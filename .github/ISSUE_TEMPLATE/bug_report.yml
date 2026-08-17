@@ -1,0 +1,81 @@
+name: 🐛 Bug Report
+description: Report a malfunction, crash, or unexpected behavior in Ghost Mode
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report an issue with **Ghost Mode**!
+
+  - type: input
+    id: device_model
+    attributes:
+      label: Device Model & Manufacturer
+      description: What phone/tablet are you using? (e.g., Google Pixel 8, Xiaomi 13, OnePlus 12)
+      placeholder: e.g. Google Pixel 8 Pro
+    validations:
+      required: true
+
+  - type: input
+    id: android_version
+    attributes:
+      label: Android Version & ROM
+      description: What Android version and OS skin are you running? (e.g., Android 14 / HyperOS 1.0)
+      placeholder: e.g. Android 14 (OxygenOS 14.0.0)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: backend_type
+    attributes:
+      label: Execution Backend
+      description: Which privilege backend is Ghost Mode using on your device?
+      options:
+        - Shizuku (Wireless Debugging / ADB)
+        - KernelSU
+        - Magisk
+        - APatch
+        - Other / Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: active_preset
+    attributes:
+      label: Active Preset
+      description: Which preset was selected when the issue occurred?
+      options:
+        - Universal (Auto-detect)
+        - Stock / Pixel (Android 12+)
+        - Xiaomi MIUI / HyperOS
+        - Samsung One UI
+        - OnePlus (OxygenOS)
+        - vivo / iQOO (OriginOS / Funtouch)
+        - Legacy Android (9-11)
+        - Custom Preset
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: Actual Behavior / Description
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: command_log
+    attributes:
+      label: Command Output Log
+      description: Copy the entries from the "Command Log" card in Ghost Mode.
+      render: shell

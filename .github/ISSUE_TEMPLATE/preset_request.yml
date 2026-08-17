@@ -1,0 +1,53 @@
+name: 📱 New Device / Preset Request
+description: Propose or share a working preset configuration for a specific device / carrier
+title: "[Preset]: "
+labels: ["preset", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share shell commands or presets that make Ghost Mode work reliably on your device model!
+
+  - type: input
+    id: device
+    attributes:
+      label: Device Brand & Model
+      placeholder: e.g. Honor Magic6 Pro / Sony Xperia 1 VI
+    validations:
+      required: true
+
+  - type: input
+    id: os_version
+    attributes:
+      label: OS / Firmware Version
+      placeholder: e.g. MagicOS 8.0 (Android 14)
+    validations:
+      required: true
+
+  - type: textarea
+    id: enable_commands
+    attributes:
+      label: Enable Commands
+      description: The shell commands used to turn on Ghost Mode (one per line).
+      placeholder: |
+        cmd phone ims disable
+        cmd phone set-allowed-network-types-for-users -s 0 01000001000000000000
+    validations:
+      required: true
+
+  - type: textarea
+    id: disable_commands
+    attributes:
+      label: Disable Commands
+      description: The shell commands used to restore normal connectivity (one per line).
+      placeholder: |
+        cmd phone set-allowed-network-types-for-users -s 0 {{SAVED_MASK}}
+        cmd phone ims enable
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_notes
+    attributes:
+      label: Testing Notes
+      description: Did incoming calls fail with "unavailable"? Did LTE/5G data stay connected?
