@@ -8,11 +8,12 @@
 
 ## Reporting a Vulnerability
 
-We take the security and integrity of Ghost Mode seriously. Because this application interacts with privileged system shell APIs and Android telephony components, we encourage responsible disclosure of potential security vulnerabilities.
+We take the security and privacy of Ghost Mode seriously. Because this application interacts with privileged system shell APIs and Android telephony components, we encourage responsible disclosure of potential vulnerabilities.
 
 If you discover a security vulnerability or privilege issue:
-1. **Do not** report security vulnerabilities via public GitHub issues.
-2. Please report your findings privately via GitHub Security Advisories or by emailing the project maintainers.
-3. Include detailed steps to reproduce the vulnerability, sample code, and the device environment.
+1. **Do not** report security vulnerabilities via public GitHub issues or discussions.
+2. Please submit a private security advisory report directly through GitHub:
+   👉 **[GitHub Private Vulnerability Report](https://github.com/Foxlape/GhostMode/security/advisories/new)**
+3. Include detailed steps to reproduce the issue, environment information (device model, Android version, Shizuku / Root state), and any relevant command logs.
 
-We will review reports promptly and publish patches in subsequent releases.
+We will review reports promptly and release patches in upcoming updates.
