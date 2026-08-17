@@ -31,7 +31,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Debug & Release APKs
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
 
       - name: Prepare Release Artifacts
         id: prepare_artifacts
@@ -40,8 +40,8 @@ jobs:
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           [ "$TAG_NAME" = "refs/heads/main" ] && TAG_NAME="nightly"
           
-          # Copy debug APK with clean name
-          cp app/build/outputs/apk/debug/app-debug.apk release_assets/GhostMode-${TAG_NAME}-debug.apk
+          # Copy release APK with clean name
+          cp app/build/outputs/apk/release/app-release.apk release_assets/GhostMode-${TAG_NAME}.apk
           
           # Generate SHA256 Checksums
           cd release_assets
