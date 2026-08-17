@@ -73,4 +73,13 @@
     <string name="schedule_cancel">Отмена</string>
     <string name="presets_action_export">Экспорт</string>
     <string name="presets_action_import">Импорт</string>
+    <string name="action_download_shizuku">Скачать Shizuku</string>
+    <string name="shizuku_authorized_apps_hint">Убедитесь, что в Shizuku в разделе «Разрешённые приложения» выдан доступ приложению «Режим призрака».</string>
+    <string name="shizuku_install_guide">Shizuku позволяет выполнять системные команды телефонии без root-прав.</string>
+    <string name="nav_main">Главная</string>
+    <string name="nav_diagnostics">Диагностика сети</string>
+    <string name="nav_logs">Журнал команд</string>
+    <string name="nav_settings">Настройки и расписание</string>
+    <string name="nav_section_menu">Разделы меню</string>
+    <string name="app_version_label">Версия 0.1.1</string>
 </resources>

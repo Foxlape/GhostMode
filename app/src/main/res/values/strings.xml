@@ -73,4 +73,13 @@
     <string name="schedule_cancel">Cancel</string>
     <string name="presets_action_export">Export</string>
     <string name="presets_action_import">Import</string>
+    <string name="action_download_shizuku">Download Shizuku</string>
+    <string name="shizuku_authorized_apps_hint">Make sure Ghost Mode is enabled in Shizuku → «Authorized Applications».</string>
+    <string name="shizuku_install_guide">Shizuku enables privileged telephony shell commands without root access.</string>
+    <string name="nav_main">Dashboard</string>
+    <string name="nav_diagnostics">Network Diagnostics</string>
+    <string name="nav_logs">Command Log</string>
+    <string name="nav_settings">Settings &amp; Schedule</string>
+    <string name="nav_section_menu">Navigation</string>
+    <string name="app_version_label">Version 0.1.1</string>
 </resources>

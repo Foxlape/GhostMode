@@ -34,9 +34,10 @@ All commands run via **Shizuku** (rootless shell via ADB UID 2000) or direct **R
 
 ## ✨ Features
 
-- ⚡ **No Root Required**: Executes privileged telephony commands seamlessly via [Shizuku](https://shizuku.rikka.app).
+- ⚡ **No Root Required**: Executes privileged telephony commands seamlessly via [Shizuku](https://shizuku.rikka.app) (with built-in 1-click download & setup guidance).
 - 🔥 **Root Superuser Support**: Direct `su` backend with automatic privilege detection (KernelSU, Magisk, APatch) — works instantly after device reboot without relaunching Shizuku.
 - 📱 **Multi-Vendor Presets**: Pre-configured profiles for Google Pixel (AOSP), Xiaomi (MIUI / HyperOS), Samsung (One UI), OnePlus (OxygenOS), vivo/iQOO (OriginOS / Funtouch), and legacy Android versions.
+- 🗂️ **Sidebar Navigation Drawer**: Clean, fast drawer menu separating Dashboard, Diagnostics, Command Log, and Settings into dedicated screens.
 - 🛠️ **Custom Preset Builder**: Build, duplicate, test, and save custom command sequences with dynamic network mask placeholders (`{{SAVED_MASK}}`).
 - 📤 **Preset Export & Import**: Easily backup or share custom profiles in JSON format.
 - 🎛️ **Quick Settings Tile**: Toggle Ghost Mode directly from your Android notification shade with one tap.

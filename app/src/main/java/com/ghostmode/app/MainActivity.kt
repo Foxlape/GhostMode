@@ -96,6 +96,7 @@ class MainActivity : AppCompatActivity() {
             logEntries = logEntries,
             onRequestPermission = shizukuManager::requestPermission,
             onOpenShizuku = shizukuManager::openShizukuApp,
+            onDownloadShizuku = shizukuManager::openShizukuDownload,
             onToggle = ::onToggle,
             onSelectPreset = ghostModeController::selectPreset,
             onSavePreset = ::onSavePreset,
