@@ -1,5 +1,6 @@
 package com.ghostmode.app.tile
 
+import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
@@ -89,6 +90,7 @@ class GhostTileService : TileService() {
         collapseQuickSettingsWith(launchIntent)
     }
 
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     private fun collapseQuickSettingsWith(launchIntent: Intent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startActivityAndCollapse(
