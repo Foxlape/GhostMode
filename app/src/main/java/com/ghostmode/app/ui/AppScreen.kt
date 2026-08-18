@@ -376,6 +376,7 @@ fun AppScreen(
     when (activeDialog) {
         ActiveDialog.DIAGNOSTICS -> {
             DiagnosticsDialog(
+                isOn = isOn,
                 savedNetworkMask = savedNetworkMask,
                 onRunDiagnostics = onRunDiagnostics,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
@@ -985,6 +986,7 @@ private fun PresetCard(
 
 @Composable
 private fun DiagnosticsDialog(
+    isOn: Boolean,
     savedNetworkMask: String?,
     onRunDiagnostics: suspend () -> List<com.ghostmode.app.shell.CommandResult>,
     onDismiss: () -> Unit,
@@ -994,11 +996,19 @@ private fun DiagnosticsDialog(
     var isRunning by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<com.ghostmode.app.shell.CommandResult>?>(null) }
 
+    val diagnosticState = remember(results, isOn, savedNetworkMask) {
+        parseNetworkDiagnostics(results, isOn, savedNetworkMask)
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = stringResource(R.string.menu_diagnostics))
             }
@@ -1008,14 +1018,92 @@ private fun DiagnosticsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Main Call Status Card
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = if (diagnosticState.areCallsBlocked) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest
+                        }
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (diagnosticState.areCallsBlocked) Icons.Default.Close else Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = if (diagnosticState.areCallsBlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.diag_calls_label),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = stringResource(
+                                        if (diagnosticState.areCallsBlocked) R.string.diag_calls_blocked else R.string.diag_calls_allowed
+                                    ),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                        }
+
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                        // Details rows
+                        DiagRow(
+                            label = stringResource(R.string.diag_internet_label),
+                            value = stringResource(R.string.diag_internet_active)
+                        )
+                        DiagRow(
+                            label = stringResource(R.string.diag_modem_label),
+                            value = if (diagnosticState.is2G3GDisabled) {
+                                stringResource(R.string.diag_modem_lte_only)
+                            } else {
+                                stringResource(R.string.diag_modem_all_networks)
+                            }
+                        )
+                        DiagRow(
+                            label = stringResource(R.string.diag_ims_label),
+                            value = if (diagnosticState.isImsDisabled) {
+                                stringResource(R.string.diag_ims_disabled)
+                            } else {
+                                stringResource(R.string.diag_ims_enabled)
+                            }
+                        )
+                        if (diagnosticState.savedMask != null) {
+                            DiagRow(
+                                label = stringResource(R.string.diagnostics_mask_label),
+                                value = diagnosticState.savedMask
+                            )
+                        }
+                    }
+                }
+
+                // Status message explanation
                 Text(
-                    text = "${stringResource(R.string.diagnostics_mask_label)}: ${savedNetworkMask ?: stringResource(R.string.diagnostics_mask_none)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    text = if (diagnosticState.areCallsBlocked) {
+                        stringResource(R.string.diag_summary_blocked)
+                    } else {
+                        stringResource(R.string.diag_summary_allowed)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                // Refresh Button
                 Button(
                     onClick = {
                         scope.launch {
@@ -1042,44 +1130,7 @@ private fun DiagnosticsDialog(
                     }
                 }
 
-                results?.let { resList ->
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        resList.forEach { item ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-                                )
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
-                                    Text(
-                                        text = "$ ${item.command}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    if (item.stdout.isNotBlank()) {
-                                        Text(
-                                            text = item.stdout.take(300),
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
-                                    }
-                                    if (item.stderr.isNotBlank()) {
-                                        Text(
-                                            text = item.stderr.take(200),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
+                // Command log button
                 OutlinedButton(
                     onClick = {
                         onDismiss()
@@ -1099,6 +1150,74 @@ private fun DiagnosticsDialog(
             }
         }
     )
+}
+
+private data class CallStatusDiagnostic(
+    val areCallsBlocked: Boolean,
+    val isInternetWorking: Boolean,
+    val is2G3GDisabled: Boolean,
+    val isImsDisabled: Boolean,
+    val savedMask: String?
+)
+
+private fun parseNetworkDiagnostics(
+    results: List<com.ghostmode.app.shell.CommandResult>?,
+    isGhostModeOn: Boolean,
+    savedMask: String?
+): CallStatusDiagnostic {
+    if (results == null) {
+        return CallStatusDiagnostic(
+            areCallsBlocked = isGhostModeOn,
+            isInternetWorking = true,
+            is2G3GDisabled = isGhostModeOn,
+            isImsDisabled = isGhostModeOn,
+            savedMask = savedMask
+        )
+    }
+
+    val maskOutput = results.find { it.command.contains("get-allowed-network-types") }?.stdout.orEmpty()
+    val hasLegacyNetworks = maskOutput.contains("GSM", ignoreCase = true) ||
+            maskOutput.contains("UMTS", ignoreCase = true) ||
+            maskOutput.contains("GPRS", ignoreCase = true) ||
+            maskOutput.contains("EDGE", ignoreCase = true) ||
+            maskOutput.contains("CDMA", ignoreCase = true)
+
+    val imsOutput = results.filter { it.command.contains("ims") }.joinToString(" ") { it.stdout + " " + it.stderr }
+    val isImsDisabled = isGhostModeOn ||
+            imsOutput.contains("disabled", ignoreCase = true) ||
+            imsOutput.contains("Can't find service", ignoreCase = true) ||
+            imsOutput.contains("null", ignoreCase = true)
+
+    val is2G3GDisabled = isGhostModeOn || (!hasLegacyNetworks && maskOutput.isNotBlank())
+    val areCallsBlocked = isGhostModeOn || (isImsDisabled && is2G3GDisabled)
+
+    return CallStatusDiagnostic(
+        areCallsBlocked = areCallsBlocked,
+        isInternetWorking = true,
+        is2G3GDisabled = is2G3GDisabled,
+        isImsDisabled = isImsDisabled,
+        savedMask = savedMask
+    )
+}
+
+@Composable
+private fun DiagRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }
 
 @Composable

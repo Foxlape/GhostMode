@@ -90,8 +90,19 @@
     <string name="about_description">Prevents incoming cellular calls by disabling IMS and fixing modem in LTE-only mode, keeping mobile data fully active.</string>
     <string name="about_cert_label">Release Certificate SHA-256</string>
     <string name="dialog_close">Close</string>
-    <string name="diagnostics_current_mask_label">Current live modem mask</string>
-    <string name="diagnostics_running">Running network diagnostics…</string>
-    <string name="diagnostics_refresh">Refresh diagnostics</string>
-    <string name="app_version_label">Version 0.1.2</string>
+    <string name="diag_calls_label">Incoming calls</string>
+    <string name="diag_calls_blocked">Blocked (Unavailable)</string>
+    <string name="diag_calls_allowed">Allowed (Normal)</string>
+    <string name="diag_internet_label">Mobile data</string>
+    <string name="diag_internet_active">Active (LTE / 5G)</string>
+    <string name="diag_ims_label">VoLTE / IMS service</string>
+    <string name="diag_ims_disabled">Disabled</string>
+    <string name="diag_ims_enabled">Active</string>
+    <string name="diag_modem_label">Modem network mode</string>
+    <string name="diag_modem_lte_only">LTE-only (2G/3G disabled)</string>
+    <string name="diag_modem_all_networks">All networks (2G/3G/4G/5G)</string>
+    <string name="diag_summary_blocked">Ghost Mode is active: callers will hear «Number is currently unavailable», while mobile internet remains fully active.</string>
+    <string name="diag_summary_allowed">Normal cellular mode: incoming calls and SMS are active across all network bands.</string>
+    <string name="diagnostics_running">Checking network status…</string>
+    <string name="app_version_label">Version 0.1.3</string>
 </resources>

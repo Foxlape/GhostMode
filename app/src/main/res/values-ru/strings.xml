@@ -90,8 +90,19 @@
     <string name="about_description">Делает телефон недоступным для входящих голосовых звонков, блокируя модем в LTE-only и отключая IMS, при этом интернет работает на полной скорости.</string>
     <string name="about_cert_label">SHA-256 релизного сертификата</string>
     <string name="dialog_close">Закрыть</string>
-    <string name="diagnostics_current_mask_label">Текущая маска модема</string>
-    <string name="diagnostics_running">Выполняется диагностика сети…</string>
-    <string name="diagnostics_refresh">Обновить диагностику</string>
-    <string name="app_version_label">Версия 0.1.2</string>
+    <string name="diag_calls_label">Входящие звонки</string>
+    <string name="diag_calls_blocked">Заблокированы (Недоступен)</string>
+    <string name="diag_calls_allowed">Принимаются (Обычный режим)</string>
+    <string name="diag_internet_label">Мобильный интернет</string>
+    <string name="diag_internet_active">Работает (LTE / 5G)</string>
+    <string name="diag_ims_label">Служба VoLTE / IMS</string>
+    <string name="diag_ims_disabled">Отключена</string>
+    <string name="diag_ims_enabled">Активна</string>
+    <string name="diag_modem_label">Режим сети модема</string>
+    <string name="diag_modem_lte_only">Только LTE (2G/3G отключены)</string>
+    <string name="diag_modem_all_networks">Все сети (2G/3G/4G/5G)</string>
+    <string name="diag_summary_blocked">Режим призрака активен: звонящие слышат «Абонент временно недоступен», мобильный интернет работает на полной скорости.</string>
+    <string name="diag_summary_allowed">Обычный режим связи: входящие звонки и SMS принимаются в штатном режиме.</string>
+    <string name="diagnostics_running">Проверка состояния сети…</string>
+    <string name="app_version_label">Версия 0.1.3</string>
 </resources>
