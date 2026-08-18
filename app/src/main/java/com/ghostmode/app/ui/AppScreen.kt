@@ -10,7 +10,9 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,35 +26,39 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,11 +67,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -73,8 +76,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -89,7 +92,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.ghostmode.app.R
 import com.ghostmode.app.data.CommandLogEntry
@@ -97,483 +105,405 @@ import com.ghostmode.app.data.GhostSession
 import com.ghostmode.app.data.Preset
 import com.ghostmode.app.shell.ShizukuStatus
 import com.ghostmode.app.support.DONATE_URL
-import java.util.Calendar
-import java.util.Locale
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
-private const val DUPLICATE_TITLE_SUFFIX = " (копия)"
-private const val MASK_VALUE_SEPARATOR = " "
-private const val BLANK_PRESET_ID = ""
-private const val BLANK_TEXT = ""
-private const val LANGUAGE_TAG_SYSTEM = "system"
-private const val LANGUAGE_TAG_RU = "ru"
-private const val LANGUAGE_TAG_EN = "en"
-private const val WEIGHT_FILL = 1f
-private const val SESSION_END_OPEN = 0L
-private const val DURATION_FLOOR_MS = 0L
-private const val MINUTE_DURATION_MS = 60_000L
-private const val MINUTES_PER_HOUR = 60
-private const val DAY_HOURS = 24
-private const val WEEK_DAYS = 7
-private const val WEEK_DURATION_MS = WEEK_DAYS * DAY_HOURS * MINUTES_PER_HOUR * MINUTE_DURATION_MS
-private const val DAY_START_HOUR = 0
-private const val DAY_START_MINUTE = 0
-private const val TIME_LABEL_SEPARATOR = " "
-private const val TIME_LABEL_FORMAT = "%02d:%02d"
-private const val SCHEDULE_TARGET_NONE = 0
-private const val SCHEDULE_TARGET_START = 1
-private const val SCHEDULE_TARGET_END = 2
-private const val IS_24_HOUR_FORMAT = true
-private val MAX_CONTENT_WIDTH = 680.dp
-private val SCREEN_PADDING = 16.dp
+private val HORIZONTAL_PADDING = 16.dp
+private val VERTICAL_PADDING = 16.dp
 private val SECTION_SPACING = 16.dp
-private val CARD_PADDING = 16.dp
-private val CARD_ITEM_SPACING = 10.dp
+private const val RELEASE_CERT_SHA256 = "FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53:DD:47:12:28:D5:71:B0:50"
 
-enum class AppNavSection {
-    DASHBOARD,
+private enum class ActiveDialog {
+    NONE,
     DIAGNOSTICS,
     LOGS,
-    SETTINGS
+    SCHEDULE,
+    LANGUAGE,
+    STATS,
+    ABOUT,
+    DONATE,
+    PRESET_EDITOR
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScreen(
-    shizukuStatus: ShizukuStatus,
-    rootAvailable: Boolean,
-    isGhostModeOn: Boolean,
+    isOn: Boolean,
+    onToggle: () -> Unit,
     isBusy: Boolean,
-    presets: List<Preset>,
-    activePresetId: String,
-    savedNetworkMask: String?,
-    logEntries: List<CommandLogEntry>,
-    onRequestPermission: () -> Unit,
+    shizukuStatus: ShizukuStatus,
+    isRootAvailable: Boolean,
+    onGrantPermission: () -> Unit,
     onOpenShizuku: () -> Unit,
     onDownloadShizuku: () -> Unit,
-    onToggle: (Boolean) -> Unit,
+    presets: List<Preset>,
+    activePresetId: String,
     onSelectPreset: (String) -> Unit,
     onSavePreset: (Preset) -> Unit,
     onDeletePreset: (String) -> Unit,
-    onRunDiagnostics: () -> Unit,
+    onDuplicatePreset: (Preset) -> Unit,
+    onExportPresets: (Uri) -> Unit,
+    onImportPresets: (Uri) -> Unit,
+    savedNetworkMask: String?,
+    onRunDiagnostics: suspend () -> List<com.ghostmode.app.shell.CommandResult>,
+    logEntries: List<CommandLogEntry>,
     onClearLog: () -> Unit,
     onRemoveEntry: (CommandLogEntry) -> Unit,
+    isScheduleEnabled: Boolean,
+    scheduleStartMinutes: Int,
+    scheduleEndMinutes: Int,
+    onScheduleChanged: (Boolean, Int, Int) -> Unit,
     notificationEnabled: Boolean,
-    onNotificationEnabled: (Boolean) -> Unit,
-    onLanguageSelected: (String) -> Unit,
-    sessions: List<GhostSession>,
-    scheduleEnabled: Boolean,
-    scheduleStartMinute: Int,
-    scheduleEndMinute: Int,
-    onScheduleEnabled: (Boolean) -> Unit,
-    onScheduleStart: (Int) -> Unit,
-    onScheduleEnd: (Int) -> Unit,
-    onExportPresets: () -> Unit,
-    onImportPresets: () -> Unit
+    onNotificationToggled: (Boolean) -> Unit,
+    sessionHistory: List<GhostSession>,
+    todayTotalMs: Long,
+    sevenDaysTotalMs: Long,
+    allTimeTotalMs: Long
 ) {
-    var currentSection by remember { mutableStateOf(AppNavSection.DASHBOARD) }
-    var editorPreset by remember { mutableStateOf<Preset?>(null) }
-    var editorIsNewPreset by remember { mutableStateOf(false) }
-    val isActionEnabled = !isBusy && (rootAvailable || shizukuStatus == ShizukuStatus.READY)
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val screenInsets = WindowInsets.safeDrawing.asPaddingValues()
+    var activeDialog by remember { mutableStateOf(ActiveDialog.NONE) }
+    var menuExpanded by remember { mutableStateOf(false) }
+    var isGridView by remember { mutableStateOf(true) }
+
+    var editingPreset by remember { mutableStateOf<Preset?>(null) }
+    var isCreatingNew by remember { mutableStateOf(false) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri -> uri?.let(onExportPresets) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri -> uri?.let(onImportPresets) }
+
     val layoutDirection = LocalLayoutDirection.current
+    val insets = WindowInsets.safeDrawing.asPaddingValues()
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(
-                modifier = Modifier.widthIn(max = 320.dp)
-            ) {
-                DrawerHeader(
-                    isGhostModeOn = isGhostModeOn,
-                    rootAvailable = rootAvailable,
-                    shizukuStatus = shizukuStatus
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-                Text(
-                    text = stringResource(R.string.nav_section_menu),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(R.string.nav_main)) },
-                    icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                    selected = currentSection == AppNavSection.DASHBOARD,
-                    onClick = {
-                        currentSection = AppNavSection.DASHBOARD
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(R.string.nav_diagnostics)) },
-                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
-                    selected = currentSection == AppNavSection.DIAGNOSTICS,
-                    onClick = {
-                        currentSection = AppNavSection.DIAGNOSTICS
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(R.string.nav_logs)) },
-                    icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
-                    selected = currentSection == AppNavSection.LOGS,
-                    badge = {
-                        if (logEntries.isNotEmpty()) {
-                            AssistChip(
-                                onClick = {},
-                                label = { Text(text = logEntries.size.toString()) }
-                            )
-                        }
-                    },
-                    onClick = {
-                        currentSection = AppNavSection.LOGS
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                NavigationDrawerItem(
-                    label = { Text(text = stringResource(R.string.nav_settings)) },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                    selected = currentSection == AppNavSection.SETTINGS,
-                    onClick = {
-                        currentSection = AppNavSection.SETTINGS
-                        scope.launch { drawerState.close() }
-                    },
-                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = stringResource(R.string.app_version_label),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
-    ) {
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_ghost),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = when (currentSection) {
-                                AppNavSection.DASHBOARD -> stringResource(R.string.app_name)
-                                AppNavSection.DIAGNOSTICS -> stringResource(R.string.nav_diagnostics)
-                                AppNavSection.LOGS -> stringResource(R.string.nav_logs)
-                                AppNavSection.SETTINGS -> stringResource(R.string.nav_settings)
-                            },
-                            style = MaterialTheme.typography.titleLarge
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                    }
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
                             Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Open Drawer"
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.settings_title)
                             )
                         }
-                    },
-                    actions = {
-                        AssistChip(
-                            onClick = {
-                                if (isActionEnabled) {
-                                    onToggle(!isGhostModeOn)
+
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_diagnostics)) },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.DIAGNOSTICS
                                 }
-                            },
-                            label = {
-                                Text(
-                                    text = stringResource(
-                                        if (isGhostModeOn) R.string.status_title_on
-                                        else R.string.status_title_off
-                                    )
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = if (isGhostModeOn) Icons.Default.Check else Icons.Default.Close,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            },
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = if (isGhostModeOn) {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceVariant
-                                }
-                            ),
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
-                )
-            }
-        ) { scaffoldPadding ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(scaffoldPadding),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .widthIn(max = MAX_CONTENT_WIDTH)
-                            .fillMaxWidth()
-                            .padding(
-                                start = screenInsets.calculateStartPadding(layoutDirection) + SCREEN_PADDING,
-                                end = screenInsets.calculateEndPadding(layoutDirection) + SCREEN_PADDING,
-                                bottom = screenInsets.calculateBottomPadding() + SCREEN_PADDING
                             )
-                    ) {
-                        when (currentSection) {
-                            AppNavSection.DASHBOARD -> {
-                                DashboardScreen(
-                                    isGhostModeOn = isGhostModeOn,
-                                    isBusy = isBusy,
-                                    isActionEnabled = isActionEnabled,
-                                    rootAvailable = rootAvailable,
-                                    shizukuStatus = shizukuStatus,
-                                    presets = presets,
-                                    activePresetId = activePresetId,
-                                    onToggle = onToggle,
-                                    onRequestPermission = onRequestPermission,
-                                    onOpenShizuku = onOpenShizuku,
-                                    onDownloadShizuku = onDownloadShizuku,
-                                    onSelectPreset = onSelectPreset,
-                                    onCreatePreset = {
-                                        editorPreset = blankPresetDraft()
-                                        editorIsNewPreset = true
-                                    },
-                                    onDuplicatePreset = { preset ->
-                                        editorPreset = preset.duplicateDraft()
-                                        editorIsNewPreset = true
-                                    },
-                                    onEditPreset = { preset ->
-                                        editorPreset = preset
-                                        editorIsNewPreset = false
-                                    },
-                                    onDeletePreset = onDeletePreset,
-                                    onExportPresets = onExportPresets,
-                                    onImportPresets = onImportPresets
-                                )
-                            }
-                            AppNavSection.DIAGNOSTICS -> {
-                                DiagnosticsScreen(
-                                    isActionEnabled = isActionEnabled,
-                                    savedNetworkMask = savedNetworkMask,
-                                    onRunDiagnostics = onRunDiagnostics,
-                                    onViewLogs = { currentSection = AppNavSection.LOGS }
-                                )
-                            }
-                            AppNavSection.LOGS -> {
-                                LogsScreen(
-                                    logEntries = logEntries,
-                                    onClearLog = onClearLog,
-                                    onRemoveEntry = onRemoveEntry
-                                )
-                            }
-                            AppNavSection.SETTINGS -> {
-                                SettingsScreen(
-                                    notificationEnabled = notificationEnabled,
-                                    onNotificationEnabled = onNotificationEnabled,
-                                    onLanguageSelected = onLanguageSelected,
-                                    scheduleEnabled = scheduleEnabled,
-                                    scheduleStartMinute = scheduleStartMinute,
-                                    scheduleEndMinute = scheduleEndMinute,
-                                    onScheduleEnabled = onScheduleEnabled,
-                                    onScheduleStart = onScheduleStart,
-                                    onScheduleEnd = onScheduleEnd,
-                                    sessions = sessions
-                                )
-                            }
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_logs)) },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.LOGS
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_schedule)) },
+                                leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.SCHEDULE
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_notification)) },
+                                leadingIcon = {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_ghost),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                },
+                                trailingIcon = {
+                                    Switch(
+                                        checked = notificationEnabled,
+                                        onCheckedChange = { checked ->
+                                            onNotificationToggled(checked)
+                                        }
+                                    )
+                                },
+                                onClick = {
+                                    onNotificationToggled(!notificationEnabled)
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_language)) },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.LANGUAGE
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_stats)) },
+                                leadingIcon = { Icon(Icons.Default.Star, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.STATS
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_about)) },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.ABOUT
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_donate)) },
+                                leadingIcon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.DONATE
+                                }
+                            )
                         }
                     }
-                }
-            }
-        }
-    }
-
-    editorPreset?.let { preset ->
-        PresetEditorDialog(
-            initialPreset = preset,
-            isNewPreset = editorIsNewPreset,
-            onSave = { editedPreset ->
-                onSavePreset(editedPreset)
-                editorPreset = null
-            },
-            onDismiss = { editorPreset = null }
-        )
-    }
-}
-
-@Composable
-private fun DrawerHeader(
-    isGhostModeOn: Boolean,
-    rootAvailable: Boolean,
-    shizukuStatus: ShizukuStatus
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painter = painterResource(R.drawable.ic_ghost),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    text = if (rootAvailable) {
-                        stringResource(R.string.root_status_title)
-                    } else {
-                        stringResource(shizukuStatusLabelRes(shizukuStatus))
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
-    }
-}
-
-@Composable
-private fun DashboardScreen(
-    isGhostModeOn: Boolean,
-    isBusy: Boolean,
-    isActionEnabled: Boolean,
-    rootAvailable: Boolean,
-    shizukuStatus: ShizukuStatus,
-    presets: List<Preset>,
-    activePresetId: String,
-    onToggle: (Boolean) -> Unit,
-    onRequestPermission: () -> Unit,
-    onOpenShizuku: () -> Unit,
-    onDownloadShizuku: () -> Unit,
-    onSelectPreset: (String) -> Unit,
-    onCreatePreset: () -> Unit,
-    onDuplicatePreset: (Preset) -> Unit,
-    onEditPreset: (Preset) -> Unit,
-    onDeletePreset: (String) -> Unit,
-    onExportPresets: () -> Unit,
-    onImportPresets: () -> Unit
-) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(SECTION_SPACING),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        item {
-            GhostModeCard(
-                isGhostModeOn = isGhostModeOn,
-                isToggleEnabled = isActionEnabled,
+    ) { contentPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    start = insets.calculateStartPadding(layoutDirection) + HORIZONTAL_PADDING,
+                    end = insets.calculateEndPadding(layoutDirection) + HORIZONTAL_PADDING,
+                    top = contentPadding.calculateTopPadding() + VERTICAL_PADDING,
+                    bottom = insets.calculateBottomPadding() + VERTICAL_PADDING
+                )
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
+        ) {
+            // Main Ghost Mode Toggle Card
+            ModeControlCard(
+                isOn = isOn,
                 isBusy = isBusy,
                 onToggle = onToggle
             )
-        }
 
-        item {
-            if (rootAvailable) {
-                RootStatusCard()
+            // Privilege Status Card (Root or Shizuku)
+            PrivilegeStatusCard(
+                isRootAvailable = isRootAvailable,
+                shizukuStatus = shizukuStatus,
+                onGrantPermission = onGrantPermission,
+                onOpenShizuku = onOpenShizuku,
+                onDownloadShizuku = onDownloadShizuku
+            )
+
+            // Presets Header & Mode
+            PresetsHeader(
+                isGridView = isGridView,
+                onToggleLayout = { isGridView = !isGridView },
+                onNewPreset = {
+                    editingPreset = null
+                    isCreatingNew = true
+                    activeDialog = ActiveDialog.PRESET_EDITOR
+                },
+                onExport = { exportLauncher.launch("ghostmode-presets.json") },
+                onImport = { importLauncher.launch(arrayOf("application/json")) }
+            )
+
+            // Presets Grid or List
+            if (isGridView) {
+                PresetsGrid(
+                    presets = presets,
+                    activePresetId = activePresetId,
+                    onSelectPreset = onSelectPreset,
+                    onDuplicate = onDuplicatePreset,
+                    onEdit = { preset ->
+                        editingPreset = preset
+                        isCreatingNew = false
+                        activeDialog = ActiveDialog.PRESET_EDITOR
+                    },
+                    onDelete = onDeletePreset
+                )
             } else {
-                ShizukuStatusCard(
-                    shizukuStatus = shizukuStatus,
-                    onRequestPermission = onRequestPermission,
-                    onOpenShizuku = onOpenShizuku,
-                    onDownloadShizuku = onDownloadShizuku
+                PresetsList(
+                    presets = presets,
+                    activePresetId = activePresetId,
+                    onSelectPreset = onSelectPreset,
+                    onDuplicate = onDuplicatePreset,
+                    onEdit = { preset ->
+                        editingPreset = preset
+                        isCreatingNew = false
+                        activeDialog = ActiveDialog.PRESET_EDITOR
+                    },
+                    onDelete = onDeletePreset
                 )
             }
-        }
 
-        item {
-            PresetsSectionHeader(
-                onCreatePreset = onCreatePreset,
-                onExportPresets = onExportPresets,
-                onImportPresets = onImportPresets
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    // Active Dialogs Router
+    when (activeDialog) {
+        ActiveDialog.DIAGNOSTICS -> {
+            DiagnosticsDialog(
+                savedNetworkMask = savedNetworkMask,
+                onRunDiagnostics = onRunDiagnostics,
+                onDismiss = { activeDialog = ActiveDialog.NONE },
+                onViewLogs = { activeDialog = ActiveDialog.LOGS }
             )
         }
-
-        items(presets, key = { preset -> preset.id }) { preset ->
-            PresetCard(
-                preset = preset,
-                isSelected = preset.id == activePresetId,
-                onSelect = { onSelectPreset(preset.id) },
-                onDuplicate = { onDuplicatePreset(preset) },
-                onEdit = { onEditPreset(preset) },
-                onDelete = { onDeletePreset(preset.id) }
+        ActiveDialog.LOGS -> {
+            LogsDialog(
+                logEntries = logEntries,
+                onClearLog = onClearLog,
+                onRemoveEntry = onRemoveEntry,
+                onDismiss = { activeDialog = ActiveDialog.NONE }
             )
         }
+        ActiveDialog.SCHEDULE -> {
+            ScheduleDialog(
+                isScheduleEnabled = isScheduleEnabled,
+                scheduleStartMinutes = scheduleStartMinutes,
+                scheduleEndMinutes = scheduleEndMinutes,
+                onScheduleChanged = onScheduleChanged,
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.LANGUAGE -> {
+            LanguageDialog(
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.STATS -> {
+            StatsDialog(
+                todayTotalMs = todayTotalMs,
+                sevenDaysTotalMs = sevenDaysTotalMs,
+                allTimeTotalMs = allTimeTotalMs,
+                sessionHistory = sessionHistory,
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.ABOUT -> {
+            AboutDialog(
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.DONATE -> {
+            DonateDialog(
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.PRESET_EDITOR -> {
+            val presetToEdit = editingPreset ?: Preset(
+                id = java.util.UUID.randomUUID().toString(),
+                title = "",
+                description = "",
+                onCommands = emptyList(),
+                offCommands = emptyList(),
+                networkMaskCaptureCommand = null,
+                isBuiltIn = false
+            )
+            PresetEditorDialog(
+                initialPreset = presetToEdit,
+                isNewPreset = isCreatingNew,
+                onSave = { preset ->
+                    onSavePreset(preset)
+                    activeDialog = ActiveDialog.NONE
+                },
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.NONE -> Unit
     }
 }
 
-@Composable
-private fun DiagnosticsScreen(
-    isActionEnabled: Boolean,
-    savedNetworkMask: String?,
-    onRunDiagnostics: () -> Unit,
-    onViewLogs: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
-    ) {
-        DiagnosticsCard(
-            isRunEnabled = isActionEnabled,
-            savedNetworkMask = savedNetworkMask,
-            onRunDiagnostics = onRunDiagnostics
-        )
+// ---------------------- Dashboard Components ----------------------
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.padding(CARD_PADDING),
-                verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
+@Composable
+private fun ModeControlCard(
+    isOn: Boolean,
+    isBusy: Boolean,
+    onToggle: () -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (isOn) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.diagnostics_title),
-                    style = MaterialTheme.typography.titleMedium
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(if (isOn) R.string.status_title_on else R.string.status_title_off),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = if (isOn) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(if (isOn) R.string.status_subtitle_on else R.string.status_subtitle_off),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isOn) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
+                    )
+                }
+
+                Switch(
+                    checked = isOn,
+                    onCheckedChange = { onToggle() },
+                    enabled = !isBusy
                 )
-                Text(
-                    text = "• dumpsys ims — проверяет регистрацию VoLTE/IMS стека\n" +
-                        "• cmd phone get-allowed-network-types-for-users — считывает битовую маску радиомодема\n" +
-                        "• Все результаты выводятся в Журнал команд с кодами ответов.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                OutlinedButton(
-                    onClick = onViewLogs,
-                    modifier = Modifier.fillMaxWidth()
+            }
+
+            AnimatedVisibility(visible = isBusy) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = stringResource(R.string.nav_logs))
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text(
+                        text = stringResource(R.string.busy_message),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -581,128 +511,107 @@ private fun DiagnosticsScreen(
 }
 
 @Composable
-private fun LogsScreen(
-    logEntries: List<CommandLogEntry>,
-    onClearLog: () -> Unit,
-    onRemoveEntry: (CommandLogEntry) -> Unit
+private fun PrivilegeStatusCard(
+    isRootAvailable: Boolean,
+    shizukuStatus: ShizukuStatus,
+    onGrantPermission: () -> Unit,
+    onOpenShizuku: () -> Unit,
+    onDownloadShizuku: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
-    ) {
-        LogPanel(
-            entries = logEntries,
-            onClear = onClearLog,
-            onRemoveEntry = onRemoveEntry
-        )
-    }
-}
-
-@Composable
-private fun SettingsScreen(
-    notificationEnabled: Boolean,
-    onNotificationEnabled: (Boolean) -> Unit,
-    onLanguageSelected: (String) -> Unit,
-    scheduleEnabled: Boolean,
-    scheduleStartMinute: Int,
-    scheduleEndMinute: Int,
-    onScheduleEnabled: (Boolean) -> Unit,
-    onScheduleStart: (Int) -> Unit,
-    onScheduleEnd: (Int) -> Unit,
-    sessions: List<GhostSession>
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
-    ) {
-        SettingsCard(
-            notificationEnabled = notificationEnabled,
-            onNotificationEnabled = onNotificationEnabled,
-            onLanguageSelected = onLanguageSelected,
-            scheduleEnabled = scheduleEnabled,
-            scheduleStartMinute = scheduleStartMinute,
-            scheduleEndMinute = scheduleEndMinute,
-            onScheduleEnabled = onScheduleEnabled,
-            onScheduleStart = onScheduleStart,
-            onScheduleEnd = onScheduleEnd
-        )
-
-        StatsCard(sessions = sessions)
-    }
-}
-
-@Composable
-private fun RootStatusCard() {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
+    if (isRootAvailable) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+            )
         ) {
-            Text(
-                text = stringResource(R.string.root_status_title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(R.string.root_status_ready),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.root_status_title),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.root_status_ready),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
+    } else {
+        ShizukuStatusCard(
+            status = shizukuStatus,
+            onGrantPermission = onGrantPermission,
+            onOpenShizuku = onOpenShizuku,
+            onDownloadShizuku = onDownloadShizuku
+        )
     }
 }
 
 @Composable
 private fun ShizukuStatusCard(
-    shizukuStatus: ShizukuStatus,
-    onRequestPermission: () -> Unit,
+    status: ShizukuStatus,
+    onGrantPermission: () -> Unit,
     onOpenShizuku: () -> Unit,
     onDownloadShizuku: () -> Unit
 ) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when (status) {
+                ShizukuStatus.READY -> MaterialTheme.colorScheme.surfaceContainerHighest
+                else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)
+            }
+        )
+    ) {
         Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (status == ShizukuStatus.READY) Icons.Default.CheckCircle else Icons.Default.Info,
+                    contentDescription = null,
+                    tint = if (status == ShizukuStatus.READY) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.shizuku_title),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                AssistChip(
-                    onClick = {
-                        when (shizukuStatus) {
-                            ShizukuStatus.NOT_INSTALLED -> onDownloadShizuku()
-                            ShizukuStatus.NOT_RUNNING -> onOpenShizuku()
-                            ShizukuStatus.NO_PERMISSION -> onRequestPermission()
-                            ShizukuStatus.READY -> onOpenShizuku()
-                        }
-                    },
-                    label = {
-                        Text(text = stringResource(shizukuStatusLabelRes(shizukuStatus)))
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = when (shizukuStatus) {
-                            ShizukuStatus.READY -> MaterialTheme.colorScheme.primaryContainer
-                            ShizukuStatus.NO_PERMISSION -> MaterialTheme.colorScheme.errorContainer
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    )
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
 
-            when (shizukuStatus) {
+            Text(
+                text = when (status) {
+                    ShizukuStatus.NOT_INSTALLED -> stringResource(R.string.shizuku_status_not_installed)
+                    ShizukuStatus.NOT_RUNNING -> stringResource(R.string.shizuku_status_not_running)
+                    ShizukuStatus.NO_PERMISSION -> stringResource(R.string.shizuku_status_no_permission)
+                    ShizukuStatus.READY -> stringResource(R.string.shizuku_status_ready)
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            when (status) {
                 ShizukuStatus.NOT_INSTALLED -> {
                     Text(
                         text = stringResource(R.string.shizuku_install_guide),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Button(
@@ -712,31 +621,18 @@ private fun ShizukuStatusCard(
                         Text(text = stringResource(R.string.action_download_shizuku))
                     }
                 }
-                ShizukuStatus.NOT_RUNNING -> {
-                    Text(
-                        text = stringResource(R.string.shizuku_status_not_running),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    OutlinedButton(
-                        onClick = onOpenShizuku,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(text = stringResource(R.string.action_open_shizuku))
-                    }
-                }
                 ShizukuStatus.NO_PERMISSION -> {
                     Text(
                         text = stringResource(R.string.shizuku_authorized_apps_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = onRequestPermission,
+                            onClick = onGrantPermission,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(text = stringResource(R.string.action_grant_permission))
@@ -749,11 +645,230 @@ private fun ShizukuStatusCard(
                         }
                     }
                 }
-                ShizukuStatus.READY -> {
-                    Text(
-                        text = stringResource(R.string.shizuku_status_ready),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                ShizukuStatus.NOT_RUNNING -> {
+                    Button(
+                        onClick = onOpenShizuku,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = stringResource(R.string.action_open_shizuku))
+                    }
+                }
+                ShizukuStatus.READY -> Unit
+            }
+        }
+    }
+}
+
+// ---------------------- Presets Section ----------------------
+
+@Composable
+private fun PresetsHeader(
+    isGridView: Boolean,
+    onToggleLayout: () -> Unit,
+    onNewPreset: () -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.presets_title),
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onToggleLayout) {
+                Icon(
+                    imageVector = if (isGridView) Icons.AutoMirrored.Filled.List else Icons.Default.Menu,
+                    contentDescription = stringResource(if (isGridView) R.string.preset_layout_list else R.string.preset_layout_grid),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            TextButton(
+                onClick = onExport,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                Text(text = stringResource(R.string.presets_action_export), style = MaterialTheme.typography.labelMedium)
+            }
+            TextButton(
+                onClick = onImport,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                Text(text = stringResource(R.string.presets_action_import), style = MaterialTheme.typography.labelMedium)
+            }
+            TextButton(
+                onClick = onNewPreset,
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                Text(text = "+ " + stringResource(R.string.editor_title_new), style = MaterialTheme.typography.labelMedium)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PresetsGrid(
+    presets: List<Preset>,
+    activePresetId: String,
+    onSelectPreset: (String) -> Unit,
+    onDuplicate: (Preset) -> Unit,
+    onEdit: (Preset) -> Unit,
+    onDelete: (String) -> Unit
+) {
+    val chunkedPresets = remember(presets) { presets.chunked(2) }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        chunkedPresets.forEach { rowPresets ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                rowPresets.forEach { preset ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        PresetTileCard(
+                            preset = preset,
+                            isSelected = preset.id == activePresetId,
+                            onSelect = { onSelectPreset(preset.id) },
+                            onDuplicate = { onDuplicate(preset) },
+                            onEdit = { onEdit(preset) },
+                            onDelete = { onDelete(preset.id) }
+                        )
+                    }
+                }
+                if (rowPresets.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PresetTileCard(
+    preset: Preset,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+    onDuplicate: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect),
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        },
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                AssistChip(
+                    onClick = {},
+                    label = {
+                        Text(
+                            text = stringResource(if (preset.isBuiltIn) R.string.preset_builtin else R.string.preset_custom),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = if (preset.isBuiltIn) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    border = null,
+                    modifier = Modifier.height(24.dp)
+                )
+
+                Box {
+                    IconButton(
+                        onClick = { menuOpen = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = menuOpen,
+                        onDismissRequest = { menuOpen = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_duplicate)) },
+                            onClick = {
+                                menuOpen = false
+                                onDuplicate()
+                            }
+                        )
+                        if (!preset.isBuiltIn) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_edit)) },
+                                onClick = {
+                                    menuOpen = false
+                                    onEdit()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    menuOpen = false
+                                    onDelete()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            Text(
+                text = preset.title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${preset.onCommands.size + preset.offCommands.size} cmds",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -761,100 +876,28 @@ private fun ShizukuStatusCard(
     }
 }
 
-private fun shizukuStatusLabelRes(status: ShizukuStatus): Int = when (status) {
-    ShizukuStatus.READY -> R.string.shizuku_status_ready
-    ShizukuStatus.NO_PERMISSION -> R.string.shizuku_status_no_permission
-    ShizukuStatus.NOT_RUNNING -> R.string.shizuku_status_not_running
-    ShizukuStatus.NOT_INSTALLED -> R.string.shizuku_status_not_installed
-}
-
 @Composable
-private fun GhostModeCard(
-    isGhostModeOn: Boolean,
-    isToggleEnabled: Boolean,
-    isBusy: Boolean,
-    onToggle: (Boolean) -> Unit
+private fun PresetsList(
+    presets: List<Preset>,
+    activePresetId: String,
+    onSelectPreset: (String) -> Unit,
+    onDuplicate: (Preset) -> Unit,
+    onEdit: (Preset) -> Unit,
+    onDelete: (String) -> Unit
 ) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isGhostModeOn) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        )
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
-        ) {
-            Text(
-                text = stringResource(
-                    if (isGhostModeOn) R.string.status_title_on else R.string.status_title_off
-                ),
-                style = MaterialTheme.typography.titleLarge
+        presets.forEach { preset ->
+            PresetCard(
+                preset = preset,
+                isSelected = preset.id == activePresetId,
+                onSelect = { onSelectPreset(preset.id) },
+                onDuplicate = { onDuplicate(preset) },
+                onEdit = { onEdit(preset) },
+                onDelete = { onDelete(preset.id) }
             )
-            Text(
-                text = stringResource(
-                    if (isGhostModeOn) R.string.status_subtitle_on else R.string.status_subtitle_off
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
-            ) {
-                Switch(
-                    checked = isGhostModeOn,
-                    onCheckedChange = onToggle,
-                    enabled = isToggleEnabled
-                )
-                Text(
-                    text = stringResource(
-                        if (isGhostModeOn) R.string.toggle_turn_off else R.string.toggle_turn_on
-                    ),
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-            if (isBusy) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                Text(
-                    text = stringResource(R.string.busy_message),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PresetsSectionHeader(
-    onCreatePreset: () -> Unit,
-    onExportPresets: () -> Unit,
-    onImportPresets: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = stringResource(R.string.presets_title),
-            style = MaterialTheme.typography.titleMedium
-        )
-        Row {
-            TextButton(onClick = onExportPresets) {
-                Text(text = stringResource(R.string.presets_action_export))
-            }
-            TextButton(onClick = onImportPresets) {
-                Text(text = stringResource(R.string.presets_action_import))
-            }
-            TextButton(onClick = onCreatePreset) {
-                Text(text = stringResource(R.string.editor_title_new))
-            }
         }
     }
 }
@@ -868,60 +911,69 @@ private fun PresetCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
-        onClick = onSelect,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant
-            }
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect),
+        border = if (isSelected) {
+            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        } else {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        },
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f) else MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = preset.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(WEIGHT_FILL)
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.weight(1f)
                 )
                 AssistChip(
-                    onClick = onSelect,
+                    onClick = {},
                     label = {
                         Text(
-                            text = stringResource(
-                                if (preset.isBuiltIn) R.string.preset_builtin
-                                else R.string.preset_custom
-                            )
+                            text = stringResource(if (preset.isBuiltIn) R.string.preset_builtin else R.string.preset_custom),
+                            style = MaterialTheme.typography.labelSmall
                         )
-                    }
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = if (preset.isBuiltIn) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+                    ),
+                    border = null
                 )
             }
-            if (preset.description.isNotBlank()) {
-                Text(
-                    text = preset.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Row {
+
+            Text(
+                text = preset.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 TextButton(onClick = onDuplicate) {
-                    Text(text = stringResource(R.string.action_duplicate))
+                    Text(stringResource(R.string.action_duplicate))
                 }
                 if (!preset.isBuiltIn) {
                     TextButton(onClick = onEdit) {
-                        Text(text = stringResource(R.string.action_edit))
+                        Text(stringResource(R.string.action_edit))
                     }
                     TextButton(onClick = onDelete) {
-                        Text(text = stringResource(R.string.action_delete))
+                        Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error)
                     }
                 }
             }
@@ -929,328 +981,302 @@ private fun PresetCard(
     }
 }
 
+// ---------------------- Dialogs ----------------------
+
 @Composable
-private fun DiagnosticsCard(
-    isRunEnabled: Boolean,
+private fun DiagnosticsDialog(
     savedNetworkMask: String?,
-    onRunDiagnostics: () -> Unit
+    onRunDiagnostics: suspend () -> List<com.ghostmode.app.shell.CommandResult>,
+    onDismiss: () -> Unit,
+    onViewLogs: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
-        ) {
-            Text(
-                text = stringResource(R.string.diagnostics_title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(R.string.diagnostics_mask_label) +
-                    MASK_VALUE_SEPARATOR +
-                    (savedNetworkMask ?: stringResource(R.string.diagnostics_mask_none)),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Button(onClick = onRunDiagnostics, enabled = isRunEnabled) {
-                Text(text = stringResource(R.string.action_run_diagnostics))
+    val scope = rememberCoroutineScope()
+    var isRunning by remember { mutableStateOf(false) }
+    var results by remember { mutableStateOf<List<com.ghostmode.app.shell.CommandResult>?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.menu_diagnostics))
             }
-        }
-    }
-}
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "${stringResource(R.string.diagnostics_mask_label)}: ${savedNetworkMask ?: stringResource(R.string.diagnostics_mask_none)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
 
-@Composable
-private fun StatsCard(sessions: List<GhostSession>) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
-        ) {
-            Text(
-                text = stringResource(R.string.stats_title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            StatsRow(
-                label = stringResource(R.string.stats_today),
-                value = durationLabel(todayDurationMs(sessions))
-            )
-            StatsRow(
-                label = stringResource(R.string.stats_week),
-                value = durationLabel(weekDurationMs(sessions))
-            )
-            StatsRow(
-                label = stringResource(R.string.stats_all),
-                value = durationLabel(totalDurationMs(sessions))
-            )
-            Text(
-                text = stringResource(R.string.stats_activations, sessions.size),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isRunning = true
+                            results = onRunDiagnostics()
+                            isRunning = false
+                        }
+                    },
+                    enabled = !isRunning,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isRunning) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.diagnostics_running))
+                    } else {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.action_run_diagnostics))
+                    }
+                }
 
-@Composable
-private fun StatsRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
+                results?.let { resList ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        resList.forEach { item ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
+                                )
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = "$ ${item.command}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    if (item.stdout.isNotBlank()) {
+                                        Text(
+                                            text = item.stdout.take(300),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    if (item.stderr.isNotBlank()) {
+                                        Text(
+                                            text = item.stderr.take(200),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
-private fun todayDurationMs(sessions: List<GhostSession>): Long {
-    val nowMs = System.currentTimeMillis()
-    return sessionsDurationBetween(sessions, startOfTodayMs(), nowMs)
-}
-
-private fun weekDurationMs(sessions: List<GhostSession>): Long {
-    val nowMs = System.currentTimeMillis()
-    return sessionsDurationBetween(sessions, nowMs - WEEK_DURATION_MS, nowMs)
-}
-
-private fun totalDurationMs(sessions: List<GhostSession>): Long {
-    val nowMs = System.currentTimeMillis()
-    return sessions.sumOf { session ->
-        val sessionEndMs = if (session.endMs == SESSION_END_OPEN) nowMs else session.endMs
-        (sessionEndMs - session.startMs).coerceAtLeast(DURATION_FLOOR_MS)
-    }
-}
-
-private fun sessionsDurationBetween(
-    sessions: List<GhostSession>,
-    fromMs: Long,
-    toMs: Long
-): Long = sessions.sumOf { session ->
-    val sessionEndMs = if (session.endMs == SESSION_END_OPEN) toMs else session.endMs
-    val overlapStartMs = maxOf(session.startMs, fromMs)
-    val overlapEndMs = minOf(sessionEndMs, toMs)
-    (overlapEndMs - overlapStartMs).coerceAtLeast(DURATION_FLOOR_MS)
-}
-
-private fun startOfTodayMs(): Long {
-    val calendar = Calendar.getInstance()
-    calendar.set(Calendar.HOUR_OF_DAY, DAY_START_HOUR)
-    calendar.set(Calendar.MINUTE, DAY_START_MINUTE)
-    calendar.set(Calendar.SECOND, DAY_START_MINUTE)
-    calendar.set(Calendar.MILLISECOND, DAY_START_MINUTE)
-    return calendar.timeInMillis
-}
-
-@Composable
-private fun durationLabel(durationMs: Long): String {
-    val totalMinutes = durationMs / MINUTE_DURATION_MS
-    val hours = totalMinutes / MINUTES_PER_HOUR
-    val minutes = totalMinutes % MINUTES_PER_HOUR
-    return if (hours == 0L) {
-        stringResource(R.string.stats_duration_minutes, minutes)
-    } else {
-        stringResource(R.string.stats_duration_hours_minutes, hours, minutes)
-    }
-}
-
-@Composable
-private fun SettingsCard(
-    notificationEnabled: Boolean,
-    onNotificationEnabled: (Boolean) -> Unit,
-    onLanguageSelected: (String) -> Unit,
-    scheduleEnabled: Boolean,
-    scheduleStartMinute: Int,
-    scheduleEndMinute: Int,
-    onScheduleEnabled: (Boolean) -> Unit,
-    onScheduleStart: (Int) -> Unit,
-    onScheduleEnd: (Int) -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(CARD_PADDING),
-            verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)
-        ) {
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            LanguageSelector(onLanguageSelected = onLanguageSelected)
-            NotificationToggle(
-                checked = notificationEnabled,
-                onCheckedChange = onNotificationEnabled
-            )
-            ScheduleSection(
-                enabled = scheduleEnabled,
-                startMinuteOfDay = scheduleStartMinute,
-                endMinuteOfDay = scheduleEndMinute,
-                onEnabled = onScheduleEnabled,
-                onStart = onScheduleStart,
-                onEnd = onScheduleEnd
-            )
-            if (DONATE_URL.isNotBlank()) {
-                DonateButton()
-            }
-        }
-    }
-}
-
-@Composable
-private fun LanguageSelector(onLanguageSelected: (String) -> Unit) {
-    val selectedTag = currentApplicationLanguageTag()
-    Column(verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)) {
-        Text(
-            text = stringResource(R.string.settings_language),
-            style = MaterialTheme.typography.titleSmall
-        )
-        LanguageOption(
-            label = stringResource(R.string.language_system),
-            tag = LANGUAGE_TAG_SYSTEM,
-            selectedTag = selectedTag,
-            onLanguageSelected = onLanguageSelected
-        )
-        LanguageOption(
-            label = stringResource(R.string.language_russian),
-            tag = LANGUAGE_TAG_RU,
-            selectedTag = selectedTag,
-            onLanguageSelected = onLanguageSelected
-        )
-        LanguageOption(
-            label = stringResource(R.string.language_english),
-            tag = LANGUAGE_TAG_EN,
-            selectedTag = selectedTag,
-            onLanguageSelected = onLanguageSelected
-        )
-    }
-}
-
-@Composable
-private fun LanguageOption(
-    label: String,
-    tag: String,
-    selectedTag: String,
-    onLanguageSelected: (String) -> Unit
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(
-            selected = tag == selectedTag,
-            onClick = { onLanguageSelected(tag) }
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(start = CARD_ITEM_SPACING)
-        )
-    }
-}
-
-@Composable
-private fun NotificationToggle(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) onCheckedChange(true) }
-    Column(verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)) {
-        Text(
-            text = stringResource(R.string.settings_notification),
-            style = MaterialTheme.typography.titleSmall
-        )
-        Text(
-            text = stringResource(R.string.settings_notification_summary),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Switch(
-            checked = checked,
-            onCheckedChange = { enabled ->
-                if (enabled && isNotificationPermissionMissing(context)) {
-                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                    onCheckedChange(enabled)
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onViewLogs()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.menu_logs))
                 }
             }
-        )
-    }
-}
-
-@Composable
-private fun ScheduleSection(
-    enabled: Boolean,
-    startMinuteOfDay: Int,
-    endMinuteOfDay: Int,
-    onEnabled: (Boolean) -> Unit,
-    onStart: (Int) -> Unit,
-    onEnd: (Int) -> Unit
-) {
-    var pickerTarget by remember { mutableIntStateOf(SCHEDULE_TARGET_NONE) }
-    Column(verticalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)) {
-        Text(
-            text = stringResource(R.string.schedule_title),
-            style = MaterialTheme.typography.titleSmall
-        )
-        Text(
-            text = stringResource(R.string.schedule_enabled),
-            style = MaterialTheme.typography.bodyMedium
-        )
-        Switch(checked = enabled, onCheckedChange = onEnabled)
-        Row(horizontalArrangement = Arrangement.spacedBy(CARD_ITEM_SPACING)) {
-            OutlinedButton(onClick = { pickerTarget = SCHEDULE_TARGET_START }) {
-                Text(text = scheduleTimeLabel(R.string.schedule_from, startMinuteOfDay))
-            }
-            OutlinedButton(onClick = { pickerTarget = SCHEDULE_TARGET_END }) {
-                Text(text = scheduleTimeLabel(R.string.schedule_to, endMinuteOfDay))
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
             }
         }
-        Text(
-            text = stringResource(R.string.schedule_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-    if (pickerTarget != SCHEDULE_TARGET_NONE) {
-        ScheduleTimeDialog(
-            initialMinuteOfDay = if (pickerTarget == SCHEDULE_TARGET_START) startMinuteOfDay else endMinuteOfDay,
-            onConfirm = { minuteOfDay ->
-                if (pickerTarget == SCHEDULE_TARGET_START) onStart(minuteOfDay) else onEnd(minuteOfDay)
-                pickerTarget = SCHEDULE_TARGET_NONE
-            },
-            onDismiss = { pickerTarget = SCHEDULE_TARGET_NONE }
-        )
-    }
+    )
 }
 
 @Composable
-private fun scheduleTimeLabel(labelRes: Int, minuteOfDay: Int): String =
-    stringResource(labelRes) + TIME_LABEL_SEPARATOR + String.format(
-        Locale.ROOT,
-        TIME_LABEL_FORMAT,
-        minuteOfDay / MINUTES_PER_HOUR,
-        minuteOfDay % MINUTES_PER_HOUR
-    )
+private fun LogsDialog(
+    logEntries: List<CommandLogEntry>,
+    onClearLog: () -> Unit,
+    onRemoveEntry: (CommandLogEntry) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.menu_logs),
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        )
+                    }
+
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.dialog_close))
+                    }
+                }
+
+                Box(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        LogPanel(
+                            entries = logEntries,
+                            onClear = onClearLog,
+                            onRemoveEntry = onRemoveEntry
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.dialog_close))
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ScheduleTimeDialog(
-    initialMinuteOfDay: Int,
-    onConfirm: (Int) -> Unit,
+private fun ScheduleDialog(
+    isScheduleEnabled: Boolean,
+    scheduleStartMinutes: Int,
+    scheduleEndMinutes: Int,
+    onScheduleChanged: (Boolean, Int, Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val timePickerState = rememberTimePickerState(
-        initialHour = initialMinuteOfDay / MINUTES_PER_HOUR,
-        initialMinute = initialMinuteOfDay % MINUTES_PER_HOUR,
-        is24Hour = IS_24_HOUR_FORMAT
+    var enabled by remember { mutableStateOf(isScheduleEnabled) }
+    var startMinutes by remember { mutableIntStateOf(scheduleStartMinutes) }
+    var endMinutes by remember { mutableIntStateOf(scheduleEndMinutes) }
+    var pickingTimeFor by remember { mutableStateOf<String?>(null) }
+
+    val startTimeState = rememberTimePickerState(
+        initialHour = startMinutes / 60,
+        initialMinute = startMinutes % 60,
+        is24Hour = true
     )
+    val endTimeState = rememberTimePickerState(
+        initialHour = endMinutes / 60,
+        initialMinute = endMinutes % 60,
+        is24Hour = true
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.schedule_title))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.schedule_enabled),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = { enabled = it }
+                    )
+                }
+
+                AnimatedVisibility(visible = enabled) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { pickingTimeFor = "START" },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = stringResource(R.string.schedule_from), style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        text = String.format("%02d:%02d", startMinutes / 60, startMinutes % 60),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = { pickingTimeFor = "END" },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(text = stringResource(R.string.schedule_to), style = MaterialTheme.typography.labelSmall)
+                                    Text(
+                                        text = String.format("%02d:%02d", endMinutes / 60, endMinutes % 60),
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = stringResource(R.string.schedule_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
-                    onConfirm(timePickerState.hour * MINUTES_PER_HOUR + timePickerState.minute)
+                    onScheduleChanged(enabled, startMinutes, endMinutes)
+                    onDismiss()
                 }
             ) {
                 Text(text = stringResource(R.string.schedule_apply))
@@ -1260,52 +1286,316 @@ private fun ScheduleTimeDialog(
             TextButton(onClick = onDismiss) {
                 Text(text = stringResource(R.string.schedule_cancel))
             }
+        }
+    )
+
+    if (pickingTimeFor != null) {
+        val isStart = pickingTimeFor == "START"
+        val state = if (isStart) startTimeState else endTimeState
+
+        AlertDialog(
+            onDismissRequest = { pickingTimeFor = null },
+            title = {
+                Text(text = stringResource(if (isStart) R.string.schedule_from else R.string.schedule_to))
+            },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = state)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (isStart) {
+                            startMinutes = state.hour * 60 + state.minute
+                        } else {
+                            endMinutes = state.hour * 60 + state.minute
+                        }
+                        pickingTimeFor = null
+                    }
+                ) {
+                    Text(text = stringResource(R.string.schedule_apply))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pickingTimeFor = null }) {
+                    Text(text = stringResource(R.string.schedule_cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun LanguageDialog(
+    onDismiss: () -> Unit
+) {
+    val currentTag = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.settings_language))
+            }
         },
-        text = { TimePicker(state = timePickerState) }
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.getEmptyLocaleList())
+                            onDismiss()
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = currentTag.isEmpty(),
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.getEmptyLocaleList())
+                            onDismiss()
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.language_system))
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags("ru"))
+                            onDismiss()
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = currentTag.startsWith("ru"),
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags("ru"))
+                            onDismiss()
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.language_russian))
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags("en"))
+                            onDismiss()
+                        }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = currentTag.startsWith("en"),
+                        onClick = {
+                            AppCompatDelegate.setApplicationLocales(androidx.core.os.LocaleListCompat.forLanguageTags("en"))
+                            onDismiss()
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = stringResource(R.string.language_english))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
+            }
+        }
     )
 }
 
 @Composable
-private fun DonateButton() {
-    val context = LocalContext.current
-    ElevatedButton(
-        onClick = {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(DONATE_URL)))
-            } catch (_: ActivityNotFoundException) {
+private fun StatsDialog(
+    todayTotalMs: Long,
+    sevenDaysTotalMs: Long,
+    allTimeTotalMs: Long,
+    sessionHistory: List<GhostSession>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.stats_title))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "${stringResource(R.string.stats_today)}: ${formatDuration(todayTotalMs)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "${stringResource(R.string.stats_week)}: ${formatDuration(sevenDaysTotalMs)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "${stringResource(R.string.stats_all)}: ${formatDuration(allTimeTotalMs)}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = String.format(stringResource(R.string.stats_activations), sessionHistory.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
             }
         }
-    ) {
-        Text(text = stringResource(R.string.settings_donate_title))
-    }
+    )
 }
 
-private fun currentApplicationLanguageTag(): String {
-    val applicationLocales = AppCompatDelegate.getApplicationLocales()
-    return when {
-        applicationLocales.isEmpty -> LANGUAGE_TAG_SYSTEM
-        applicationLocales.toLanguageTags().startsWith(LANGUAGE_TAG_RU) -> LANGUAGE_TAG_RU
-        else -> LANGUAGE_TAG_EN
-    }
+@Composable
+private fun AboutDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_ghost),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.about_title))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.app_version_label),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = stringResource(R.string.about_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                HorizontalDivider()
+
+                Text(
+                    text = stringResource(R.string.about_cert_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                ) {
+                    Text(
+                        text = RELEASE_CERT_SHA256,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Foxlape/GhostMode"))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "GitHub Repository")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
+            }
+        }
+    )
 }
 
-private fun isNotificationPermissionMissing(context: Context): Boolean =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
-        PackageManager.PERMISSION_GRANTED
+@Composable
+private fun DonateDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
 
-private fun blankPresetDraft(): Preset = Preset(
-    id = BLANK_PRESET_ID,
-    title = BLANK_TEXT,
-    description = BLANK_TEXT,
-    onCommands = emptyList(),
-    offCommands = emptyList(),
-    networkMaskCaptureCommand = null,
-    isBuiltIn = false
-)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.settings_donate_title))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Ghost Mode — полностью свободный и открытый проект без рекламы и трекеров.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(DONATE_URL))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {}
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = stringResource(R.string.settings_donate_title))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
+            }
+        }
+    )
+}
 
-private fun Preset.duplicateDraft(): Preset = copy(
-    id = BLANK_PRESET_ID,
-    title = title + DUPLICATE_TITLE_SUFFIX,
-    isBuiltIn = false
-)
+private fun formatDuration(ms: Long): String {
+    val totalMinutes = ms / 60000
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+}

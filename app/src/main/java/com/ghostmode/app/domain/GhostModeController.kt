@@ -58,8 +58,13 @@ class GhostModeController(
         if (!canRun()) return emptyList()
         isBusyFlow.value = true
         try {
-            return listOf(DIAGNOSTICS_IMS_COMMAND, BuiltInPresets.MASK_CAPTURE_COMMAND)
-                .map { command -> executeAndLog(command) }
+            val commands = listOf(
+                BuiltInPresets.MASK_CAPTURE_COMMAND,
+                BuiltInPresets.GET_IMS_SERVICE_DEVICE_COMMAND,
+                BuiltInPresets.GET_IMS_SERVICE_CARRIER_COMMAND,
+                DIAGNOSTICS_IMS_COMMAND
+            )
+            return commands.map { command -> executeAndLog(command) }
         } finally {
             isBusyFlow.value = false
         }

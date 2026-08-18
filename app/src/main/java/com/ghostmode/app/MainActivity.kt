@@ -85,51 +85,69 @@ class MainActivity : AppCompatActivity() {
         val scheduleStartMinute by stateRepository.scheduleStartMinuteOfDay.collectAsStateWithLifecycle()
         val scheduleEndMinute by stateRepository.scheduleEndMinuteOfDay.collectAsStateWithLifecycle()
 
+        val now = System.currentTimeMillis()
+        val todayMidnight = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val sevenDaysAgo = now - 7 * 24 * 3600 * 1000L
+
+        val todayTotalMs = sessions.filter { it.startMs >= todayMidnight }.sumOf { (it.endMs ?: now) - it.startMs }
+        val sevenDaysTotalMs = sessions.filter { it.startMs >= sevenDaysAgo }.sumOf { (it.endMs ?: now) - it.startMs }
+        val allTimeTotalMs = sessions.sumOf { (it.endMs ?: now) - it.startMs }
+
         AppScreen(
-            shizukuStatus = shizukuStatus,
-            rootAvailable = shellBackend == ShellBackend.ROOT,
-            isGhostModeOn = isGhostModeOn,
+            isOn = isGhostModeOn,
+            onToggle = ::onToggle,
             isBusy = isBusy,
-            presets = presets,
-            activePresetId = activePresetId,
-            savedNetworkMask = savedNetworkMask,
-            logEntries = logEntries,
-            onRequestPermission = shizukuManager::requestPermission,
+            shizukuStatus = shizukuStatus,
+            isRootAvailable = shellBackend == ShellBackend.ROOT,
+            onGrantPermission = shizukuManager::requestPermission,
             onOpenShizuku = shizukuManager::openShizukuApp,
             onDownloadShizuku = shizukuManager::openShizukuDownload,
-            onToggle = ::onToggle,
+            presets = presets,
+            activePresetId = activePresetId,
             onSelectPreset = ghostModeController::selectPreset,
             onSavePreset = ::onSavePreset,
             onDeletePreset = presetRepository::deleteCustomPreset,
-            onRunDiagnostics = ::onRunDiagnostics,
+            onDuplicatePreset = ::onDuplicatePreset,
+            onExportPresets = { uri -> writePresetsExport(uri) },
+            onImportPresets = { uri -> readPresetsImport(uri) },
+            savedNetworkMask = savedNetworkMask,
+            onRunDiagnostics = { ghostModeController.runDiagnostics() },
+            logEntries = logEntries,
             onClearLog = stateRepository::clearLog,
             onRemoveEntry = { stateRepository.removeLogEntry(it.timestampMs) },
+            isScheduleEnabled = scheduleEnabled,
+            scheduleStartMinutes = scheduleStartMinute,
+            scheduleEndMinutes = scheduleEndMinute,
+            onScheduleChanged = ::onScheduleChanged,
             notificationEnabled = notificationEnabled,
-            onNotificationEnabled = stateRepository::setNotificationEnabled,
-            onLanguageSelected = ::onLanguageSelected,
-            sessions = sessions,
-            scheduleEnabled = scheduleEnabled,
-            scheduleStartMinute = scheduleStartMinute,
-            scheduleEndMinute = scheduleEndMinute,
-            onScheduleEnabled = ::onScheduleEnabled,
-            onScheduleStart = ::onScheduleStartMinuteOfDay,
-            onScheduleEnd = ::onScheduleEndMinuteOfDay,
-            onExportPresets = { presetExportLauncher.launch(PRESETS_EXPORT_SUGGESTED_NAME) },
-            onImportPresets = { presetImportLauncher.launch(PRESETS_IMPORT_MIME_TYPES) }
+            onNotificationToggled = stateRepository::setNotificationEnabled,
+            sessionHistory = sessions,
+            todayTotalMs = todayTotalMs,
+            sevenDaysTotalMs = sevenDaysTotalMs,
+            allTimeTotalMs = allTimeTotalMs
         )
     }
 
-    private fun onToggle(enabled: Boolean) {
+    private fun onToggle() {
+        val shouldTurnOn = !stateRepository.isOn.value
         lifecycleScope.launch {
-            if (enabled) ghostModeController.turnOn() else ghostModeController.turnOff()
+            if (shouldTurnOn) ghostModeController.turnOn() else ghostModeController.turnOff()
             GhostWidgetProvider.refreshAll(this@MainActivity, stateRepository.isOn.value)
         }
     }
 
-    private fun onRunDiagnostics() {
-        lifecycleScope.launch {
-            ghostModeController.runDiagnostics()
-        }
+    private fun onDuplicatePreset(preset: Preset) {
+        val duplicated = preset.copy(
+            id = java.util.UUID.randomUUID().toString(),
+            title = "${preset.title} (копия)",
+            isBuiltIn = false
+        )
+        presetRepository.saveCustomPreset(duplicated)
     }
 
     private fun onSavePreset(preset: Preset) {
@@ -139,27 +157,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun onLanguageSelected(languageTag: String) {
-        val applicationLocales = when (languageTag) {
-            LANGUAGE_TAG_RU -> LocaleListCompat.forLanguageTags(LANGUAGE_TAG_RU)
-            LANGUAGE_TAG_EN -> LocaleListCompat.forLanguageTags(LANGUAGE_TAG_EN)
-            else -> LocaleListCompat.getEmptyLocaleList()
-        }
-        AppCompatDelegate.setApplicationLocales(applicationLocales)
-    }
-
-    private fun onScheduleEnabled(enabled: Boolean) {
+    private fun onScheduleChanged(enabled: Boolean, startMin: Int, endMin: Int) {
         stateRepository.setScheduleEnabled(enabled)
-        ScheduleManager.update(this)
-    }
-
-    private fun onScheduleStartMinuteOfDay(minuteOfDay: Int) {
-        stateRepository.setScheduleStartMinuteOfDay(minuteOfDay)
-        ScheduleManager.update(this)
-    }
-
-    private fun onScheduleEndMinuteOfDay(minuteOfDay: Int) {
-        stateRepository.setScheduleEndMinuteOfDay(minuteOfDay)
+        stateRepository.setScheduleStartMinuteOfDay(startMin)
+        stateRepository.setScheduleEndMinuteOfDay(endMin)
         ScheduleManager.update(this)
     }
 

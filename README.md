@@ -37,16 +37,14 @@ All commands run via **Shizuku** (rootless shell via ADB UID 2000) or direct **R
 - ⚡ **No Root Required**: Executes privileged telephony commands seamlessly via [Shizuku](https://shizuku.rikka.app) (with built-in 1-click download & setup guidance).
 - 🔥 **Root Superuser Support**: Direct `su` backend with automatic privilege detection (KernelSU, Magisk, APatch) — works instantly after device reboot without relaunching Shizuku.
 - 📱 **Multi-Vendor Presets**: Pre-configured profiles for Google Pixel (AOSP), Xiaomi (MIUI / HyperOS), Samsung (One UI), OnePlus (OxygenOS), vivo/iQOO (OriginOS / Funtouch), and legacy Android versions.
-- 🗂️ **Sidebar Navigation Drawer**: Clean, fast drawer menu separating Dashboard, Diagnostics, Command Log, and Settings into dedicated screens.
-- 🛠️ **Custom Preset Builder**: Build, duplicate, test, and save custom command sequences with dynamic network mask placeholders (`{{SAVED_MASK}}`).
-- 📤 **Preset Export & Import**: Easily backup or share custom profiles in JSON format.
-- 🎛️ **Quick Settings Tile**: Toggle Ghost Mode directly from your Android notification shade with one tap.
+- ⊞ **Preset Grid Tiles & List View**: Interactive 2-column preset grid with instant switching, custom creator, and export/import.
+- 🎛️ **Quick Settings Tile**: Toggle Ghost Mode directly from your Android notification shade with one tap; long-press opens app directly.
 - 🧩 **Home Screen Widget**: Sleek interactive desktop widget for instant state switching.
 - ⏰ **Automated Schedules**: Daily quiet hours (e.g. `23:00` → `08:00`) with persistent boot-aware exact alarms.
 - 🔔 **Persistent Status Notification**: Optional active mode notification featuring an elapsed timer and direct one-click "Turn Off" action.
 - 📊 **Usage Statistics**: Track total time in Ghost Mode, session history (up to 500 records), and usage trends (today, 7 days, all-time).
 - 🌍 **Bilingual Interface**: Full English and Russian localization with instant runtime language switching.
-- 🎨 **Modern Material 3 UI**: Clean adaptive design respecting system bars, landscape mode, and large tablet screens.
+- 🎨 **Modern Material 3 UI**: Clean adaptive design with 3-dots action menu (Diagnostics, Command Log, Schedule, Language, Stats, About).
 
 ---
 

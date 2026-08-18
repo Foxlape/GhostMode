@@ -42,9 +42,17 @@ class GhostStatusService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_TURN_OFF) {
+            handleTurnOff()
+            return START_NOT_STICKY
+        }
+        if (!stateRepository.isOn.value || !stateRepository.notificationEnabled.value) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         startForegroundCompat()
-        if (intent?.action == ACTION_TURN_OFF) handleTurnOff()
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {
