@@ -36,6 +36,7 @@
 
         <service
             android:name=".tile.GhostTileService"
+            android:enabled="true"
             android:exported="true"
             android:icon="@drawable/ic_ghost"
             android:label="@string/tile_label"

@@ -126,11 +126,24 @@ class MainActivity : AppCompatActivity() {
             onScheduleChanged = ::onScheduleChanged,
             notificationEnabled = notificationEnabled,
             onNotificationToggled = stateRepository::setNotificationEnabled,
+            onRequestAddTile = ::requestAddQuickSettingsTile,
             sessionHistory = sessions,
             todayTotalMs = todayTotalMs,
             sevenDaysTotalMs = sevenDaysTotalMs,
             allTimeTotalMs = allTimeTotalMs
         )
+    }
+
+    private fun requestAddQuickSettingsTile() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val statusBarManager = getSystemService(android.app.StatusBarManager::class.java) ?: return
+            statusBarManager.requestAddTileService(
+                android.content.ComponentName(this, com.ghostmode.app.tile.GhostTileService::class.java),
+                getString(R.string.tile_label),
+                android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_ghost),
+                mainExecutor
+            ) { }
+        }
     }
 
     private fun onToggle() {

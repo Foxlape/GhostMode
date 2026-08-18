@@ -104,5 +104,6 @@
     <string name="diag_summary_blocked">Режим призрака активен: звонящие слышат «Абонент временно недоступен», мобильный интернет работает на полной скорости.</string>
     <string name="diag_summary_allowed">Обычный режим связи: входящие звонки и SMS принимаются в штатном режиме.</string>
     <string name="diagnostics_running">Проверка состояния сети…</string>
-    <string name="app_version_label">Версия 0.1.3</string>
+    <string name="menu_add_tile">Добавить кнопку в шторку</string>
+    <string name="app_version_label">Версия 0.1.4</string>
 </resources>

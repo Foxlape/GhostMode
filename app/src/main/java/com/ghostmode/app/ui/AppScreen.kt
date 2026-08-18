@@ -155,6 +155,7 @@ fun AppScreen(
     onScheduleChanged: (Boolean, Int, Int) -> Unit,
     notificationEnabled: Boolean,
     onNotificationToggled: (Boolean) -> Unit,
+    onRequestAddTile: () -> Unit = {},
     sessionHistory: List<GhostSession>,
     todayTotalMs: Long,
     sevenDaysTotalMs: Long,
@@ -256,6 +257,16 @@ fun AppScreen(
                                     onNotificationToggled(!notificationEnabled)
                                 }
                             )
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                DropdownMenuItem(
+                                    text = { Text(text = stringResource(R.string.menu_add_tile)) },
+                                    leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onRequestAddTile()
+                                    }
+                                )
+                            }
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text(text = stringResource(R.string.menu_language)) },

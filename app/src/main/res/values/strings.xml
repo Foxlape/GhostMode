@@ -104,5 +104,6 @@
     <string name="diag_summary_blocked">Ghost Mode is active: callers will hear «Number is currently unavailable», while mobile internet remains fully active.</string>
     <string name="diag_summary_allowed">Normal cellular mode: incoming calls and SMS are active across all network bands.</string>
     <string name="diagnostics_running">Checking network status…</string>
-    <string name="app_version_label">Version 0.1.3</string>
+    <string name="menu_add_tile">Add tile to quick settings</string>
+    <string name="app_version_label">Version 0.1.4</string>
 </resources>
