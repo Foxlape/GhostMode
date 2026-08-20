@@ -22,7 +22,7 @@ data class GhostSession(
     val endMs: Long
 )
 
-open class GhostStateRepository(context: Context? = null) {
+open class GhostStateRepository(private val context: Context? = null) {
 
     private val prefs = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val isOnFlow = MutableStateFlow(prefs?.getBoolean(KEY_IS_ON, false) ?: false)
@@ -64,11 +64,29 @@ open class GhostStateRepository(context: Context? = null) {
             ?.putBoolean(KEY_IS_ON, value)
             ?.putLong(KEY_IS_ON_TIMESTAMP, timestampMs)
             ?.apply()
+        context?.let { ctx ->
+            com.ghostmode.app.widget.GhostWidgetProvider.refreshAll(ctx, value)
+            com.ghostmode.app.tile.GhostTileService.requestTileUpdate(ctx)
+            com.ghostmode.app.service.StatusNotificationManager.update(
+                ctx,
+                value,
+                notificationEnabledFlow.value,
+                timestampMs
+            )
+        }
     }
 
     open fun setNotificationEnabled(value: Boolean) {
         notificationEnabledFlow.value = value
         prefs?.edit()?.putBoolean(KEY_NOTIFICATION_ENABLED, value)?.apply()
+        context?.let { ctx ->
+            com.ghostmode.app.service.StatusNotificationManager.update(
+                ctx,
+                isOnFlow.value,
+                value,
+                isOnTimestampMsFlow.value
+            )
+        }
     }
 
     open fun setScheduleEnabled(value: Boolean) {

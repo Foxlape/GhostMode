@@ -1,6 +1,8 @@
 package com.ghostmode.app
 
 import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 import com.ghostmode.app.data.GhostStateRepository
 import com.ghostmode.app.scheduling.ScheduleManager
 import com.ghostmode.app.service.StatusNotificationManager
@@ -9,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import java.util.Locale
 
 class GhostModeApp : Application() {
 
@@ -17,6 +20,12 @@ class GhostModeApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        if (AppCompatDelegate.getApplicationLocales().isEmpty) {
+            val systemLanguage = Locale.getDefault().language
+            if (systemLanguage.startsWith("ru")) {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("ru"))
+            }
+        }
         ScheduleManager.update(this)
         combine(
             stateRepository.isOn,

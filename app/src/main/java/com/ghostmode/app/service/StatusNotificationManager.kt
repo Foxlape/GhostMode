@@ -52,6 +52,8 @@ object StatusNotificationManager {
             .setContentTitle(context.getString(R.string.notification_title_on))
             .setContentText(context.getString(R.string.notification_text_on))
             .setOngoing(true)
+            .setAutoCancel(false)
+            .setSilent(true)
             .setWhen(if (timestampMs > 0) timestampMs else System.currentTimeMillis())
             .setUsesChronometer(true)
             .setContentIntent(mainActivityPendingIntent)
@@ -61,7 +63,8 @@ object StatusNotificationManager {
                 turnOffPendingIntent
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
         try {

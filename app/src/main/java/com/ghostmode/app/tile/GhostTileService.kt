@@ -2,6 +2,7 @@ package com.ghostmode.app.tile
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
@@ -168,5 +169,15 @@ class GhostTileService : TileService() {
     companion object {
         private const val REQUEST_CODE = 101
         private const val LAUNCH_REQUEST_CODE = 0
+
+        fun requestTileUpdate(context: Context) {
+            try {
+                requestListeningState(
+                    context,
+                    android.content.ComponentName(context, GhostTileService::class.java)
+                )
+            } catch (_: Exception) {
+            }
+        }
     }
 }
