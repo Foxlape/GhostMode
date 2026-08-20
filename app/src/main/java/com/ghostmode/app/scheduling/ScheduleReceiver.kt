@@ -22,6 +22,7 @@ class ScheduleReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         val action = intent.action ?: return
         val isTick = action == ACTION_TICK
+        val isBoot = action == Intent.ACTION_BOOT_COMPLETED
         val isSystemReschedule = action in SYSTEM_RESCHEDULE_ACTIONS
         if (!isTick && !isSystemReschedule) return
         val pendingResult = goAsync()
@@ -30,15 +31,21 @@ class ScheduleReceiver : BroadcastReceiver() {
             val shizukuManager = ShizukuManager(appContext)
             try {
                 if (isSystemReschedule) ScheduleManager.update(appContext)
-                shizukuManager.start()
-                val rootExecutor = RootShellExecutor()
-                val ghostModeController = GhostModeController(
-                    AutoShellExecutor(rootExecutor, shizukuManager),
-                    PresetRepository(appContext),
-                    stateRepository
-                )
-                rootExecutor.probeRoot()
-                applyScheduledState(stateRepository, ghostModeController)
+                if (stateRepository.scheduleEnabled.value) {
+                    shizukuManager.start()
+                    val rootExecutor = RootShellExecutor()
+                    val ghostModeController = GhostModeController(
+                        AutoShellExecutor(rootExecutor, shizukuManager),
+                        PresetRepository(appContext),
+                        stateRepository
+                    )
+                    rootExecutor.probeRoot()
+                    applyScheduledState(stateRepository, ghostModeController)
+                } else if (isBoot) {
+                    // On reboot without schedule enabled, modem state is reset by the OS.
+                    // Reset Ghost Mode state to OFF so UI / QS Tile / Widget reflect actual modem state.
+                    stateRepository.setIsOn(false)
+                }
             } catch (_: IllegalStateException) {
             } finally {
                 ScheduleManager.update(appContext)
@@ -53,6 +60,7 @@ class ScheduleReceiver : BroadcastReceiver() {
         stateRepository: GhostStateRepository,
         ghostModeController: GhostModeController
     ) {
+        if (!stateRepository.scheduleEnabled.value) return
         val inWindow = isMinuteOfDayInWindow(currentMinuteOfDay(), stateRepository)
         val isOn = stateRepository.isOn.value
         if (inWindow && !isOn) {

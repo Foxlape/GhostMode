@@ -107,9 +107,14 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
     }
 
     fun openShizukuApp() {
-        val launchIntent = context.packageManager.getLaunchIntentForPackage(SHIZUKU_PACKAGE) ?: return
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(launchIntent)
+        for (pkg in SHIZUKU_PACKAGES) {
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)
+            if (launchIntent != null) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                context.startActivity(launchIntent)
+                return
+            }
+        }
     }
 
     fun openShizukuDownload() {
@@ -184,7 +189,6 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
 
     private fun requestPermissionIfEligible() {
         if (Shizuku.isPreV11()) return
-        if (Shizuku.shouldShowRequestPermissionRationale()) return
         Shizuku.requestPermission(PERMISSION_REQUEST_CODE)
     }
 
@@ -213,14 +217,24 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
     }
 
     private fun computeStatus(): ShizukuStatus {
-        if (!isShizukuInstalled()) return ShizukuStatus.NOT_INSTALLED
-        if (!isBinderAlive()) return ShizukuStatus.NOT_RUNNING
-        if (!isPermissionGranted()) return ShizukuStatus.NO_PERMISSION
-        return ShizukuStatus.READY
+        if (isBinderAlive()) {
+            return if (isPermissionGranted()) {
+                ShizukuStatus.READY
+            } else {
+                ShizukuStatus.NO_PERMISSION
+            }
+        }
+        return if (isShizukuInstalled()) {
+            ShizukuStatus.NOT_RUNNING
+        } else {
+            ShizukuStatus.NOT_INSTALLED
+        }
     }
 
     private fun isShizukuInstalled(): Boolean {
-        return context.packageManager.getLaunchIntentForPackage(SHIZUKU_PACKAGE) != null
+        return SHIZUKU_PACKAGES.any { pkg ->
+            context.packageManager.getLaunchIntentForPackage(pkg) != null
+        }
     }
 
     private fun isBinderAlive(): Boolean {
@@ -244,6 +258,12 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
         const val PROCESS_NAME_SUFFIX = "service"
         const val PERMISSION_REQUEST_CODE = 101
         const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+        val SHIZUKU_PACKAGES = listOf(
+            "moe.shizuku.privileged.api",
+            "io.github.nightzuku",
+            "com.nightzuku",
+            "moe.nightzuku"
+        )
         const val MIN_SHIZUKU_VERSION = 11
 
         private const val INITIAL_READINESS = false

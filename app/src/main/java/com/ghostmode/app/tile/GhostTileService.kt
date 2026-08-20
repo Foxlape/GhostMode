@@ -63,7 +63,10 @@ class GhostTileService : TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
-        updateTile()
+        scope.launch {
+            rootExecutor.probeRoot()
+            updateTile()
+        }
     }
 
     override fun onClick() {
@@ -71,16 +74,22 @@ class GhostTileService : TileService() {
     }
 
     private fun handleTileClick() {
-        updateTile()
-        if (rootExecutor.isRootAvailable.value) {
-            launchGhostModeToggle()
-            return
-        }
-        when (shizukuManager.status.value) {
-            ShizukuStatus.NOT_INSTALLED,
-            ShizukuStatus.NOT_RUNNING -> launchAppTrampoline()
-            ShizukuStatus.NO_PERMISSION -> requestShizukuPermission()
-            ShizukuStatus.READY -> launchGhostModeToggle()
+        scope.launch {
+            val hasRoot = rootExecutor.probeRoot()
+            if (hasRoot || shizukuManager.status.value == ShizukuStatus.READY) {
+                if (stateRepository.isOn.value) {
+                    ghostModeController.turnOff()
+                } else {
+                    ghostModeController.turnOn()
+                }
+                updateTile()
+                return@launch
+            }
+            when (shizukuManager.status.value) {
+                ShizukuStatus.NO_PERMISSION -> requestShizukuPermission()
+                else -> launchAppTrampoline()
+            }
+            updateTile()
         }
     }
 
@@ -109,17 +118,6 @@ class GhostTileService : TileService() {
 
     private fun requestShizukuPermission() {
         runShizukuCall { Shizuku.requestPermission(REQUEST_CODE) }
-    }
-
-    private fun launchGhostModeToggle() {
-        scope.launch {
-            if (stateRepository.isOn.value) {
-                ghostModeController.turnOff()
-            } else {
-                ghostModeController.turnOn()
-            }
-            updateTile()
-        }
     }
 
     private fun updateTile() {

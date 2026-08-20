@@ -93,6 +93,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -388,7 +389,6 @@ fun AppScreen(
         ActiveDialog.DIAGNOSTICS -> {
             DiagnosticsDialog(
                 isOn = isOn,
-                savedNetworkMask = savedNetworkMask,
                 onRunDiagnostics = onRunDiagnostics,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
                 onViewLogs = { activeDialog = ActiveDialog.LOGS }
@@ -998,7 +998,6 @@ private fun PresetCard(
 @Composable
 private fun DiagnosticsDialog(
     isOn: Boolean,
-    savedNetworkMask: String?,
     onRunDiagnostics: suspend () -> List<com.ghostmode.app.shell.CommandResult>,
     onDismiss: () -> Unit,
     onViewLogs: () -> Unit
@@ -1007,8 +1006,8 @@ private fun DiagnosticsDialog(
     var isRunning by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<com.ghostmode.app.shell.CommandResult>?>(null) }
 
-    val diagnosticState = remember(results, isOn, savedNetworkMask) {
-        parseNetworkDiagnostics(results, isOn, savedNetworkMask)
+    val diagnosticState = remember(results, isOn) {
+        parseNetworkDiagnostics(results, isOn)
     }
 
     AlertDialog(
@@ -1052,7 +1051,7 @@ private fun DiagnosticsDialog(
                             Icon(
                                 imageVector = if (diagnosticState.areCallsBlocked) Icons.Default.Close else Icons.Default.CheckCircle,
                                 contentDescription = null,
-                                tint = if (diagnosticState.areCallsBlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -1094,12 +1093,6 @@ private fun DiagnosticsDialog(
                                 stringResource(R.string.diag_ims_enabled)
                             }
                         )
-                        if (diagnosticState.savedMask != null) {
-                            DiagRow(
-                                label = stringResource(R.string.diagnostics_mask_label),
-                                value = diagnosticState.savedMask
-                            )
-                        }
                     }
                 }
 
@@ -1167,22 +1160,19 @@ private data class CallStatusDiagnostic(
     val areCallsBlocked: Boolean,
     val isInternetWorking: Boolean,
     val is2G3GDisabled: Boolean,
-    val isImsDisabled: Boolean,
-    val savedMask: String?
+    val isImsDisabled: Boolean
 )
 
 private fun parseNetworkDiagnostics(
     results: List<com.ghostmode.app.shell.CommandResult>?,
-    isGhostModeOn: Boolean,
-    savedMask: String?
+    isGhostModeOn: Boolean
 ): CallStatusDiagnostic {
     if (results == null) {
         return CallStatusDiagnostic(
             areCallsBlocked = isGhostModeOn,
             isInternetWorking = true,
             is2G3GDisabled = isGhostModeOn,
-            isImsDisabled = isGhostModeOn,
-            savedMask = savedMask
+            isImsDisabled = isGhostModeOn
         )
     }
 
@@ -1206,8 +1196,7 @@ private fun parseNetworkDiagnostics(
         areCallsBlocked = areCallsBlocked,
         isInternetWorking = true,
         is2G3GDisabled = is2G3GDisabled,
-        isImsDisabled = isImsDisabled,
-        savedMask = savedMask
+        isImsDisabled = isImsDisabled
     )
 }
 
@@ -1221,12 +1210,16 @@ private fun DiagRow(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1.2f, fill = false)
         )
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f, fill = false)
         )
     }
 }

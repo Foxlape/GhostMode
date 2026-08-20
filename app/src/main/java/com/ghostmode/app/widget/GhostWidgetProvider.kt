@@ -54,13 +54,15 @@ class GhostWidgetProvider : AppWidgetProvider() {
         try {
             shizukuManager.start()
             val rootExecutor = RootShellExecutor()
+            val hasRoot = rootExecutor.probeRoot()
             val ghostModeController = GhostModeController(
                 AutoShellExecutor(rootExecutor, shizukuManager),
                 PresetRepository(context),
                 stateRepository
             )
-            rootExecutor.probeRoot()
-            if (stateRepository.isOn.value) ghostModeController.turnOff() else ghostModeController.turnOn()
+            if (hasRoot || shizukuManager.status.value == com.ghostmode.app.shell.ShizukuStatus.READY) {
+                if (stateRepository.isOn.value) ghostModeController.turnOff() else ghostModeController.turnOn()
+            }
         } finally {
             refreshAll(context, stateRepository.isOn.value)
             shizukuManager.stop()

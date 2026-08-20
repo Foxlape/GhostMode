@@ -30,7 +30,9 @@ class RootShellExecutor : ShellExecutor {
     }
 
     override suspend fun execute(command: String): CommandResult {
-        if (!isRootAvailableFlow.value) return rootFailure(command, ERROR_ROOT_UNAVAILABLE)
+        if (!isRootAvailableFlow.value && !probeRoot()) {
+            return rootFailure(command, ERROR_ROOT_UNAVAILABLE)
+        }
         return try {
             withContext(Dispatchers.IO) { runRootCommand(command) }
         } catch (error: CancellationException) {

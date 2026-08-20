@@ -105,5 +105,5 @@
     <string name="diag_summary_allowed">Normal cellular mode: incoming calls and SMS are active across all network bands.</string>
     <string name="diagnostics_running">Checking network status…</string>
     <string name="menu_add_tile">Add tile to quick settings</string>
-    <string name="app_version_label">Version 0.1.4</string>
+    <string name="app_version_label">Version 0.1.5</string>
 </resources>
