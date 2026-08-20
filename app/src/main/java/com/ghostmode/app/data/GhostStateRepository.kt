@@ -22,68 +22,68 @@ data class GhostSession(
     val endMs: Long
 )
 
-class GhostStateRepository(context: Context) {
+open class GhostStateRepository(context: Context? = null) {
 
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val isOnFlow = MutableStateFlow(prefs.getBoolean(KEY_IS_ON, false))
-    private val isOnTimestampMsFlow = MutableStateFlow(prefs.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE))
-    private val savedNetworkMaskFlow = MutableStateFlow(prefs.getString(KEY_SAVED_MASK, null))
-    private val savedMaskTimestampMsFlow = MutableStateFlow(prefs.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE))
+    private val prefs = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val isOnFlow = MutableStateFlow(prefs?.getBoolean(KEY_IS_ON, false) ?: false)
+    private val isOnTimestampMsFlow = MutableStateFlow(prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE)
+    private val savedNetworkMaskFlow = MutableStateFlow(prefs?.getString(KEY_SAVED_MASK, null))
+    private val savedMaskTimestampMsFlow = MutableStateFlow(prefs?.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE) ?: TIMESTAMP_NONE)
     private val activePresetIdFlow = MutableStateFlow(
-        prefs.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
+        prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
     )
     private val logEntriesFlow = MutableStateFlow<List<CommandLogEntry>>(EMPTY_LOG)
-    private val notificationEnabledFlow = MutableStateFlow(prefs.getBoolean(KEY_NOTIFICATION_ENABLED, false))
+    private val notificationEnabledFlow = MutableStateFlow(prefs?.getBoolean(KEY_NOTIFICATION_ENABLED, false) ?: false)
     private val sessionsFlow = MutableStateFlow(loadSessions())
-    private val scheduleEnabledFlow = MutableStateFlow(prefs.getBoolean(KEY_SCHEDULE_ENABLED, SCHEDULE_DEFAULT_DISABLED))
+    private val scheduleEnabledFlow = MutableStateFlow(prefs?.getBoolean(KEY_SCHEDULE_ENABLED, SCHEDULE_DEFAULT_DISABLED) ?: SCHEDULE_DEFAULT_DISABLED)
     private val scheduleStartMinuteOfDayFlow = MutableStateFlow(
-        prefs.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START_MINUTE)
+        prefs?.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START_MINUTE) ?: DEFAULT_SCHEDULE_START_MINUTE
     )
     private val scheduleEndMinuteOfDayFlow = MutableStateFlow(
-        prefs.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE)
+        prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
     )
 
-    val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
-    val isOnTimestampMs: StateFlow<Long> = isOnTimestampMsFlow.asStateFlow()
-    val savedNetworkMask: StateFlow<String?> = savedNetworkMaskFlow.asStateFlow()
-    val savedMaskTimestampMs: StateFlow<Long> = savedMaskTimestampMsFlow.asStateFlow()
-    val activePresetId: StateFlow<String> = activePresetIdFlow.asStateFlow()
-    val logEntries: StateFlow<List<CommandLogEntry>> = logEntriesFlow.asStateFlow()
-    val notificationEnabled: StateFlow<Boolean> = notificationEnabledFlow.asStateFlow()
-    val sessions: StateFlow<List<GhostSession>> = sessionsFlow.asStateFlow()
-    val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
-    val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartMinuteOfDayFlow.asStateFlow()
-    val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndMinuteOfDayFlow.asStateFlow()
+    open val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
+    open val isOnTimestampMs: StateFlow<Long> = isOnTimestampMsFlow.asStateFlow()
+    open val savedNetworkMask: StateFlow<String?> = savedNetworkMaskFlow.asStateFlow()
+    open val savedMaskTimestampMs: StateFlow<Long> = savedMaskTimestampMsFlow.asStateFlow()
+    open val activePresetId: StateFlow<String> = activePresetIdFlow.asStateFlow()
+    open val logEntries: StateFlow<List<CommandLogEntry>> = logEntriesFlow.asStateFlow()
+    open val notificationEnabled: StateFlow<Boolean> = notificationEnabledFlow.asStateFlow()
+    open val sessions: StateFlow<List<GhostSession>> = sessionsFlow.asStateFlow()
+    open val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
+    open val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartMinuteOfDayFlow.asStateFlow()
+    open val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndMinuteOfDayFlow.asStateFlow()
 
-    fun setIsOn(value: Boolean) {
+    open fun setIsOn(value: Boolean) {
         val timestampMs = if (value) System.currentTimeMillis() else TIMESTAMP_NONE
         isOnFlow.value = value
         isOnTimestampMsFlow.value = timestampMs
         if (value) openSession() else closeOpenSessions()
-        prefs.edit()
-            .putBoolean(KEY_IS_ON, value)
-            .putLong(KEY_IS_ON_TIMESTAMP, timestampMs)
-            .apply()
+        prefs?.edit()
+            ?.putBoolean(KEY_IS_ON, value)
+            ?.putLong(KEY_IS_ON_TIMESTAMP, timestampMs)
+            ?.apply()
     }
 
-    fun setNotificationEnabled(value: Boolean) {
+    open fun setNotificationEnabled(value: Boolean) {
         notificationEnabledFlow.value = value
-        prefs.edit().putBoolean(KEY_NOTIFICATION_ENABLED, value).apply()
+        prefs?.edit()?.putBoolean(KEY_NOTIFICATION_ENABLED, value)?.apply()
     }
 
-    fun setScheduleEnabled(value: Boolean) {
+    open fun setScheduleEnabled(value: Boolean) {
         scheduleEnabledFlow.value = value
-        prefs.edit().putBoolean(KEY_SCHEDULE_ENABLED, value).apply()
+        prefs?.edit()?.putBoolean(KEY_SCHEDULE_ENABLED, value)?.apply()
     }
 
-    fun setScheduleStartMinuteOfDay(minuteOfDay: Int) {
+    open fun setScheduleStartMinuteOfDay(minuteOfDay: Int) {
         scheduleStartMinuteOfDayFlow.value = minuteOfDay
-        prefs.edit().putInt(KEY_SCHEDULE_START_MINUTE, minuteOfDay).apply()
+        prefs?.edit()?.putInt(KEY_SCHEDULE_START_MINUTE, minuteOfDay)?.apply()
     }
 
-    fun setScheduleEndMinuteOfDay(minuteOfDay: Int) {
+    open fun setScheduleEndMinuteOfDay(minuteOfDay: Int) {
         scheduleEndMinuteOfDayFlow.value = minuteOfDay
-        prefs.edit().putInt(KEY_SCHEDULE_END_MINUTE, minuteOfDay).apply()
+        prefs?.edit()?.putInt(KEY_SCHEDULE_END_MINUTE, minuteOfDay)?.apply()
     }
 
     private fun openSession() {
@@ -104,11 +104,11 @@ class GhostStateRepository(context: Context) {
     private fun updateSessions(transform: (List<GhostSession>) -> List<GhostSession>) {
         val updatedSessions = transform(sessionsFlow.value).takeLast(SESSION_CAPACITY)
         sessionsFlow.value = updatedSessions
-        prefs.edit().putString(KEY_SESSIONS, sessionsToJson(updatedSessions)).apply()
+        prefs?.edit()?.putString(KEY_SESSIONS, sessionsToJson(updatedSessions))?.apply()
     }
 
     private fun loadSessions(): List<GhostSession> {
-        val storedJson = prefs.getString(KEY_SESSIONS, null) ?: return emptyList()
+        val storedJson = prefs?.getString(KEY_SESSIONS, null) ?: return emptyList()
         return try {
             sessionsFromJson(storedJson)
         } catch (_: JSONException) {
@@ -138,32 +138,32 @@ class GhostStateRepository(context: Context) {
         return jsonArray.toString()
     }
 
-    fun setSavedNetworkMask(mask: String?) {
+    open fun setSavedNetworkMask(mask: String?) {
         val timestampMs = if (mask == null) TIMESTAMP_NONE else System.currentTimeMillis()
         savedNetworkMaskFlow.value = mask
         savedMaskTimestampMsFlow.value = timestampMs
-        prefs.edit()
-            .putString(KEY_SAVED_MASK, mask)
-            .putLong(KEY_SAVED_MASK_TS, timestampMs)
-            .apply()
+        prefs?.edit()
+            ?.putString(KEY_SAVED_MASK, mask)
+            ?.putLong(KEY_SAVED_MASK_TS, timestampMs)
+            ?.apply()
     }
 
-    fun setActivePresetId(presetId: String) {
+    open fun setActivePresetId(presetId: String) {
         activePresetIdFlow.value = presetId
-        prefs.edit().putString(KEY_ACTIVE_PRESET_ID, presetId).apply()
+        prefs?.edit()?.putString(KEY_ACTIVE_PRESET_ID, presetId)?.apply()
     }
 
-    fun appendLog(entry: CommandLogEntry) {
+    open fun appendLog(entry: CommandLogEntry) {
         logEntriesFlow.update { current -> (current + entry).takeLast(LOG_CAPACITY) }
     }
 
-    fun removeLogEntry(timestampMs: Long) {
+    open fun removeLogEntry(timestampMs: Long) {
         logEntriesFlow.update { current ->
             current.filterNot { entry -> entry.timestampMs == timestampMs }
         }
     }
 
-    fun clearLog() {
+    open fun clearLog() {
         logEntriesFlow.value = EMPTY_LOG
     }
 

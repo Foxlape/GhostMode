@@ -63,6 +63,12 @@ class GhostWidgetProvider : AppWidgetProvider() {
             if (hasRoot || shizukuManager.status.value == com.ghostmode.app.shell.ShizukuStatus.READY) {
                 if (stateRepository.isOn.value) ghostModeController.turnOff() else ghostModeController.turnOn()
             }
+            com.ghostmode.app.service.StatusNotificationManager.update(
+                context,
+                stateRepository.isOn.value,
+                stateRepository.notificationEnabled.value,
+                stateRepository.isOnTimestampMs.value
+            )
         } finally {
             refreshAll(context, stateRepository.isOn.value)
             shizukuManager.stop()

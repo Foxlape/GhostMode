@@ -49,6 +49,12 @@ class ScheduleReceiver : BroadcastReceiver() {
             } catch (_: IllegalStateException) {
             } finally {
                 ScheduleManager.update(appContext)
+                com.ghostmode.app.service.StatusNotificationManager.update(
+                    appContext,
+                    stateRepository.isOn.value,
+                    stateRepository.notificationEnabled.value,
+                    stateRepository.isOnTimestampMs.value
+                )
                 GhostWidgetProvider.refreshAll(appContext, stateRepository.isOn.value)
                 shizukuManager.stop()
                 pendingResult.finish()

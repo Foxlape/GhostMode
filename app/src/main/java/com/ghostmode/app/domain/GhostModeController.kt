@@ -75,8 +75,8 @@ class GhostModeController(
         stateRepository.setActivePresetId(presetId)
     }
 
-    private fun canRun(): Boolean =
-        !isBusyFlow.value && shellExecutor.readiness.value
+    private suspend fun canRun(): Boolean =
+        !isBusyFlow.value && (shellExecutor.readiness.value || (shellExecutor as? com.ghostmode.app.shell.AutoShellExecutor)?.isReady() == true)
 
     private fun resolveActivePreset(): Preset? =
         presetRepository.getPreset(stateRepository.activePresetId.value)

@@ -36,6 +36,12 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.OpenDocument()
     ) { uri -> if (uri != null) readPresetsImport(uri) }
 
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        stateRepository.setNotificationEnabled(isGranted)
+    }
+
     private lateinit var shizukuManager: ShizukuManager
     private lateinit var rootExecutor: RootShellExecutor
     private lateinit var autoExecutor: AutoShellExecutor
@@ -125,7 +131,7 @@ class MainActivity : AppCompatActivity() {
             scheduleEndMinutes = scheduleEndMinute,
             onScheduleChanged = ::onScheduleChanged,
             notificationEnabled = notificationEnabled,
-            onNotificationToggled = stateRepository::setNotificationEnabled,
+            onNotificationToggled = ::onNotificationToggled,
             onRequestAddTile = ::requestAddQuickSettingsTile,
             sessionHistory = sessions,
             todayTotalMs = todayTotalMs,
@@ -150,6 +156,12 @@ class MainActivity : AppCompatActivity() {
         val shouldTurnOn = !stateRepository.isOn.value
         lifecycleScope.launch {
             if (shouldTurnOn) ghostModeController.turnOn() else ghostModeController.turnOff()
+            com.ghostmode.app.service.StatusNotificationManager.update(
+                this@MainActivity,
+                stateRepository.isOn.value,
+                stateRepository.notificationEnabled.value,
+                stateRepository.isOnTimestampMs.value
+            )
             GhostWidgetProvider.refreshAll(this@MainActivity, stateRepository.isOn.value)
         }
     }
@@ -175,6 +187,20 @@ class MainActivity : AppCompatActivity() {
         stateRepository.setScheduleStartMinuteOfDay(startMin)
         stateRepository.setScheduleEndMinuteOfDay(endMin)
         ScheduleManager.update(this)
+    }
+
+    private fun onNotificationToggled(enabled: Boolean) {
+        if (enabled && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    this,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        stateRepository.setNotificationEnabled(enabled)
     }
 
     private fun writePresetsExport(uri: Uri) {

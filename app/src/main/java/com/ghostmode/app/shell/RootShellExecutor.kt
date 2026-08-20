@@ -9,15 +9,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 
-class RootShellExecutor : ShellExecutor {
+open class RootShellExecutor : ShellExecutor {
 
-    private val isRootAvailableFlow = MutableStateFlow(false)
+    protected val isRootAvailableFlow = MutableStateFlow(false)
 
     val isRootAvailable: StateFlow<Boolean> = isRootAvailableFlow.asStateFlow()
 
     override val readiness: StateFlow<Boolean> = isRootAvailable
 
-    suspend fun probeRoot(): Boolean {
+    open suspend fun probeRoot(): Boolean {
         val isAvailable = try {
             withContext(Dispatchers.IO) { probeRootProcess() }
         } catch (error: CancellationException) {

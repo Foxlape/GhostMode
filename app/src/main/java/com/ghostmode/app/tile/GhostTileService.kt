@@ -82,6 +82,13 @@ class GhostTileService : TileService() {
                 } else {
                     ghostModeController.turnOn()
                 }
+                com.ghostmode.app.service.StatusNotificationManager.update(
+                    applicationContext,
+                    stateRepository.isOn.value,
+                    stateRepository.notificationEnabled.value,
+                    stateRepository.isOnTimestampMs.value
+                )
+                com.ghostmode.app.widget.GhostWidgetProvider.refreshAll(applicationContext, stateRepository.isOn.value)
                 updateTile()
                 return@launch
             }

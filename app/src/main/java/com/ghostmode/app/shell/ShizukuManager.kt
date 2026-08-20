@@ -27,25 +27,27 @@ import rikka.shizuku.Shizuku
 
 enum class ShizukuStatus { NOT_INSTALLED, NOT_RUNNING, NO_PERMISSION, READY }
 
-class ShizukuManager(private val context: Context) : ShellExecutor {
+open class ShizukuManager(private val context: Context? = null) : ShellExecutor {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    private val statusFlow = MutableStateFlow(ShizukuStatus.NOT_INSTALLED)
+    protected val statusFlow = MutableStateFlow(ShizukuStatus.NOT_INSTALLED)
     val status: StateFlow<ShizukuStatus> = statusFlow.asStateFlow()
 
     override val readiness: StateFlow<Boolean> = status
         .map { it == ShizukuStatus.READY }
         .stateIn(scope, SharingStarted.Eagerly, INITIAL_READINESS)
 
-    private val userServiceArgs: Shizuku.UserServiceArgs = Shizuku.UserServiceArgs(
-        ComponentName(context.packageName, UserService::class.java.name)
-    )
-        .tag(USER_SERVICE_TAG)
-        .daemon(false)
-        .processNameSuffix(PROCESS_NAME_SUFFIX)
-        .debuggable(BuildConfig.DEBUG)
-        .version(BuildConfig.VERSION_CODE)
+    private val userServiceArgs: Shizuku.UserServiceArgs? = context?.let {
+        Shizuku.UserServiceArgs(
+            ComponentName(it.packageName, UserService::class.java.name)
+        )
+            .tag(USER_SERVICE_TAG)
+            .daemon(false)
+            .processNameSuffix(PROCESS_NAME_SUFFIX)
+            .debuggable(BuildConfig.DEBUG)
+            .version(BuildConfig.VERSION_CODE)
+    }
 
     private val binderReceivedListener = Shizuku.OnBinderReceivedListener { refreshStatus() }
     private val binderDeadListener = Shizuku.OnBinderDeadListener { refreshStatus() }
@@ -107,25 +109,27 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
     }
 
     fun openShizukuApp() {
+        val ctx = context ?: return
         for (pkg in SHIZUKU_PACKAGES) {
-            val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)
+            val launchIntent = ctx.packageManager.getLaunchIntentForPackage(pkg)
             if (launchIntent != null) {
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(launchIntent)
+                ctx.startActivity(launchIntent)
                 return
             }
         }
     }
 
     fun openShizukuDownload() {
+        val ctx = context ?: return
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$SHIZUKU_PACKAGE"))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(intent)
+            ctx.startActivity(intent)
         } catch (_: ActivityNotFoundException) {
             val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shizuku.rikka.app"))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(webIntent)
+            ctx.startActivity(webIntent)
         }
     }
 
@@ -145,30 +149,39 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
     }
 
     private suspend fun runRemoteCommand(command: String): CommandResult {
-        return try {
-            CommandResult.fromJson(command, obtainConnectedService().runCommand(command))
-        } catch (error: RemoteException) {
-            remoteFailureResult(command, error)
-        } catch (error: SecurityException) {
-            remoteFailureResult(command, error)
-        } catch (error: IllegalStateException) {
-            remoteFailureResult(command, error)
+        return connectionMutex.withLock {
+            try {
+                bindUserServiceIfNeeded()
+                CommandResult.fromJson(command, obtainConnectedService().runCommand(command))
+            } catch (error: RemoteException) {
+                remoteFailureResult(command, error)
+            } catch (error: SecurityException) {
+                remoteFailureResult(command, error)
+            } catch (error: IllegalStateException) {
+                remoteFailureResult(command, error)
+            }
         }
     }
 
-    private suspend fun obtainConnectedService(): IUserService = connectionMutex.withLock {
+    private suspend fun obtainConnectedService(): IUserService {
         connectedService?.let { return it }
         val awaiter = CompletableDeferred<IUserService>()
         connectionAwaiter = awaiter
         try {
             ensureSupportedShizukuVersion()
-            Shizuku.bindUserService(userServiceArgs, userServiceConnection)
+            bindUserServiceIfNeeded()
         } catch (error: IllegalStateException) {
             connectionAwaiter = null
             throw error
         }
+        return awaiter.await()
+    }
+
+    private fun bindUserServiceIfNeeded() {
+        val args = userServiceArgs ?: return
+        if (isUserServiceBound) return
         isUserServiceBound = true
-        awaiter.await()
+        runShizukuCall { Shizuku.bindUserService(args, userServiceConnection) }
     }
 
     private fun ensureSupportedShizukuVersion() {
@@ -193,8 +206,9 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
     }
 
     private fun unbindUserServiceIfNeeded() {
+        val args = userServiceArgs ?: return
         if (!isUserServiceBound) return
-        runShizukuCall { Shizuku.unbindUserService(userServiceArgs, userServiceConnection, true) }
+        runShizukuCall { Shizuku.unbindUserService(args, userServiceConnection, true) }
         isUserServiceBound = false
     }
 
@@ -232,8 +246,9 @@ class ShizukuManager(private val context: Context) : ShellExecutor {
     }
 
     private fun isShizukuInstalled(): Boolean {
+        val pm = context?.packageManager ?: return false
         return SHIZUKU_PACKAGES.any { pkg ->
-            context.packageManager.getLaunchIntentForPackage(pkg) != null
+            pm.getLaunchIntentForPackage(pkg) != null
         }
     }
 

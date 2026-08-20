@@ -8,24 +8,24 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.UUID
 
-class PresetRepository(context: Context) {
+open class PresetRepository(context: Context? = null) {
 
-    private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val preferences = context?.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     private var customPresets: List<Preset> = emptyList()
     private val presetsState = MutableStateFlow(emptyList<Preset>())
 
-    val presets: StateFlow<List<Preset>> = presetsState
+    open val presets: StateFlow<List<Preset>> = presetsState
 
     init {
         customPresets = loadCustomPresets()
         publishPresets()
     }
 
-    fun getPreset(presetId: String): Preset? =
+    open fun getPreset(presetId: String): Preset? =
         BuiltInPresets.ALL.firstOrNull { it.id == presetId }
             ?: customPresets.firstOrNull { it.id == presetId }
 
-    fun saveCustomPreset(preset: Preset): Preset {
+    open fun saveCustomPreset(preset: Preset): Preset {
         if (preset.isBuiltIn) {
             throw IllegalArgumentException(BUILT_IN_SAVE_REJECTION)
         }
@@ -34,7 +34,7 @@ class PresetRepository(context: Context) {
         return savedPreset
     }
 
-    fun deleteCustomPreset(presetId: String) {
+    open fun deleteCustomPreset(presetId: String) {
         if (customPresets.none { it.id == presetId }) {
             return
         }
@@ -116,7 +116,7 @@ class PresetRepository(context: Context) {
     }
 
     private fun loadCustomPresets(): List<Preset> {
-        val storedJson = preferences.getString(PRESETS_STORAGE_KEY, null) ?: return emptyList()
+        val storedJson = preferences?.getString(PRESETS_STORAGE_KEY, null) ?: return emptyList()
         return try {
             parseCustomPresets(storedJson)
         } catch (error: JSONException) {
@@ -136,7 +136,7 @@ class PresetRepository(context: Context) {
     private fun persistCustomPresets() {
         val jsonArray = JSONArray()
         customPresets.forEach { preset -> jsonArray.put(preset.toJson()) }
-        preferences.edit().putString(PRESETS_STORAGE_KEY, jsonArray.toString()).apply()
+        preferences?.edit()?.putString(PRESETS_STORAGE_KEY, jsonArray.toString())?.apply()
     }
 
     private fun Preset.toJson(): JSONObject {

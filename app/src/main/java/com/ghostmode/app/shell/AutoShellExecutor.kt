@@ -15,22 +15,24 @@ class AutoShellExecutor(
     private val shizuku: ShizukuManager
 ) : ShellExecutor {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val backend: StateFlow<ShellBackend?> =
         combine(root.isRootAvailable, shizuku.status) { isRootAvailable, status ->
-            when {
-                isRootAvailable -> ShellBackend.ROOT
-                status == ShizukuStatus.READY -> ShellBackend.SHIZUKU
-                else -> null
-            }
-        }.stateIn(scope, SharingStarted.Eagerly, INITIAL_BACKEND)
+            resolveBackend(isRootAvailable, status)
+        }.stateIn(scope, SharingStarted.Eagerly, resolveBackend(root.isRootAvailable.value, shizuku.status.value))
 
     override val readiness: StateFlow<Boolean> =
-        backend.map { it != null }.stateIn(scope, SharingStarted.Eagerly, INITIAL_READINESS)
+        backend.map { it != null }
+            .stateIn(scope, SharingStarted.Eagerly, resolveBackend(root.isRootAvailable.value, shizuku.status.value) != null)
+
+    suspend fun isReady(): Boolean {
+        if (root.isRootAvailable.value || root.probeRoot()) return true
+        return shizuku.status.value == ShizukuStatus.READY
+    }
 
     override suspend fun execute(command: String): CommandResult =
-        if (root.isRootAvailable.value) {
+        if (root.isRootAvailable.value || root.probeRoot()) {
             root.execute(command)
         } else {
             executeViaShizuku(command)
@@ -45,6 +47,13 @@ class AutoShellExecutor(
             shizukuFailure(command, error.message ?: error.javaClass.simpleName)
         }
 
+    private fun resolveBackend(isRootAvailable: Boolean, status: ShizukuStatus): ShellBackend? =
+        when {
+            isRootAvailable -> ShellBackend.ROOT
+            status == ShizukuStatus.READY -> ShellBackend.SHIZUKU
+            else -> null
+        }
+
     private fun shizukuFailure(command: String, reason: String): CommandResult =
         CommandResult(
             command = command,
@@ -54,8 +63,6 @@ class AutoShellExecutor(
         )
 
     companion object {
-        private val INITIAL_BACKEND: ShellBackend? = null
-        private const val INITIAL_READINESS = false
         private const val EXIT_SHIZUKU_FAILURE = -1
         private const val EMPTY_OUTPUT = ""
     }
