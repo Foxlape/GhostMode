@@ -19,6 +19,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
 
@@ -43,10 +45,13 @@ class GhostTileService : TileService() {
         rootExecutor = RootShellExecutor()
         autoExecutor = AutoShellExecutor(rootExecutor, shizukuManager)
         presetRepository = PresetRepository(applicationContext)
-        stateRepository = GhostStateRepository(applicationContext)
+        stateRepository = GhostStateRepository.getInstance(applicationContext)
         ghostModeController = GhostModeController(autoExecutor, presetRepository, stateRepository)
         shizukuManager.start()
         registerShizukuListeners()
+        stateRepository.isOn
+            .onEach { updateTile() }
+            .launchIn(scope)
         scope.launch { rootExecutor.probeRoot(); updateTile() }
     }
 
@@ -83,13 +88,6 @@ class GhostTileService : TileService() {
                 } else {
                     ghostModeController.turnOn()
                 }
-                com.ghostmode.app.service.StatusNotificationManager.update(
-                    applicationContext,
-                    stateRepository.isOn.value,
-                    stateRepository.notificationEnabled.value,
-                    stateRepository.isOnTimestampMs.value
-                )
-                com.ghostmode.app.widget.GhostWidgetProvider.refreshAll(applicationContext, stateRepository.isOn.value)
                 updateTile()
                 return@launch
             }
@@ -130,7 +128,15 @@ class GhostTileService : TileService() {
 
     private fun updateTile() {
         val tile = qsTile ?: return
+        val isOn = stateRepository.isOn.value
         tile.label = getString(R.string.tile_label)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            tile.subtitle = getString(if (isOn) R.string.status_title_on else R.string.status_title_off)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            tile.stateDescription = getString(if (isOn) R.string.status_title_on else R.string.status_title_off)
+        }
+        tile.icon = android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_ghost)
         tile.state = resolveTileState()
         tile.updateTile()
     }

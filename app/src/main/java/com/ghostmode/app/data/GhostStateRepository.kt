@@ -43,6 +43,54 @@ open class GhostStateRepository(private val context: Context? = null) {
         prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
     )
 
+    private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        when (key) {
+            KEY_IS_ON -> {
+                val newIsOn = prefs?.getBoolean(KEY_IS_ON, false) ?: false
+                if (isOnFlow.value != newIsOn) isOnFlow.value = newIsOn
+            }
+            KEY_IS_ON_TIMESTAMP -> {
+                val newTs = prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
+                if (isOnTimestampMsFlow.value != newTs) isOnTimestampMsFlow.value = newTs
+            }
+            KEY_SAVED_MASK -> {
+                val newMask = prefs?.getString(KEY_SAVED_MASK, null)
+                if (savedNetworkMaskFlow.value != newMask) savedNetworkMaskFlow.value = newMask
+            }
+            KEY_SAVED_MASK_TS -> {
+                val newMaskTs = prefs?.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
+                if (savedMaskTimestampMsFlow.value != newMaskTs) savedMaskTimestampMsFlow.value = newMaskTs
+            }
+            KEY_NOTIFICATION_ENABLED -> {
+                val newNotif = prefs?.getBoolean(KEY_NOTIFICATION_ENABLED, false) ?: false
+                if (notificationEnabledFlow.value != newNotif) notificationEnabledFlow.value = newNotif
+            }
+            KEY_SCHEDULE_ENABLED -> {
+                val newSched = prefs?.getBoolean(KEY_SCHEDULE_ENABLED, SCHEDULE_DEFAULT_DISABLED) ?: SCHEDULE_DEFAULT_DISABLED
+                if (scheduleEnabledFlow.value != newSched) scheduleEnabledFlow.value = newSched
+            }
+            KEY_SCHEDULE_START_MINUTE -> {
+                val newStart = prefs?.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START_MINUTE) ?: DEFAULT_SCHEDULE_START_MINUTE
+                if (scheduleStartMinuteOfDayFlow.value != newStart) scheduleStartMinuteOfDayFlow.value = newStart
+            }
+            KEY_SCHEDULE_END_MINUTE -> {
+                val newEnd = prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
+                if (scheduleEndMinuteOfDayFlow.value != newEnd) scheduleEndMinuteOfDayFlow.value = newEnd
+            }
+            KEY_ACTIVE_PRESET_ID -> {
+                val newPreset = prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
+                if (activePresetIdFlow.value != newPreset) activePresetIdFlow.value = newPreset
+            }
+            KEY_SESSIONS -> {
+                sessionsFlow.value = loadSessions()
+            }
+        }
+    }
+
+    init {
+        prefs?.registerOnSharedPreferenceChangeListener(prefsListener)
+    }
+
     open val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
     open val isOnTimestampMs: StateFlow<Long> = isOnTimestampMsFlow.asStateFlow()
     open val savedNetworkMask: StateFlow<String?> = savedNetworkMaskFlow.asStateFlow()
@@ -207,5 +255,14 @@ open class GhostStateRepository(private val context: Context? = null) {
         private const val DEFAULT_SCHEDULE_START_MINUTE = 1380
         private const val DEFAULT_SCHEDULE_END_MINUTE = 480
         private val EMPTY_LOG: List<CommandLogEntry> = emptyList()
+
+        @Volatile
+        private var instance: GhostStateRepository? = null
+
+        fun getInstance(context: Context): GhostStateRepository {
+            return instance ?: synchronized(this) {
+                instance ?: GhostStateRepository(context.applicationContext).also { instance = it }
+            }
+        }
     }
 }

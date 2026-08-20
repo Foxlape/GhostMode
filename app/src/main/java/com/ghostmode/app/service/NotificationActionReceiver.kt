@@ -22,7 +22,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         val appContext = context.applicationContext
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
-            val stateRepository = GhostStateRepository(appContext)
+            val stateRepository = GhostStateRepository.getInstance(appContext)
             val shizukuManager = ShizukuManager(appContext)
             try {
                 shizukuManager.start()

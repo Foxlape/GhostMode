@@ -27,7 +27,7 @@ class ScheduleReceiver : BroadcastReceiver() {
         if (!isTick && !isSystemReschedule) return
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
-            val stateRepository = GhostStateRepository(appContext)
+            val stateRepository = GhostStateRepository.getInstance(appContext)
             val shizukuManager = ShizukuManager(appContext)
             try {
                 if (isSystemReschedule) ScheduleManager.update(appContext)

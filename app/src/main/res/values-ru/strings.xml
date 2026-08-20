@@ -105,5 +105,5 @@
     <string name="diag_summary_allowed">Обычный режим связи: входящие звонки и SMS принимаются в штатном режиме.</string>
     <string name="diagnostics_running">Проверка состояния сети…</string>
     <string name="menu_add_tile">Добавить кнопку в шторку</string>
-    <string name="app_version_label">Версия 0.1.7</string>
+    <string name="app_version_label">Версия 0.1.8</string>
 </resources>

@@ -50,7 +50,7 @@ class GhostWidgetProvider : AppWidgetProvider() {
 
     private suspend fun performToggle(context: Context) {
         val shizukuManager = ShizukuManager(context)
-        val stateRepository = GhostStateRepository(context)
+        val stateRepository = GhostStateRepository.getInstance(context)
         try {
             shizukuManager.start()
             val rootExecutor = RootShellExecutor()

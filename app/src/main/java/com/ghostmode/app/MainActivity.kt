@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
         rootExecutor = RootShellExecutor()
         autoExecutor = AutoShellExecutor(rootExecutor, shizukuManager)
         presetRepository = PresetRepository(this)
-        stateRepository = GhostStateRepository(this)
+        stateRepository = GhostStateRepository.getInstance(this)
         ghostModeController = GhostModeController(autoExecutor, presetRepository, stateRepository)
         setContent {
             GhostModeTheme {
