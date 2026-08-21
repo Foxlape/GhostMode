@@ -42,4 +42,19 @@ class GhostStateRepositoryTest {
         repository.setSavedNetworkMask("11001111101111111111")
         assertEquals("11001111101111111111", repository.savedNetworkMask.value)
     }
+
+    @Test
+    fun setSimSlotMode_updatesFlow() {
+        assertEquals(SimSlotMode.ALL, repository.simSlotMode.value)
+        repository.setSimSlotMode(SimSlotMode.SIM_2)
+        assertEquals(SimSlotMode.SIM_2, repository.simSlotMode.value)
+    }
+
+    @Test
+    fun setSavedNetworkMaskForSlot_managesPerSlot() {
+        repository.setSavedNetworkMaskForSlot(0, "mask0")
+        repository.setSavedNetworkMaskForSlot(1, "mask1")
+        assertEquals("mask0", repository.getSavedNetworkMaskForSlot(0))
+        assertEquals("mask1", repository.getSavedNetworkMaskForSlot(1))
+    }
 }

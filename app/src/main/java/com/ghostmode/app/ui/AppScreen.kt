@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -71,6 +72,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -104,6 +108,7 @@ import com.ghostmode.app.R
 import com.ghostmode.app.data.CommandLogEntry
 import com.ghostmode.app.data.GhostSession
 import com.ghostmode.app.data.Preset
+import com.ghostmode.app.data.SimSlotMode
 import com.ghostmode.app.shell.ShizukuStatus
 import com.ghostmode.app.support.DONATE_URL
 import kotlinx.coroutines.launch
@@ -156,6 +161,8 @@ fun AppScreen(
     onScheduleChanged: (Boolean, Int, Int) -> Unit,
     notificationEnabled: Boolean,
     onNotificationToggled: (Boolean) -> Unit,
+    simSlotMode: SimSlotMode = SimSlotMode.ALL,
+    onSimSlotModeChanged: (SimSlotMode) -> Unit = {},
     onRequestAddTile: () -> Unit = {},
     sessionHistory: List<GhostSession>,
     todayTotalMs: Long,
@@ -327,6 +334,12 @@ fun AppScreen(
                 isOn = isOn,
                 isBusy = isBusy,
                 onToggle = onToggle
+            )
+
+            // Dual SIM Slot Selection Card
+            SimSelectionCard(
+                simSlotMode = simSlotMode,
+                onSimSlotModeChanged = onSimSlotModeChanged
             )
 
             // Privilege Status Card (Root or Shizuku)
@@ -1722,3 +1735,77 @@ private fun formatDuration(ms: Long): String {
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SimSelectionCard(
+    simSlotMode: SimSlotMode,
+    onSimSlotModeChanged: (SimSlotMode) -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Phone,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.sim_selection_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val modes = listOf(
+                    SimSlotMode.ALL to stringResource(R.string.sim_slot_all),
+                    SimSlotMode.SIM_1 to stringResource(R.string.sim_slot_sim_1),
+                    SimSlotMode.SIM_2 to stringResource(R.string.sim_slot_sim_2)
+                )
+                modes.forEachIndexed { index, (mode, label) ->
+                    SegmentedButton(
+                        selected = simSlotMode == mode,
+                        onClick = { onSimSlotModeChanged(mode) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size)
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (simSlotMode == mode) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+
+            val descriptionRes = when (simSlotMode) {
+                SimSlotMode.ALL -> R.string.sim_slot_all_desc
+                SimSlotMode.SIM_1 -> R.string.sim_slot_1_desc
+                SimSlotMode.SIM_2 -> R.string.sim_slot_2_desc
+            }
+            Text(
+                text = stringResource(descriptionRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+

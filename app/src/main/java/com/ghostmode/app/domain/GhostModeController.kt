@@ -31,10 +31,12 @@ class GhostModeController(
         isBusyFlow.value = true
         try {
             val preset = resolveActivePreset() ?: return TurnOutcome.Failure(emptyList())
-            val captureFailure = captureNetworkMaskIfMissing(preset)
-            if (captureFailure != null) return TurnOutcome.Failure(listOf(captureFailure))
-            val results = preset.onCommands.map { command -> executeAndLog(command) }
-            stateRepository.setIsOn(results.all { it.isSuccess })
+            val slots = getActiveSlots()
+            captureNetworkMasksIfMissing(preset, slots)
+            val commands = expandCommandsForSlots(preset.onCommands, slots)
+            val results = commands.map { command -> executeAndLog(command) }
+            val isSuccess = results.any { it.isSuccess }
+            stateRepository.setIsOn(isSuccess)
             return outcomeFor(results)
         } finally {
             isBusyFlow.value = false
@@ -46,7 +48,20 @@ class GhostModeController(
         isBusyFlow.value = true
         try {
             val preset = resolveActivePreset() ?: return TurnOutcome.Failure(emptyList())
-            val results = preset.offCommands.mapNotNull { command -> executeOffCommand(command) }
+            val slots = getActiveSlots()
+            val results = mutableListOf<CommandResult>()
+            for (cmd in preset.offCommands) {
+                if (cmd.contains("-s 0")) {
+                    for (slot in slots) {
+                        val slotCmd = cmd.replace("-s 0", "-s $slot")
+                        val res = executeOffCommandForSlot(slotCmd, slot)
+                        if (res != null) results.add(res)
+                    }
+                } else {
+                    val res = executeOffCommandForSlot(cmd, 0)
+                    if (res != null) results.add(res)
+                }
+            }
             stateRepository.setIsOn(false)
             return outcomeFor(results)
         } finally {
@@ -58,12 +73,13 @@ class GhostModeController(
         if (!canRun()) return emptyList()
         isBusyFlow.value = true
         try {
-            val commands = listOf(
+            val slots = getActiveSlots()
+            val baseCommands = listOf(
                 BuiltInPresets.MASK_CAPTURE_COMMAND,
                 BuiltInPresets.GET_IMS_SERVICE_DEVICE_COMMAND,
-                BuiltInPresets.GET_IMS_SERVICE_CARRIER_COMMAND,
-                DIAGNOSTICS_IMS_COMMAND
+                BuiltInPresets.GET_IMS_SERVICE_CARRIER_COMMAND
             )
+            val commands = expandCommandsForSlots(baseCommands, slots) + DIAGNOSTICS_IMS_COMMAND
             return commands.map { command -> executeAndLog(command) }
         } finally {
             isBusyFlow.value = false
@@ -82,29 +98,52 @@ class GhostModeController(
         presetRepository.getPreset(stateRepository.activePresetId.value)
             ?: presetRepository.getPreset(BuiltInPresets.DEFAULT_ID)
 
-    private suspend fun captureNetworkMaskIfMissing(preset: Preset): CommandResult? {
-        val captureCommand = preset.networkMaskCaptureCommand ?: return null
-        if (stateRepository.savedNetworkMask.value != null) return null
-        val executedResult = executeSafely(captureCommand)
-        if (!executedResult.isSuccess) {
-            stateRepository.appendLog(executedResult.toLogEntry())
-            return executedResult
+    private fun getActiveSlots(): List<Int> =
+        stateRepository.simSlotMode.value.slots
+
+    private fun expandCommandsForSlots(commands: List<String>, slots: List<Int>): List<String> {
+        val expanded = mutableListOf<String>()
+        for (cmd in commands) {
+            if (cmd.contains("-s 0")) {
+                for (slot in slots) {
+                    expanded.add(cmd.replace("-s 0", "-s $slot"))
+                }
+            } else {
+                expanded.add(cmd)
+            }
         }
-        val networkMask = executedResult.stdout.lines()
-            .lastOrNull { line -> MASK_VALUE_PATTERN.matches(line.trim()) }
-            ?.trim()
-        if (networkMask == null) {
-            applyFallbackRestoreMask(captureCommand)
-            return null
-        }
-        stateRepository.appendLog(executedResult.toLogEntry())
-        stateRepository.setSavedNetworkMask(networkMask)
-        return null
+        return expanded
     }
 
-    private fun applyFallbackRestoreMask(command: String) {
+    private suspend fun captureNetworkMasksIfMissing(preset: Preset, slots: List<Int>) {
+        val baseCaptureCommand = preset.networkMaskCaptureCommand ?: return
+        for (slot in slots) {
+            if (stateRepository.getSavedNetworkMaskForSlot(slot) != null) continue
+            val captureCmd = if (baseCaptureCommand.contains("-s 0")) {
+                baseCaptureCommand.replace("-s 0", "-s $slot")
+            } else {
+                baseCaptureCommand
+            }
+            val executedResult = executeSafely(captureCmd)
+            if (!executedResult.isSuccess) {
+                stateRepository.appendLog(executedResult.toLogEntry())
+                continue
+            }
+            val networkMask = executedResult.stdout.lines()
+                .lastOrNull { line -> MASK_VALUE_PATTERN.matches(line.trim()) }
+                ?.trim()
+            if (networkMask != null) {
+                stateRepository.appendLog(executedResult.toLogEntry())
+                stateRepository.setSavedNetworkMaskForSlot(slot, networkMask)
+            } else {
+                applyFallbackRestoreMaskForSlot(captureCmd, slot)
+            }
+        }
+    }
+
+    private fun applyFallbackRestoreMaskForSlot(command: String, slot: Int) {
         stateRepository.appendLog(fallbackMaskLogEntry(command))
-        stateRepository.setSavedNetworkMask(FALLBACK_RESTORE_MASK)
+        stateRepository.setSavedNetworkMaskForSlot(slot, FALLBACK_RESTORE_MASK)
     }
 
     private fun fallbackMaskLogEntry(command: String): CommandLogEntry =
@@ -116,13 +155,14 @@ class GhostModeController(
             exitCode = EXIT_SKIPPED
         )
 
-    private suspend fun executeOffCommand(command: String): CommandResult? {
-        val savedMask = stateRepository.savedNetworkMask.value
+    private suspend fun executeOffCommandForSlot(command: String, slot: Int): CommandResult? {
+        val savedMask = stateRepository.getSavedNetworkMaskForSlot(slot)
+            ?: stateRepository.savedNetworkMask.value
         if (savedMask == null && command.contains(BuiltInPresets.MASK_PLACEHOLDER)) {
             stateRepository.appendLog(skippedLogEntry(command))
             return null
         }
-        val resolvedCommand = command.replace(BuiltInPresets.MASK_PLACEHOLDER, savedMask.orEmpty())
+        val resolvedCommand = command.replace(BuiltInPresets.MASK_PLACEHOLDER, savedMask ?: FALLBACK_RESTORE_MASK)
         return executeAndLog(resolvedCommand)
     }
 

@@ -6,6 +6,7 @@ import com.ghostmode.app.data.GhostSession
 import com.ghostmode.app.data.GhostStateRepository
 import com.ghostmode.app.data.Preset
 import com.ghostmode.app.data.PresetRepository
+import com.ghostmode.app.data.SimSlotMode
 import com.ghostmode.app.shell.CommandResult
 import com.ghostmode.app.shell.ShellExecutor
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,13 +58,17 @@ class FakePresetRepository : PresetRepository(null) {
 class FakeGhostStateRepository : GhostStateRepository(null) {
     private val isOnFlow = MutableStateFlow(false)
     private val savedMaskFlow = MutableStateFlow<String?>(null)
+    private val savedMaskSlot1Flow = MutableStateFlow<String?>(null)
+    private val simSlotModeFlow = MutableStateFlow(SimSlotMode.ALL)
     private val activePresetIdFlow = MutableStateFlow(BuiltInPresets.DEFAULT_ID)
     private val logs = mutableListOf<CommandLogEntry>()
 
     override val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
     override val isOnTimestampMs: StateFlow<Long> = MutableStateFlow(0L).asStateFlow()
     override val savedNetworkMask: StateFlow<String?> = savedMaskFlow.asStateFlow()
+    override val savedNetworkMaskSlot1: StateFlow<String?> = savedMaskSlot1Flow.asStateFlow()
     override val savedMaskTimestampMs: StateFlow<Long> = MutableStateFlow(0L).asStateFlow()
+    override val simSlotMode: StateFlow<SimSlotMode> = simSlotModeFlow.asStateFlow()
     override val activePresetId: StateFlow<String> = activePresetIdFlow.asStateFlow()
     override val logEntries: StateFlow<List<CommandLogEntry>> = MutableStateFlow(emptyList<CommandLogEntry>()).asStateFlow()
     override val notificationEnabled: StateFlow<Boolean> = MutableStateFlow(true).asStateFlow()
@@ -77,7 +82,13 @@ class FakeGhostStateRepository : GhostStateRepository(null) {
     override fun setScheduleEnabled(value: Boolean) {}
     override fun setScheduleStartMinuteOfDay(minuteOfDay: Int) {}
     override fun setScheduleEndMinuteOfDay(minuteOfDay: Int) {}
+    override fun setSimSlotMode(mode: SimSlotMode) { simSlotModeFlow.value = mode }
     override fun setSavedNetworkMask(mask: String?) { savedMaskFlow.value = mask }
+    override fun setSavedNetworkMaskForSlot(slot: Int, mask: String?) {
+        if (slot == 1) savedMaskSlot1Flow.value = mask else savedMaskFlow.value = mask
+    }
+    override fun getSavedNetworkMaskForSlot(slot: Int): String? =
+        if (slot == 1) savedMaskSlot1Flow.value else savedMaskFlow.value
     override fun setActivePresetId(presetId: String) { activePresetIdFlow.value = presetId }
     override fun appendLog(entry: CommandLogEntry) { logs.add(entry) }
     override fun removeLogEntry(timestampMs: Long) {}
@@ -122,5 +133,32 @@ class GhostModeControllerTest {
         val outcome = controller.turnOn()
         assertTrue(outcome is TurnOutcome.Failure)
         assertFalse(fakeStateRepo.isOn.value)
+    }
+
+    @Test
+    fun turnOn_withSim1_executesOnlySlot0Commands() = runTest {
+        fakeStateRepo.setSimSlotMode(SimSlotMode.SIM_1)
+        controller.turnOn()
+        val imsCommands = fakeShell.executedCommands.filter { it.contains("ims disable") }
+        assertTrue(imsCommands.any { it.contains("-s 0") })
+        assertFalse(imsCommands.any { it.contains("-s 1") })
+    }
+
+    @Test
+    fun turnOn_withSim2_executesOnlySlot1Commands() = runTest {
+        fakeStateRepo.setSimSlotMode(SimSlotMode.SIM_2)
+        controller.turnOn()
+        val imsCommands = fakeShell.executedCommands.filter { it.contains("ims disable") }
+        assertTrue(imsCommands.any { it.contains("-s 1") })
+        assertFalse(imsCommands.any { it.contains("-s 0") })
+    }
+
+    @Test
+    fun turnOn_withAllSims_executesBothSlot0AndSlot1Commands() = runTest {
+        fakeStateRepo.setSimSlotMode(SimSlotMode.ALL)
+        controller.turnOn()
+        val imsCommands = fakeShell.executedCommands.filter { it.contains("ims disable") }
+        assertTrue(imsCommands.any { it.contains("-s 0") })
+        assertTrue(imsCommands.any { it.contains("-s 1") })
     }
 }

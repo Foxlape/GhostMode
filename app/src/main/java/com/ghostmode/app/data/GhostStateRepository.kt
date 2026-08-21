@@ -29,6 +29,10 @@ open class GhostStateRepository(private val context: Context? = null) {
     private val isOnTimestampMsFlow = MutableStateFlow(prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE)
     private val savedNetworkMaskFlow = MutableStateFlow(prefs?.getString(KEY_SAVED_MASK, null))
     private val savedMaskTimestampMsFlow = MutableStateFlow(prefs?.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE) ?: TIMESTAMP_NONE)
+    private val savedMaskSlot1Flow = MutableStateFlow(prefs?.getString(KEY_SAVED_MASK_SLOT_1, null))
+    private val simSlotModeFlow = MutableStateFlow(
+        SimSlotMode.fromStorage(prefs?.getString(KEY_SIM_SLOT_MODE, null))
+    )
     private val activePresetIdFlow = MutableStateFlow(
         prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
     )
@@ -53,13 +57,21 @@ open class GhostStateRepository(private val context: Context? = null) {
                 val newTs = prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
                 if (isOnTimestampMsFlow.value != newTs) isOnTimestampMsFlow.value = newTs
             }
-            KEY_SAVED_MASK -> {
+            KEY_SAVED_MASK, KEY_SAVED_MASK_SLOT_0 -> {
                 val newMask = prefs?.getString(KEY_SAVED_MASK, null)
                 if (savedNetworkMaskFlow.value != newMask) savedNetworkMaskFlow.value = newMask
+            }
+            KEY_SAVED_MASK_SLOT_1 -> {
+                val newMask1 = prefs?.getString(KEY_SAVED_MASK_SLOT_1, null)
+                if (savedMaskSlot1Flow.value != newMask1) savedMaskSlot1Flow.value = newMask1
             }
             KEY_SAVED_MASK_TS -> {
                 val newMaskTs = prefs?.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
                 if (savedMaskTimestampMsFlow.value != newMaskTs) savedMaskTimestampMsFlow.value = newMaskTs
+            }
+            KEY_SIM_SLOT_MODE -> {
+                val newMode = SimSlotMode.fromStorage(prefs?.getString(KEY_SIM_SLOT_MODE, null))
+                if (simSlotModeFlow.value != newMode) simSlotModeFlow.value = newMode
             }
             KEY_NOTIFICATION_ENABLED -> {
                 val newNotif = prefs?.getBoolean(KEY_NOTIFICATION_ENABLED, false) ?: false
@@ -94,7 +106,9 @@ open class GhostStateRepository(private val context: Context? = null) {
     open val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
     open val isOnTimestampMs: StateFlow<Long> = isOnTimestampMsFlow.asStateFlow()
     open val savedNetworkMask: StateFlow<String?> = savedNetworkMaskFlow.asStateFlow()
+    open val savedNetworkMaskSlot1: StateFlow<String?> = savedMaskSlot1Flow.asStateFlow()
     open val savedMaskTimestampMs: StateFlow<Long> = savedMaskTimestampMsFlow.asStateFlow()
+    open val simSlotMode: StateFlow<SimSlotMode> = simSlotModeFlow.asStateFlow()
     open val activePresetId: StateFlow<String> = activePresetIdFlow.asStateFlow()
     open val logEntries: StateFlow<List<CommandLogEntry>> = logEntriesFlow.asStateFlow()
     open val notificationEnabled: StateFlow<Boolean> = notificationEnabledFlow.asStateFlow()
@@ -102,6 +116,30 @@ open class GhostStateRepository(private val context: Context? = null) {
     open val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
     open val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartMinuteOfDayFlow.asStateFlow()
     open val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndMinuteOfDayFlow.asStateFlow()
+
+    open fun setSimSlotMode(mode: SimSlotMode) {
+        simSlotModeFlow.value = mode
+        prefs?.edit()?.putString(KEY_SIM_SLOT_MODE, mode.name)?.apply()
+    }
+
+    open fun setSavedNetworkMaskForSlot(slot: Int, mask: String?) {
+        val timestampMs = if (mask != null) System.currentTimeMillis() else TIMESTAMP_NONE
+        if (slot == 1) {
+            savedMaskSlot1Flow.value = mask
+            prefs?.edit()?.putString(KEY_SAVED_MASK_SLOT_1, mask)?.apply()
+        } else {
+            savedNetworkMaskFlow.value = mask
+            savedMaskTimestampMsFlow.value = timestampMs
+            prefs?.edit()
+                ?.putString(KEY_SAVED_MASK, mask)
+                ?.putString(KEY_SAVED_MASK_SLOT_0, mask)
+                ?.putLong(KEY_SAVED_MASK_TS, timestampMs)
+                ?.apply()
+        }
+    }
+
+    open fun getSavedNetworkMaskForSlot(slot: Int): String? =
+        if (slot == 1) savedMaskSlot1Flow.value else savedNetworkMaskFlow.value
 
     open fun setIsOn(value: Boolean) {
         val timestampMs = if (value) System.currentTimeMillis() else TIMESTAMP_NONE
@@ -240,7 +278,10 @@ open class GhostStateRepository(private val context: Context? = null) {
         private const val KEY_IS_ON_TIMESTAMP = "is_on_timestamp"
         private const val KEY_NOTIFICATION_ENABLED = "notification_enabled"
         private const val KEY_SAVED_MASK = "saved_mask"
+        private const val KEY_SAVED_MASK_SLOT_0 = "saved_mask_slot_0"
+        private const val KEY_SAVED_MASK_SLOT_1 = "saved_mask_slot_1"
         private const val KEY_SAVED_MASK_TS = "saved_mask_ts"
+        private const val KEY_SIM_SLOT_MODE = "sim_slot_mode"
         private const val KEY_ACTIVE_PRESET_ID = "active_preset_id"
         private const val KEY_SESSIONS = "sessions"
         private const val KEY_START_MS = "startMs"

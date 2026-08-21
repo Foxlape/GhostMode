@@ -105,5 +105,13 @@
     <string name="diag_summary_allowed">Normal cellular mode: incoming calls and SMS are active across all network bands.</string>
     <string name="diagnostics_running">Checking network status…</string>
     <string name="menu_add_tile">Add tile to quick settings</string>
-    <string name="app_version_label">Version 0.1.8</string>
+    <string name="settings_sim_slots">SIM Cards</string>
+    <string name="sim_selection_title">Active SIM Mode</string>
+    <string name="sim_slot_all">Both SIMs</string>
+    <string name="sim_slot_sim_1">SIM 1 Only</string>
+    <string name="sim_slot_sim_2">SIM 2 Only</string>
+    <string name="sim_slot_all_desc">Ghost Mode silences incoming calls on both SIM 1 and SIM 2</string>
+    <string name="sim_slot_1_desc">Ghost Mode silences SIM 1; SIM 2 remains active for calls</string>
+    <string name="sim_slot_2_desc">Ghost Mode silences SIM 2; SIM 1 remains active for calls</string>
+    <string name="app_version_label">Version 0.1.9</string>
 </resources>

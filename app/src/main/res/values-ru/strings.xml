@@ -105,5 +105,13 @@
     <string name="diag_summary_allowed">Обычный режим связи: входящие звонки и SMS принимаются в штатном режиме.</string>
     <string name="diagnostics_running">Проверка состояния сети…</string>
     <string name="menu_add_tile">Добавить кнопку в шторку</string>
-    <string name="app_version_label">Версия 0.1.8</string>
+    <string name="settings_sim_slots">SIM-карты</string>
+    <string name="sim_selection_title">Режим SIM-карт</string>
+    <string name="sim_slot_all">Обе SIM</string>
+    <string name="sim_slot_sim_1">Только SIM 1</string>
+    <string name="sim_slot_sim_2">Только SIM 2</string>
+    <string name="sim_slot_all_desc">Режим глушит звонки на обеих SIM-картах (SIM 1 и SIM 2)</string>
+    <string name="sim_slot_1_desc">Режим глушит только SIM 1; SIM 2 принимает звонки</string>
+    <string name="sim_slot_2_desc">Режим глушит только SIM 2; SIM 1 принимает звонки</string>
+    <string name="app_version_label">Версия 0.1.9</string>
 </resources>

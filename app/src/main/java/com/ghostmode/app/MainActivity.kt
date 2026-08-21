@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity() {
         val savedNetworkMask by stateRepository.savedNetworkMask.collectAsStateWithLifecycle()
         val logEntries by stateRepository.logEntries.collectAsStateWithLifecycle()
         val notificationEnabled by stateRepository.notificationEnabled.collectAsStateWithLifecycle()
+        val simSlotMode by stateRepository.simSlotMode.collectAsStateWithLifecycle()
         val sessions by stateRepository.sessions.collectAsStateWithLifecycle()
         val scheduleEnabled by stateRepository.scheduleEnabled.collectAsStateWithLifecycle()
         val scheduleStartMinute by stateRepository.scheduleStartMinuteOfDay.collectAsStateWithLifecycle()
@@ -132,6 +133,8 @@ class MainActivity : AppCompatActivity() {
             onScheduleChanged = ::onScheduleChanged,
             notificationEnabled = notificationEnabled,
             onNotificationToggled = ::onNotificationToggled,
+            simSlotMode = simSlotMode,
+            onSimSlotModeChanged = stateRepository::setSimSlotMode,
             onRequestAddTile = ::requestAddQuickSettingsTile,
             sessionHistory = sessions,
             todayTotalMs = todayTotalMs,
