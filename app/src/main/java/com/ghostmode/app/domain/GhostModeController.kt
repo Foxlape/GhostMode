@@ -27,8 +27,7 @@ class GhostModeController(
     val isBusy: StateFlow<Boolean> = isBusyFlow.asStateFlow()
 
     suspend fun turnOn(): TurnOutcome {
-        if (!canRun()) return TurnOutcome.Failure(emptyList())
-        isBusyFlow.value = true
+        if (!canRun() || !isBusyFlow.compareAndSet(false, true)) return TurnOutcome.Failure(emptyList())
         try {
             val preset = resolveActivePreset() ?: return TurnOutcome.Failure(emptyList())
             val slots = getActiveSlots()
@@ -44,16 +43,15 @@ class GhostModeController(
     }
 
     suspend fun turnOff(): TurnOutcome {
-        if (!canRun()) return TurnOutcome.Failure(emptyList())
-        isBusyFlow.value = true
+        if (!canRun() || !isBusyFlow.compareAndSet(false, true)) return TurnOutcome.Failure(emptyList())
         try {
             val preset = resolveActivePreset() ?: return TurnOutcome.Failure(emptyList())
             val slots = getActiveSlots()
             val results = mutableListOf<CommandResult>()
             for (cmd in preset.offCommands) {
-                if (cmd.contains("-s 0")) {
+                if (cmd.contains(SLOT_MARKER)) {
                     for (slot in slots) {
-                        val slotCmd = cmd.replace("-s 0", "-s $slot")
+                        val slotCmd = cmd.replaceFirst(SLOT_MARKER, "-s $slot")
                         val res = executeOffCommandForSlot(slotCmd, slot)
                         if (res != null) results.add(res)
                     }
@@ -62,7 +60,8 @@ class GhostModeController(
                     if (res != null) results.add(res)
                 }
             }
-            stateRepository.setIsOn(false)
+            val isRestored = results.any { it.isSuccess }
+            stateRepository.setIsOn(!isRestored)
             return outcomeFor(results)
         } finally {
             isBusyFlow.value = false
@@ -70,8 +69,7 @@ class GhostModeController(
     }
 
     suspend fun runDiagnostics(): List<CommandResult> {
-        if (!canRun()) return emptyList()
-        isBusyFlow.value = true
+        if (!canRun() || !isBusyFlow.compareAndSet(false, true)) return emptyList()
         try {
             val slots = getActiveSlots()
             val baseCommands = listOf(
@@ -104,9 +102,9 @@ class GhostModeController(
     private fun expandCommandsForSlots(commands: List<String>, slots: List<Int>): List<String> {
         val expanded = mutableListOf<String>()
         for (cmd in commands) {
-            if (cmd.contains("-s 0")) {
+            if (cmd.contains(SLOT_MARKER)) {
                 for (slot in slots) {
-                    expanded.add(cmd.replace("-s 0", "-s $slot"))
+                    expanded.add(cmd.replaceFirst(SLOT_MARKER, "-s $slot"))
                 }
             } else {
                 expanded.add(cmd)
@@ -119,8 +117,8 @@ class GhostModeController(
         val baseCaptureCommand = preset.networkMaskCaptureCommand ?: return
         for (slot in slots) {
             if (stateRepository.getSavedNetworkMaskForSlot(slot) != null) continue
-            val captureCmd = if (baseCaptureCommand.contains("-s 0")) {
-                baseCaptureCommand.replace("-s 0", "-s $slot")
+            val captureCmd = if (baseCaptureCommand.contains(SLOT_MARKER)) {
+                baseCaptureCommand.replaceFirst(SLOT_MARKER, "-s $slot")
             } else {
                 baseCaptureCommand
             }
@@ -129,9 +127,10 @@ class GhostModeController(
                 stateRepository.appendLog(executedResult.toLogEntry())
                 continue
             }
-            val networkMask = executedResult.stdout.lines()
-                .lastOrNull { line -> MASK_VALUE_PATTERN.matches(line.trim()) }
-                ?.trim()
+            val networkMask = MASK_VALUE_PATTERN
+                .findAll(executedResult.stdout)
+                .lastOrNull()
+                ?.value
             if (networkMask != null) {
                 stateRepository.appendLog(executedResult.toLogEntry())
                 stateRepository.setSavedNetworkMaskForSlot(slot, networkMask)
@@ -213,8 +212,9 @@ class GhostModeController(
         const val SKIP_REASON_NO_MASK = "Пропущено: сохранённая маска сети не найдена"
         const val DIAGNOSTICS_IMS_COMMAND = "dumpsys ims"
         const val FALLBACK_RESTORE_MASK = "11001111101111111111"
+        const val SLOT_MARKER = "-s 0"
 
-        private val MASK_VALUE_PATTERN = Regex("[01]{16,24}")
+        private val MASK_VALUE_PATTERN = Regex("(?<![0-9])[01]{16,32}(?![0-9])")
 
         private const val EXIT_COMMAND_FAILURE = -1
         private const val EMPTY_OUTPUT = ""

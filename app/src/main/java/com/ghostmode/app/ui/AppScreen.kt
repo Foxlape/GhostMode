@@ -883,7 +883,7 @@ private fun PresetTileCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${preset.onCommands.size + preset.offCommands.size} cmds",
+                    text = stringResource(R.string.preset_commands_count, preset.onCommands.size + preset.offCommands.size),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1044,6 +1044,14 @@ private fun DiagnosticsDialog(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Main Call Status Card
+                if (diagnosticState == null) {
+                    Text(
+                        text = stringResource(R.string.diagnostics_not_run_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (diagnosticState != null) {
                 ElevatedCard(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.elevatedCardColors(
@@ -1119,6 +1127,7 @@ private fun DiagnosticsDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                }
 
                 // Refresh Button
                 Button(
@@ -1179,14 +1188,9 @@ private data class CallStatusDiagnostic(
 private fun parseNetworkDiagnostics(
     results: List<com.ghostmode.app.shell.CommandResult>?,
     isGhostModeOn: Boolean
-): CallStatusDiagnostic {
+): CallStatusDiagnostic? {
     if (results == null) {
-        return CallStatusDiagnostic(
-            areCallsBlocked = isGhostModeOn,
-            isInternetWorking = true,
-            is2G3GDisabled = isGhostModeOn,
-            isImsDisabled = isGhostModeOn
-        )
+        return null
     }
 
     val maskOutput = results.find { it.command.contains("get-allowed-network-types") }?.stdout.orEmpty()
@@ -1670,7 +1674,7 @@ private fun AboutDialog(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(text = "GitHub Repository")
+                    Text(text = stringResource(R.string.about_github))
                 }
             }
         },
@@ -1703,21 +1707,23 @@ private fun DonateDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Ghost Mode — полностью свободный и открытый проект без рекламы и трекеров.",
+                    text = stringResource(R.string.donate_description),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Button(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(DONATE_URL))
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        try {
-                            context.startActivity(intent)
-                        } catch (_: Exception) {}
-                        onDismiss()
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = stringResource(R.string.settings_donate_title))
+                if (DONATE_URL.isNotBlank()) {
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(DONATE_URL))
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            try {
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = stringResource(R.string.settings_donate_title))
+                    }
                 }
             }
         },

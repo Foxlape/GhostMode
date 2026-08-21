@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -12,20 +14,31 @@ android {
         applicationId = "com.ghostmode.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "0.1.9"
+        versionCode = 11
+        versionName = "0.1.10"
     }
 
     signingConfigs {
         create("release") {
-            val keystoreFile = rootProject.file(System.getenv("KEYSTORE_FILE") ?: "ghostmode-release.keystore")
-            if (keystoreFile.exists()) {
-                storeFile = keystoreFile
-                storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "GhostMode2026SecureKey!"
-                keyAlias = System.getenv("KEY_ALIAS") ?: "ghostmode"
-                keyPassword = System.getenv("KEY_PASSWORD") ?: "GhostMode2026SecureKey!"
-            } else {
-                initWith(getByName("debug"))
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            val envKeystoreFile = System.getenv("KEYSTORE_FILE")?.let { path -> rootProject.file(path) }
+            when {
+                keystorePropertiesFile.exists() -> {
+                    val properties = Properties().apply {
+                        keystorePropertiesFile.inputStream().use { stream -> load(stream) }
+                    }
+                    storeFile = rootProject.file(properties.getProperty("storeFile"))
+                    storePassword = properties.getProperty("storePassword")
+                    keyAlias = properties.getProperty("keyAlias")
+                    keyPassword = properties.getProperty("keyPassword")
+                }
+                envKeystoreFile != null && envKeystoreFile.exists() && System.getenv("KEYSTORE_PASSWORD") != null -> {
+                    storeFile = envKeystoreFile
+                    storePassword = System.getenv("KEYSTORE_PASSWORD")
+                    keyAlias = System.getenv("KEY_ALIAS")
+                    keyPassword = System.getenv("KEY_PASSWORD")
+                }
+                else -> initWith(getByName("debug"))
             }
         }
     }

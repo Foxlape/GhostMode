@@ -13,7 +13,7 @@ object ScheduleManager {
     fun update(context: Context) {
         val appContext = context.applicationContext
         val alarmManager = appContext.getSystemService(AlarmManager::class.java)
-        val stateRepository = GhostStateRepository(appContext)
+        val stateRepository = GhostStateRepository.getInstance(appContext)
         val startPendingIntent = buildTickPendingIntent(appContext, REQUEST_CODE_START)
         val endPendingIntent = buildTickPendingIntent(appContext, REQUEST_CODE_END)
         alarmManager.cancel(startPendingIntent)

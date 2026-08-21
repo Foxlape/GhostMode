@@ -113,5 +113,9 @@
     <string name="sim_slot_all_desc">Ghost Mode silences incoming calls on both SIM 1 and SIM 2</string>
     <string name="sim_slot_1_desc">Ghost Mode silences SIM 1; SIM 2 remains active for calls</string>
     <string name="sim_slot_2_desc">Ghost Mode silences SIM 2; SIM 1 remains active for calls</string>
-    <string name="app_version_label">Version 0.1.9</string>
+    <string name="app_version_label">Version 0.1.10</string>
+    <string name="diagnostics_not_run_hint">Run diagnostics to check the actual modem state.</string>
+    <string name="preset_commands_count">%1$d commands</string>
+    <string name="about_github">GitHub Repository</string>
+    <string name="donate_description">Ghost Mode is a fully free and open project with no ads or trackers.</string>
 </resources>

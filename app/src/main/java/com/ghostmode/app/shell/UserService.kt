@@ -8,6 +8,7 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 
 class UserService : IUserService.Stub {
     constructor()
@@ -19,12 +20,21 @@ class UserService : IUserService.Stub {
         return try {
             val process = ProcessBuilder(SHELL_COMMAND, SHELL_ARGUMENT, command).start()
             val stderrReading = readStreamAsync(process.errorStream)
-            val stdout = process.inputStream.bufferedReader().use { it.readText() }
-            successJson(stdout, stderrReading.get(), process.waitFor())
+            val stdoutReading = readStreamAsync(process.inputStream)
+            val exitCode = awaitExitWithTimeout(process)
+            successJson(stdoutReading.get(), stderrReading.get(), exitCode)
         } catch (error: Exception) {
             failureJson(error)
         }
     }
+
+    private fun awaitExitWithTimeout(process: Process): Int =
+        if (process.waitFor(COMMAND_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            process.exitValue()
+        } else {
+            process.destroyForcibly()
+            EXIT_PROCESS_KILLED
+        }
 
     override fun destroy() {
         System.exit(0)
@@ -52,6 +62,9 @@ class UserService : IUserService.Stub {
     companion object {
         const val SHELL_COMMAND = "sh"
         const val SHELL_ARGUMENT = "-c"
+
+        const val COMMAND_TIMEOUT_MS = 20_000L
+        const val EXIT_PROCESS_KILLED = -3
 
         private const val EMPTY_STREAM = ""
 

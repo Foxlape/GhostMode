@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.RemoteViews
 import com.ghostmode.app.MainActivity
 import com.ghostmode.app.R
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 class GhostWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        val isOn = GhostStateRepository(context).isOn.value
+        val isOn = GhostStateRepository.getInstance(context).isOn.value
         appWidgetIds.forEach { appWidgetId ->
             appWidgetManager.updateAppWidget(appWidgetId, buildRemoteViews(context, isOn))
         }
@@ -41,7 +42,8 @@ class GhostWidgetProvider : AppWidgetProvider() {
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
             try {
                 performToggle(appContext)
-            } catch (_: IllegalStateException) {
+            } catch (error: Exception) {
+                Log.e(TAG, "Widget toggle failed", error)
             } finally {
                 pendingResult.finish()
             }
@@ -57,7 +59,7 @@ class GhostWidgetProvider : AppWidgetProvider() {
             val hasRoot = rootExecutor.probeRoot()
             val ghostModeController = GhostModeController(
                 AutoShellExecutor(rootExecutor, shizukuManager),
-                PresetRepository(context),
+                PresetRepository.getInstance(context),
                 stateRepository
             )
             if (hasRoot || shizukuManager.status.value == com.ghostmode.app.shell.ShizukuStatus.READY) {
@@ -76,6 +78,8 @@ class GhostWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
+        private const val TAG = "GhostWidget"
+
         const val ACTION_TOGGLE = "com.ghostmode.app.widget.TOGGLE"
 
         fun refreshAll(context: Context, isOn: Boolean) {

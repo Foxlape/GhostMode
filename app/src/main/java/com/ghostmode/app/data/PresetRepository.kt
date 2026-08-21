@@ -13,6 +13,7 @@ open class PresetRepository(context: Context? = null) {
     private val preferences = context?.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     private var customPresets: List<Preset> = emptyList()
     private val presetsState = MutableStateFlow(emptyList<Preset>())
+    private val presetsLock = Any()
 
     open val presets: StateFlow<List<Preset>> = presetsState
 
@@ -29,18 +30,22 @@ open class PresetRepository(context: Context? = null) {
         if (preset.isBuiltIn) {
             throw IllegalArgumentException(BUILT_IN_SAVE_REJECTION)
         }
-        val savedPreset = resolveSavedPreset(preset)
-        upsertCustomPreset(savedPreset)
-        return savedPreset
+        synchronized(presetsLock) {
+            val savedPreset = resolveSavedPreset(preset)
+            upsertCustomPreset(savedPreset)
+            return savedPreset
+        }
     }
 
     open fun deleteCustomPreset(presetId: String) {
-        if (customPresets.none { it.id == presetId }) {
-            return
+        synchronized(presetsLock) {
+            if (customPresets.none { it.id == presetId }) {
+                return
+            }
+            customPresets = customPresets.filterNot { it.id == presetId }
+            persistCustomPresets()
+            publishPresets()
         }
-        customPresets = customPresets.filterNot { it.id == presetId }
-        persistCustomPresets()
-        publishPresets()
     }
 
     fun exportCustomPresetsJson(): String {
@@ -59,32 +64,45 @@ open class PresetRepository(context: Context? = null) {
 
     private fun importParsedPresets(json: String): Int {
         val jsonArray = JSONArray(json)
-        val importedPresets = buildList {
-            for (index in 0 until jsonArray.length()) {
-                jsonArray.getJSONObject(index).toImportedPresetOrNull()?.let { add(it) }
+        synchronized(presetsLock) {
+            val importedPresets = buildList {
+                for (index in 0 until jsonArray.length()) {
+                    jsonArray.getJSONObject(index).toImportedPresetOrNull()
+                        ?.takeUnless { candidate -> isDuplicateOfExisting(candidate) }
+                        ?.let { add(it) }
+                }
             }
+            customPresets = customPresets + importedPresets
+            persistCustomPresets()
+            publishPresets()
+            return importedPresets.size
         }
-        customPresets = customPresets + importedPresets
-        persistCustomPresets()
-        publishPresets()
-        return importedPresets.size
     }
 
+    private fun isDuplicateOfExisting(candidate: Preset): Boolean =
+        customPresets.any { existing ->
+            existing.title == candidate.title &&
+                existing.onCommands == candidate.onCommands &&
+                existing.offCommands == candidate.offCommands
+        }
+
     fun duplicatePreset(sourcePresetId: String, newTitle: String): Preset? {
-        val sourcePreset = getPreset(sourcePresetId) ?: return null
-        val duplicate = Preset(
-            id = CUSTOM_ID_PREFIX + UUID.randomUUID(),
-            title = newTitle,
-            description = duplicateDescription(sourcePreset),
-            onCommands = sourcePreset.onCommands,
-            offCommands = sourcePreset.offCommands,
-            networkMaskCaptureCommand = sourcePreset.networkMaskCaptureCommand,
-            isBuiltIn = false
-        )
-        customPresets = customPresets + duplicate
-        persistCustomPresets()
-        publishPresets()
-        return duplicate
+        synchronized(presetsLock) {
+            val sourcePreset = getPreset(sourcePresetId) ?: return null
+            val duplicate = Preset(
+                id = CUSTOM_ID_PREFIX + UUID.randomUUID(),
+                title = newTitle,
+                description = duplicateDescription(sourcePreset),
+                onCommands = sourcePreset.onCommands,
+                offCommands = sourcePreset.offCommands,
+                networkMaskCaptureCommand = sourcePreset.networkMaskCaptureCommand,
+                isBuiltIn = false
+            )
+            customPresets = customPresets + duplicate
+            persistCustomPresets()
+            publishPresets()
+            return duplicate
+        }
     }
 
     private fun resolveSavedPreset(preset: Preset): Preset {
@@ -189,20 +207,29 @@ open class PresetRepository(context: Context? = null) {
     private fun JSONObject.optStringOrNull(key: String): String? =
         if (has(key)) getString(key) else null
 
-    private companion object {
-        const val PREFERENCES_NAME = "ghost_presets"
-        const val PRESETS_STORAGE_KEY = "custom_presets"
-        const val KEY_ID = "id"
-        const val KEY_TITLE = "title"
-        const val KEY_DESCRIPTION = "description"
-        const val KEY_ON_COMMANDS = "onCommands"
-        const val KEY_OFF_COMMANDS = "offCommands"
-        const val KEY_NETWORK_MASK_CAPTURE_COMMAND = "networkMaskCaptureCommand"
-        const val CUSTOM_ID_PREFIX = "custom_"
-        const val DUPLICATE_DESCRIPTION_PREFIX = "Копия пресета "
-        const val EMPTY_DESCRIPTION = ""
-        const val BUILT_IN_SAVE_REJECTION = "Built-in presets cannot be saved as custom presets"
-        const val INDEX_NOT_FOUND = -1
-        const val IMPORT_PARSE_ERROR = -1
+    companion object {
+        @Volatile
+        private var instance: PresetRepository? = null
+
+        fun getInstance(context: Context): PresetRepository {
+            return instance ?: synchronized(this) {
+                instance ?: PresetRepository(context.applicationContext).also { instance = it }
+            }
+        }
+
+        private const val PREFERENCES_NAME = "ghost_presets"
+        private const val PRESETS_STORAGE_KEY = "custom_presets"
+        private const val KEY_ID = "id"
+        private const val KEY_TITLE = "title"
+        private const val KEY_DESCRIPTION = "description"
+        private const val KEY_ON_COMMANDS = "onCommands"
+        private const val KEY_OFF_COMMANDS = "offCommands"
+        private const val KEY_NETWORK_MASK_CAPTURE_COMMAND = "networkMaskCaptureCommand"
+        private const val CUSTOM_ID_PREFIX = "custom_"
+        private const val DUPLICATE_DESCRIPTION_PREFIX = "Копия пресета "
+        private const val EMPTY_DESCRIPTION = ""
+        private const val BUILT_IN_SAVE_REJECTION = "Built-in presets cannot be saved as custom presets"
+        private const val INDEX_NOT_FOUND = -1
+        private const val IMPORT_PARSE_ERROR = -1
     }
 }

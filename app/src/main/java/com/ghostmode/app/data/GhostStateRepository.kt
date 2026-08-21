@@ -37,6 +37,7 @@ open class GhostStateRepository(private val context: Context? = null) {
         prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
     )
     private val logEntriesFlow = MutableStateFlow<List<CommandLogEntry>>(EMPTY_LOG)
+    private val sessionsLock = Any()
     private val notificationEnabledFlow = MutableStateFlow(prefs?.getBoolean(KEY_NOTIFICATION_ENABLED, false) ?: false)
     private val sessionsFlow = MutableStateFlow(loadSessions())
     private val scheduleEnabledFlow = MutableStateFlow(prefs?.getBoolean(KEY_SCHEDULE_ENABLED, SCHEDULE_DEFAULT_DISABLED) ?: SCHEDULE_DEFAULT_DISABLED)
@@ -57,7 +58,7 @@ open class GhostStateRepository(private val context: Context? = null) {
                 val newTs = prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
                 if (isOnTimestampMsFlow.value != newTs) isOnTimestampMsFlow.value = newTs
             }
-            KEY_SAVED_MASK, KEY_SAVED_MASK_SLOT_0 -> {
+            KEY_SAVED_MASK -> {
                 val newMask = prefs?.getString(KEY_SAVED_MASK, null)
                 if (savedNetworkMaskFlow.value != newMask) savedNetworkMaskFlow.value = newMask
             }
@@ -132,7 +133,6 @@ open class GhostStateRepository(private val context: Context? = null) {
             savedMaskTimestampMsFlow.value = timestampMs
             prefs?.edit()
                 ?.putString(KEY_SAVED_MASK, mask)
-                ?.putString(KEY_SAVED_MASK_SLOT_0, mask)
                 ?.putLong(KEY_SAVED_MASK_TS, timestampMs)
                 ?.apply()
         }
@@ -206,9 +206,11 @@ open class GhostStateRepository(private val context: Context? = null) {
     }
 
     private fun updateSessions(transform: (List<GhostSession>) -> List<GhostSession>) {
-        val updatedSessions = transform(sessionsFlow.value).takeLast(SESSION_CAPACITY)
-        sessionsFlow.value = updatedSessions
-        prefs?.edit()?.putString(KEY_SESSIONS, sessionsToJson(updatedSessions))?.apply()
+        synchronized(sessionsLock) {
+            val updatedSessions = transform(sessionsFlow.value).takeLast(SESSION_CAPACITY)
+            sessionsFlow.value = updatedSessions
+            prefs?.edit()?.putString(KEY_SESSIONS, sessionsToJson(updatedSessions))?.apply()
+        }
     }
 
     private fun loadSessions(): List<GhostSession> {
@@ -252,6 +254,15 @@ open class GhostStateRepository(private val context: Context? = null) {
             ?.apply()
     }
 
+    fun effectiveDurationMs(session: GhostSession, nowMs: Long): Long =
+        (if (session.endMs == SESSION_END_OPEN) nowMs else session.endMs) - session.startMs
+
+    fun totalDurationMs(sessions: List<GhostSession>, fromMs: Long, nowMs: Long): Long =
+        sessions.filter { it.startMs >= fromMs }.sumOf { session -> effectiveDurationMs(session, nowMs) }
+
+    fun totalDurationAllTimeMs(sessions: List<GhostSession>, nowMs: Long): Long =
+        sessions.sumOf { session -> effectiveDurationMs(session, nowMs) }
+
     open fun setActivePresetId(presetId: String) {
         activePresetIdFlow.value = presetId
         prefs?.edit()?.putString(KEY_ACTIVE_PRESET_ID, presetId)?.apply()
@@ -278,7 +289,6 @@ open class GhostStateRepository(private val context: Context? = null) {
         private const val KEY_IS_ON_TIMESTAMP = "is_on_timestamp"
         private const val KEY_NOTIFICATION_ENABLED = "notification_enabled"
         private const val KEY_SAVED_MASK = "saved_mask"
-        private const val KEY_SAVED_MASK_SLOT_0 = "saved_mask_slot_0"
         private const val KEY_SAVED_MASK_SLOT_1 = "saved_mask_slot_1"
         private const val KEY_SAVED_MASK_TS = "saved_mask_ts"
         private const val KEY_SIM_SLOT_MODE = "sim_slot_mode"

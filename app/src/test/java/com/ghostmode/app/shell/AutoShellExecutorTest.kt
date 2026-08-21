@@ -15,7 +15,7 @@ class FakeRootExecutor(private var available: Boolean = false) : RootShellExecut
         isRootAvailableFlow.value = available
     }
 
-    override suspend fun probeRoot(): Boolean {
+    override suspend fun probeRoot(force: Boolean): Boolean {
         isRootAvailableFlow.value = available
         return available
     }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 open class RootShellExecutor : ShellExecutor {
 
@@ -17,7 +18,11 @@ open class RootShellExecutor : ShellExecutor {
 
     override val readiness: StateFlow<Boolean> = isRootAvailable
 
-    open suspend fun probeRoot(): Boolean {
+    @Volatile
+    private var lastProbeTimeMs = 0L
+
+    open suspend fun probeRoot(force: Boolean = false): Boolean {
+        if (!force && isProbeCacheValid()) return isRootAvailableFlow.value
         val isAvailable = try {
             withContext(Dispatchers.IO) { probeRootProcess() }
         } catch (error: CancellationException) {
@@ -25,6 +30,7 @@ open class RootShellExecutor : ShellExecutor {
         } catch (_: Exception) {
             false
         }
+        lastProbeTimeMs = System.currentTimeMillis()
         isRootAvailableFlow.value = isAvailable
         return isAvailable
     }
@@ -42,15 +48,21 @@ open class RootShellExecutor : ShellExecutor {
         }
     }
 
+    private fun isProbeCacheValid(): Boolean =
+        System.currentTimeMillis() - lastProbeTimeMs < PROBE_CACHE_TTL_MS
+
     private suspend fun probeRootProcess(): Boolean = coroutineScope {
         val process = ProcessBuilder(SU_BINARY, SU_FLAG, ROOT_PROBE_COMMAND).start()
         val stderrContent = async(Dispatchers.IO) {
             process.errorStream.bufferedReader().use { it.readText() }
         }
-        val stdoutContent = process.inputStream.bufferedReader().use { it.readText() }
-        val exitCode = process.waitFor()
+        val stdoutContent = async(Dispatchers.IO) {
+            process.inputStream.bufferedReader().use { it.readText() }
+        }
+        val exitCode = awaitExitWithTimeout(process, PROBE_TIMEOUT_MS)
+        val stdout = stdoutContent.await()
         stderrContent.await()
-        exitCode == CommandResult.EXIT_SUCCESS && stdoutContent.contains(ROOT_UID_MARKER)
+        exitCode == CommandResult.EXIT_SUCCESS && stdout.contains(ROOT_UID_MARKER)
     }
 
     private suspend fun runRootCommand(command: String): CommandResult = coroutineScope {
@@ -59,8 +71,17 @@ open class RootShellExecutor : ShellExecutor {
             process.errorStream.bufferedReader().use { it.readText() }
         }
         val stdoutContent = process.inputStream.bufferedReader().use { it.readText() }
-        CommandResult(command, stdoutContent, stderrContent.await(), process.waitFor())
+        val exitCode = awaitExitWithTimeout(process, COMMAND_TIMEOUT_MS)
+        CommandResult(command, stdoutContent, stderrContent.await(), exitCode)
     }
+
+    private fun awaitExitWithTimeout(process: Process, timeoutMs: Long): Int =
+        if (process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)) {
+            process.exitValue()
+        } else {
+            process.destroyForcibly()
+            EXIT_PROCESS_KILLED
+        }
 
     private fun rootFailure(command: String, reason: String): CommandResult =
         CommandResult(
@@ -75,6 +96,11 @@ open class RootShellExecutor : ShellExecutor {
         const val SU_FLAG = "-c"
         const val ROOT_PROBE_COMMAND = "id"
         const val ROOT_UID_MARKER = "uid=0"
+
+        const val PROBE_CACHE_TTL_MS = 5_000L
+        const val PROBE_TIMEOUT_MS = 10_000L
+        const val COMMAND_TIMEOUT_MS = 20_000L
+        const val EXIT_PROCESS_KILLED = -3
 
         private const val EXIT_ROOT_FAILURE = -1
         private const val EMPTY_OUTPUT = ""

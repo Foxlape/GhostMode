@@ -3,6 +3,7 @@ package com.ghostmode.app.scheduling
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.ghostmode.app.data.GhostStateRepository
 import com.ghostmode.app.data.PresetRepository
 import com.ghostmode.app.domain.GhostModeController
@@ -36,7 +37,7 @@ class ScheduleReceiver : BroadcastReceiver() {
                     val rootExecutor = RootShellExecutor()
                     val ghostModeController = GhostModeController(
                         AutoShellExecutor(rootExecutor, shizukuManager),
-                        PresetRepository(appContext),
+                        PresetRepository.getInstance(appContext),
                         stateRepository
                     )
                     rootExecutor.probeRoot()
@@ -46,7 +47,8 @@ class ScheduleReceiver : BroadcastReceiver() {
                     // Reset Ghost Mode state to OFF so UI / QS Tile / Widget reflect actual modem state.
                     stateRepository.setIsOn(false)
                 }
-            } catch (_: IllegalStateException) {
+            } catch (error: IllegalStateException) {
+                Log.e(TAG, "Scheduled ghost mode switch failed", error)
             } finally {
                 ScheduleManager.update(appContext)
                 com.ghostmode.app.service.StatusNotificationManager.update(
@@ -95,6 +97,8 @@ class ScheduleReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        private const val TAG = "GhostSchedule"
+
         const val ACTION_TICK = "com.ghostmode.app.schedule.TICK"
 
         private val SYSTEM_RESCHEDULE_ACTIONS = setOf(

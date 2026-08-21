@@ -16,7 +16,7 @@ import java.util.Locale
 class GhostModeApp : Application() {
 
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val stateRepository: GhostStateRepository by lazy { GhostStateRepository(this) }
+    val stateRepository: GhostStateRepository by lazy { GhostStateRepository.getInstance(this) }
 
     override fun onCreate() {
         super.onCreate()

@@ -3,6 +3,7 @@ package com.ghostmode.app.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.ghostmode.app.data.GhostStateRepository
 import com.ghostmode.app.data.PresetRepository
 import com.ghostmode.app.domain.GhostModeController
@@ -29,20 +30,21 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 val rootExecutor = RootShellExecutor()
                 val ghostModeController = GhostModeController(
                     AutoShellExecutor(rootExecutor, shizukuManager),
-                    PresetRepository(appContext),
+                    PresetRepository.getInstance(appContext),
                     stateRepository
                 )
                 rootExecutor.probeRoot()
                 if (stateRepository.isOn.value) {
                     ghostModeController.turnOff()
                 }
-            } catch (_: Exception) {
+            } catch (error: Exception) {
+                Log.e(TAG, "Scheduled turn-off from notification failed", error)
             } finally {
                 StatusNotificationManager.update(
                     appContext,
-                    isOn = false,
+                    isOn = stateRepository.isOn.value,
                     notificationEnabled = stateRepository.notificationEnabled.value,
-                    timestampMs = 0L
+                    timestampMs = if (stateRepository.isOn.value) stateRepository.isOnTimestampMs.value else 0L
                 )
                 GhostWidgetProvider.refreshAll(appContext, false)
                 shizukuManager.stop()
@@ -52,6 +54,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        private const val TAG = "GhostNotifAction"
+
         const val ACTION_TURN_OFF = "com.ghostmode.app.notification.TURN_OFF"
     }
 }

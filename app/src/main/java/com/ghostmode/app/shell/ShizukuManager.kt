@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import rikka.shizuku.Shizuku
 
 enum class ShizukuStatus { NOT_INSTALLED, NOT_RUNNING, NO_PERMISSION, READY }
@@ -66,6 +67,7 @@ open class ShizukuManager(private val context: Context? = null) : ShellExecutor 
 
         override fun onServiceDisconnected(componentName: ComponentName) {
             connectedService = null
+            isUserServiceBound = false
             connectionAwaiter?.completeExceptionally(IllegalStateException(ERROR_SERVICE_DISCONNECTED))
             connectionAwaiter = null
         }
@@ -174,7 +176,12 @@ open class ShizukuManager(private val context: Context? = null) : ShellExecutor 
             connectionAwaiter = null
             throw error
         }
-        return awaiter.await()
+        val service = withTimeoutOrNull(BIND_TIMEOUT_MS) { awaiter.await() }
+        if (service == null) {
+            connectionAwaiter = null
+            throw IllegalStateException(ERROR_BIND_TIMEOUT)
+        }
+        return service
     }
 
     private fun bindUserServiceIfNeeded() {
@@ -273,13 +280,13 @@ open class ShizukuManager(private val context: Context? = null) : ShellExecutor 
         const val PROCESS_NAME_SUFFIX = "service"
         const val PERMISSION_REQUEST_CODE = 101
         const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
+        const val SUI_PACKAGE = "rikka.sui"
         val SHIZUKU_PACKAGES = listOf(
             "moe.shizuku.privileged.api",
-            "io.github.nightzuku",
-            "com.nightzuku",
-            "moe.nightzuku"
+            "rikka.sui"
         )
         const val MIN_SHIZUKU_VERSION = 11
+        const val BIND_TIMEOUT_MS = 10_000L
 
         private const val INITIAL_READINESS = false
 
@@ -288,5 +295,6 @@ open class ShizukuManager(private val context: Context? = null) : ShellExecutor 
         private const val ERROR_NOT_READY = "Shizuku is not ready for command execution"
         private const val ERROR_UNSUPPORTED_VERSION = "Installed Shizuku version is not supported"
         private const val ERROR_SERVICE_DISCONNECTED = "Shizuku user service connection was lost"
+        private const val ERROR_BIND_TIMEOUT = "Shizuku user service binding timed out"
     }
 }

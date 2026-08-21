@@ -2,6 +2,7 @@ package com.ghostmode.app
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -28,14 +29,6 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    private val presetExportLauncher = registerForActivityResult(
-        ActivityResultContracts.CreateDocument(PRESETS_EXPORT_MIME_TYPE)
-    ) { uri -> if (uri != null) writePresetsExport(uri) }
-
-    private val presetImportLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri -> if (uri != null) readPresetsImport(uri) }
-
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -54,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         shizukuManager = ShizukuManager(applicationContext)
         rootExecutor = RootShellExecutor()
         autoExecutor = AutoShellExecutor(rootExecutor, shizukuManager)
-        presetRepository = PresetRepository(this)
+        presetRepository = PresetRepository.getInstance(applicationContext)
         stateRepository = GhostStateRepository.getInstance(this)
         ghostModeController = GhostModeController(autoExecutor, presetRepository, stateRepository)
         setContent {
@@ -71,7 +64,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        shizukuManager.stop()
+        if (!ghostModeController.isBusy.value) {
+            shizukuManager.stop()
+        }
         super.onStop()
     }
 
@@ -101,9 +96,9 @@ class MainActivity : AppCompatActivity() {
         }.timeInMillis
         val sevenDaysAgo = now - 7 * 24 * 3600 * 1000L
 
-        val todayTotalMs = sessions.filter { it.startMs >= todayMidnight }.sumOf { (it.endMs ?: now) - it.startMs }
-        val sevenDaysTotalMs = sessions.filter { it.startMs >= sevenDaysAgo }.sumOf { (it.endMs ?: now) - it.startMs }
-        val allTimeTotalMs = sessions.sumOf { (it.endMs ?: now) - it.startMs }
+        val todayTotalMs = stateRepository.totalDurationMs(sessions, todayMidnight, now)
+        val sevenDaysTotalMs = stateRepository.totalDurationMs(sessions, sevenDaysAgo, now)
+        val allTimeTotalMs = stateRepository.totalDurationAllTimeMs(sessions, now)
 
         AppScreen(
             isOn = isGhostModeOn,
@@ -211,7 +206,8 @@ class MainActivity : AppCompatActivity() {
             contentResolver.openOutputStream(uri)?.use { outputStream ->
                 outputStream.write(presetRepository.exportCustomPresetsJson().toByteArray())
             }
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.e(TAG, "Presets export failed", error)
         }
     }
 
@@ -220,7 +216,8 @@ class MainActivity : AppCompatActivity() {
             contentResolver.openInputStream(uri)?.use { inputStream ->
                 inputStream.readBytes().toString(Charsets.UTF_8)
             }
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.e(TAG, "Presets import read failed", error)
             null
         } ?: return
         val importedCount = presetRepository.importPresetsJson(importedJson)
@@ -236,15 +233,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val LANGUAGE_TAG_RU = "ru"
-        private const val LANGUAGE_TAG_EN = "en"
-        private const val PRESETS_EXPORT_MIME_TYPE = "application/json"
-        private const val PRESETS_EXPORT_SUGGESTED_NAME = "ghost-presets.json"
+        private const val TAG = "GhostMain"
         private const val IMPORT_LOG_COMMAND = "Импорт пресетов"
         private const val IMPORT_LOG_RESULT_PREFIX = "Добавлено: "
         private const val IMPORT_LOG_EMPTY_OUTPUT = ""
         private const val IMPORT_LOG_SUCCESS = 0
         private const val IMPORT_LOG_FAILURE = -1
-        private val PRESETS_IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain")
     }
 }

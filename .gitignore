@@ -62,3 +62,4 @@ Thumbs.db
 *.p12
 *.key
 secrets.properties
+keystore.properties

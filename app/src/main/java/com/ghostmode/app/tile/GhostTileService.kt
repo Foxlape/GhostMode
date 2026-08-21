@@ -44,7 +44,7 @@ class GhostTileService : TileService() {
         shizukuManager = ShizukuManager(applicationContext)
         rootExecutor = RootShellExecutor()
         autoExecutor = AutoShellExecutor(rootExecutor, shizukuManager)
-        presetRepository = PresetRepository(applicationContext)
+        presetRepository = PresetRepository.getInstance(applicationContext)
         stateRepository = GhostStateRepository.getInstance(applicationContext)
         ghostModeController = GhostModeController(autoExecutor, presetRepository, stateRepository)
         shizukuManager.start()
@@ -52,7 +52,6 @@ class GhostTileService : TileService() {
         stateRepository.isOn
             .onEach { updateTile() }
             .launchIn(scope)
-        scope.launch { rootExecutor.probeRoot(); updateTile() }
     }
 
     override fun onDestroy() {

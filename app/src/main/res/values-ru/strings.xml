@@ -113,5 +113,9 @@
     <string name="sim_slot_all_desc">Режим глушит звонки на обеих SIM-картах (SIM 1 и SIM 2)</string>
     <string name="sim_slot_1_desc">Режим глушит только SIM 1; SIM 2 принимает звонки</string>
     <string name="sim_slot_2_desc">Режим глушит только SIM 2; SIM 1 принимает звонки</string>
-    <string name="app_version_label">Версия 0.1.9</string>
+    <string name="app_version_label">Версия 0.1.10</string>
+    <string name="diagnostics_not_run_hint">Запустите диагностику, чтобы проверить реальное состояние модема.</string>
+    <string name="preset_commands_count">Команд: %1$d</string>
+    <string name="about_github">Репозиторий GitHub</string>
+    <string name="donate_description">Ghost Mode — полностью свободный и открытый проект без рекламы и трекеров.</string>
 </resources>
