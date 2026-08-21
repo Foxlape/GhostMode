@@ -47,6 +47,12 @@ open class GhostStateRepository(private val context: Context? = null) {
     private val scheduleEndMinuteOfDayFlow = MutableStateFlow(
         prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
     )
+    private val themeModeFlow = MutableStateFlow(
+        ThemeMode.fromStorage(prefs?.getString(KEY_THEME_MODE, null))
+    )
+    private val timerFireAtMsFlow = MutableStateFlow(
+        prefs?.getLong(KEY_TIMER_FIRE_AT, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
+    )
 
     private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         when (key) {
@@ -90,6 +96,14 @@ open class GhostStateRepository(private val context: Context? = null) {
                 val newEnd = prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
                 if (scheduleEndMinuteOfDayFlow.value != newEnd) scheduleEndMinuteOfDayFlow.value = newEnd
             }
+            KEY_THEME_MODE -> {
+                val newTheme = ThemeMode.fromStorage(prefs?.getString(KEY_THEME_MODE, null))
+                if (themeModeFlow.value != newTheme) themeModeFlow.value = newTheme
+            }
+            KEY_TIMER_FIRE_AT -> {
+                val newFireAt = prefs?.getLong(KEY_TIMER_FIRE_AT, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
+                if (timerFireAtMsFlow.value != newFireAt) timerFireAtMsFlow.value = newFireAt
+            }
             KEY_ACTIVE_PRESET_ID -> {
                 val newPreset = prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
                 if (activePresetIdFlow.value != newPreset) activePresetIdFlow.value = newPreset
@@ -117,6 +131,8 @@ open class GhostStateRepository(private val context: Context? = null) {
     open val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
     open val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartMinuteOfDayFlow.asStateFlow()
     open val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndMinuteOfDayFlow.asStateFlow()
+    open val themeMode: StateFlow<ThemeMode> = themeModeFlow.asStateFlow()
+    open val timerFireAtMs: StateFlow<Long> = timerFireAtMsFlow.asStateFlow()
 
     open fun setSimSlotMode(mode: SimSlotMode) {
         simSlotModeFlow.value = mode
@@ -188,6 +204,20 @@ open class GhostStateRepository(private val context: Context? = null) {
     open fun setScheduleEndMinuteOfDay(minuteOfDay: Int) {
         scheduleEndMinuteOfDayFlow.value = minuteOfDay
         prefs?.edit()?.putInt(KEY_SCHEDULE_END_MINUTE, minuteOfDay)?.apply()
+    }
+
+    open fun setThemeMode(mode: ThemeMode) {
+        themeModeFlow.value = mode
+        prefs?.edit()?.putString(KEY_THEME_MODE, mode.name)?.apply()
+    }
+
+    open fun setTimerFireAtMs(valueMs: Long) {
+        timerFireAtMsFlow.value = valueMs
+        prefs?.edit()?.putLong(KEY_TIMER_FIRE_AT, valueMs)?.apply()
+    }
+
+    open fun clearTimerFireAt() {
+        setTimerFireAtMs(TIMESTAMP_NONE)
     }
 
     private fun openSession() {
@@ -299,6 +329,8 @@ open class GhostStateRepository(private val context: Context? = null) {
         private const val KEY_SCHEDULE_ENABLED = "schedule_enabled"
         private const val KEY_SCHEDULE_START_MINUTE = "schedule_start_minute"
         private const val KEY_SCHEDULE_END_MINUTE = "schedule_end_minute"
+        private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_TIMER_FIRE_AT = "timer_fire_at"
         private const val TIMESTAMP_NONE = 0L
         private const val SESSION_END_OPEN = 0L
         private const val SESSION_CAPACITY = 500

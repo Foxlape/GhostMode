@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="turn_on"
+        android:enabled="true"
+        android:icon="@drawable/ic_ghost"
+        android:shortcutShortLabel="@string/shortcut_turn_on"
+        android:shortcutLongLabel="@string/shortcut_turn_on">
+        <intent
+            android:action="com.ghostmode.app.shortcut.TURN_ON"
+            android:targetPackage="com.ghostmode.app"
+            android:targetClass="com.ghostmode.app.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="turn_off"
+        android:enabled="true"
+        android:icon="@drawable/ic_ghost"
+        android:shortcutShortLabel="@string/shortcut_turn_off"
+        android:shortcutLongLabel="@string/shortcut_turn_off">
+        <intent
+            android:action="com.ghostmode.app.shortcut.TURN_OFF"
+            android:targetPackage="com.ghostmode.app"
+            android:targetClass="com.ghostmode.app.MainActivity" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="timer_1h"
+        android:enabled="true"
+        android:icon="@drawable/ic_ghost"
+        android:shortcutShortLabel="@string/shortcut_timer_1h"
+        android:shortcutLongLabel="@string/shortcut_timer_1h_long">
+        <intent
+            android:action="com.ghostmode.app.shortcut.TIMER_1H"
+            android:targetPackage="com.ghostmode.app"
+            android:targetClass="com.ghostmode.app.MainActivity" />
+    </shortcut>
+</shortcuts>

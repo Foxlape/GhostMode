@@ -87,6 +87,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -109,8 +110,11 @@ import com.ghostmode.app.data.CommandLogEntry
 import com.ghostmode.app.data.GhostSession
 import com.ghostmode.app.data.Preset
 import com.ghostmode.app.data.SimSlotMode
+import com.ghostmode.app.data.ThemeMode
 import com.ghostmode.app.shell.ShizukuStatus
 import com.ghostmode.app.support.DONATE_URL
+import com.ghostmode.app.support.GitHubRelease
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -118,6 +122,10 @@ private val HORIZONTAL_PADDING = 16.dp
 private val VERTICAL_PADDING = 16.dp
 private val SECTION_SPACING = 16.dp
 private const val RELEASE_CERT_SHA256 = "FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53:DD:47:12:28:D5:71:B0:50"
+private const val TIMER_TICK_INTERVAL_MS = 30_000L
+private const val TIMER_CHIP_30M_MINUTES = 30
+private const val TIMER_CHIP_1H_MINUTES = 60
+private const val TIMER_CHIP_2H_MINUTES = 120
 
 private enum class ActiveDialog {
     NONE,
@@ -125,6 +133,8 @@ private enum class ActiveDialog {
     LOGS,
     SCHEDULE,
     LANGUAGE,
+    THEME,
+    UPDATES,
     STATS,
     ABOUT,
     DONATE,
@@ -167,7 +177,19 @@ fun AppScreen(
     sessionHistory: List<GhostSession>,
     todayTotalMs: Long,
     sevenDaysTotalMs: Long,
-    allTimeTotalMs: Long
+    allTimeTotalMs: Long,
+    availableUpdate: GitHubRelease?,
+    onCheckUpdates: () -> Unit,
+    onDismissUpdate: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+    themeMode: ThemeMode,
+    onThemeChanged: (ThemeMode) -> Unit,
+    isBatteryExempt: Boolean,
+    onRequestIgnoreBatteryOptimization: () -> Unit,
+    timerFireAtMs: Long,
+    onArmTimerMinutes: (Int) -> Unit,
+    onArmTimerUntilMorning: () -> Unit,
+    onCancelTimer: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -277,6 +299,22 @@ fun AppScreen(
                             }
                             HorizontalDivider()
                             DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_updates)) },
+                                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.UPDATES
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(text = stringResource(R.string.menu_theme)) },
+                                leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                                onClick = {
+                                    menuExpanded = false
+                                    activeDialog = ActiveDialog.THEME
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text(text = stringResource(R.string.menu_language)) },
                                 leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
                                 onClick = {
@@ -329,12 +367,32 @@ fun AppScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(SECTION_SPACING)
         ) {
+            availableUpdate?.let { release ->
+                UpdateBannerCard(
+                    release = release,
+                    onDownload = {
+                        onOpenUrl(release.apkUrl)
+                        onDismissUpdate()
+                    },
+                    onDismiss = onDismissUpdate
+                )
+            }
+
             // Main Ghost Mode Toggle Card
             ModeControlCard(
                 isOn = isOn,
                 isBusy = isBusy,
                 onToggle = onToggle
             )
+
+            if (isOn) {
+                TimerCard(
+                    timerFireAtMs = timerFireAtMs,
+                    onArmTimerMinutes = onArmTimerMinutes,
+                    onArmTimerUntilMorning = onArmTimerUntilMorning,
+                    onCancelTimer = onCancelTimer
+                )
+            }
 
             // Dual SIM Slot Selection Card
             SimSelectionCard(
@@ -350,6 +408,10 @@ fun AppScreen(
                 onOpenShizuku = onOpenShizuku,
                 onDownloadShizuku = onDownloadShizuku
             )
+
+            if (!isBatteryExempt) {
+                BatteryOptimizationCard(onRequest = onRequestIgnoreBatteryOptimization)
+            }
 
             // Presets Header & Mode
             PresetsHeader(
@@ -426,6 +488,27 @@ fun AppScreen(
         }
         ActiveDialog.LANGUAGE -> {
             LanguageDialog(
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.THEME -> {
+            ThemeDialog(
+                currentMode = themeMode,
+                onSelect = { mode ->
+                    onThemeChanged(mode)
+                    activeDialog = ActiveDialog.NONE
+                },
+                onDismiss = { activeDialog = ActiveDialog.NONE }
+            )
+        }
+        ActiveDialog.UPDATES -> {
+            UpdatesDialog(
+                availableRelease = availableUpdate,
+                onCheckUpdates = onCheckUpdates,
+                onDownload = { url ->
+                    onOpenUrl(url)
+                    activeDialog = ActiveDialog.NONE
+                },
                 onDismiss = { activeDialog = ActiveDialog.NONE }
             )
         }
@@ -1555,6 +1638,301 @@ private fun LanguageDialog(
                 Text(text = stringResource(R.string.dialog_close))
             }
         }
+    )
+}
+
+@Composable
+private fun UpdateBannerCard(
+    release: GitHubRelease,
+    onDownload: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.update_banner_new, release.versionName),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+            }
+            release.changelog?.takeIf { it.isNotBlank() }?.let { changelog ->
+                Text(
+                    text = changelog,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 6,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onDownload, modifier = Modifier.weight(1f)) {
+                    Text(text = stringResource(R.string.update_download))
+                }
+                OutlinedButton(onClick = onDismiss) {
+                    Text(text = stringResource(R.string.update_later))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatteryOptimizationCard(onRequest: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.battery_title),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+            }
+            Text(
+                text = stringResource(R.string.battery_text),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Button(onClick = onRequest, modifier = Modifier.fillMaxWidth()) {
+                Text(text = stringResource(R.string.battery_action))
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimerCard(
+    timerFireAtMs: Long,
+    onArmTimerMinutes: (Int) -> Unit,
+    onArmTimerUntilMorning: () -> Unit,
+    onCancelTimer: () -> Unit
+) {
+    val isArmed = timerFireAtMs > System.currentTimeMillis()
+    val tick by produceState(System.currentTimeMillis(), timerFireAtMs) {
+        while (true) {
+            value = System.currentTimeMillis()
+            delay(TIMER_TICK_INTERVAL_MS)
+        }
+    }
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Text(
+                    text = stringResource(R.string.timer_title),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+            }
+
+            if (isArmed) {
+                val targetClock = remember(timerFireAtMs) { formatClockTime(timerFireAtMs) }
+                val minutesLeft = ((timerFireAtMs - tick) / 60_000L).coerceAtLeast(0L)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.timer_armed_in, targetClock),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Text(
+                            text = stringResource(R.string.timer_minutes_left, formatDuration(minutesLeft * 60_000L)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = onCancelTimer) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.timer_cancel)
+                        )
+                    }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AssistChip(
+                        onClick = { onArmTimerMinutes(TIMER_CHIP_30M_MINUTES) },
+                        label = { Text(text = stringResource(R.string.timer_chip_30m)) }
+                    )
+                    AssistChip(
+                        onClick = { onArmTimerMinutes(TIMER_CHIP_1H_MINUTES) },
+                        label = { Text(text = stringResource(R.string.timer_chip_1h)) }
+                    )
+                    AssistChip(
+                        onClick = { onArmTimerMinutes(TIMER_CHIP_2H_MINUTES) },
+                        label = { Text(text = stringResource(R.string.timer_chip_2h)) }
+                    )
+                    AssistChip(
+                        onClick = onArmTimerUntilMorning,
+                        label = { Text(text = stringResource(R.string.timer_chip_morning)) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeDialog(
+    currentMode: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.menu_theme))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    ThemeMode.SYSTEM to R.string.theme_system,
+                    ThemeMode.DARK to R.string.theme_dark,
+                    ThemeMode.LIGHT to R.string.theme_light
+                ).forEach { (mode, labelRes) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(mode) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = currentMode == mode, onClick = { onSelect(mode) })
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(labelRes))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
+            }
+        }
+    )
+}
+
+@Composable
+private fun UpdatesDialog(
+    availableRelease: GitHubRelease?,
+    onCheckUpdates: () -> Unit,
+    onDownload: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.menu_updates))
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (availableRelease == null) {
+                    Text(
+                        text = stringResource(R.string.update_none_hint),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.update_banner_new, availableRelease.versionName),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    availableRelease.changelog?.takeIf { it.isNotBlank() }?.let { changelog ->
+                        HorizontalDivider()
+                        Text(
+                            text = changelog,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = { onDownload(availableRelease.apkUrl) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = stringResource(R.string.update_download))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onCheckUpdates) {
+                Text(text = stringResource(R.string.update_check_again))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(R.string.dialog_close))
+            }
+        }
+    )
+}
+
+private fun formatClockTime(timeMs: Long): String {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = timeMs
+    return String.format(
+        "%02d:%02d",
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE)
     )
 }
 

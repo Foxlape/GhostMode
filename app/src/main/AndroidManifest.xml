@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
@@ -31,6 +32,9 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
             </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <service
@@ -50,6 +54,14 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="com.ghostmode.app.notification.TURN_OFF" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".service.TimerReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.ghostmode.app.timer.FIRE" />
             </intent-filter>
         </receiver>
 
