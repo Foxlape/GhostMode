@@ -106,6 +106,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.ghostmode.app.R
+import com.ghostmode.app.data.BuiltInPresets
 import com.ghostmode.app.data.CommandLogEntry
 import com.ghostmode.app.data.GhostSession
 import com.ghostmode.app.data.Preset
@@ -126,6 +127,11 @@ private const val TIMER_TICK_INTERVAL_MS = 30_000L
 private const val TIMER_CHIP_30M_MINUTES = 30
 private const val TIMER_CHIP_1H_MINUTES = 60
 private const val TIMER_CHIP_2H_MINUTES = 120
+
+private val DIAGNOSTICS_MASK_PATTERN = Regex("(?<![0-9])[01]{16,32}(?![0-9])")
+private val IMS_SERVICE_NAME_PATTERN = Regex("\\b[a-z][a-z0-9_]*(?:\\.[A-Za-z0-9_]+)+\\b")
+private val LEGACY_NETWORK_NAMES = listOf("GSM", "UMTS", "GPRS", "EDGE", "CDMA")
+private val IMS_DISABLED_MARKERS = listOf("Can't find service", "disabled", "null")
 
 private enum class ActiveDialog {
     NONE,
@@ -463,7 +469,6 @@ fun AppScreen(
     when (activeDialog) {
         ActiveDialog.DIAGNOSTICS -> {
             DiagnosticsDialog(
-                isOn = isOn,
                 onRunDiagnostics = onRunDiagnostics,
                 onDismiss = { activeDialog = ActiveDialog.NONE },
                 onViewLogs = { activeDialog = ActiveDialog.LOGS }
@@ -1093,7 +1098,6 @@ private fun PresetCard(
 
 @Composable
 private fun DiagnosticsDialog(
-    isOn: Boolean,
     onRunDiagnostics: suspend () -> List<com.ghostmode.app.shell.CommandResult>,
     onDismiss: () -> Unit,
     onViewLogs: () -> Unit
@@ -1102,8 +1106,8 @@ private fun DiagnosticsDialog(
     var isRunning by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<com.ghostmode.app.shell.CommandResult>?>(null) }
 
-    val diagnosticState = remember(results, isOn) {
-        parseNetworkDiagnostics(results, isOn)
+    val diagnosticState = remember(results) {
+        parseNetworkDiagnostics(results)
     }
 
     AlertDialog(
@@ -1269,36 +1273,41 @@ private data class CallStatusDiagnostic(
 )
 
 private fun parseNetworkDiagnostics(
-    results: List<com.ghostmode.app.shell.CommandResult>?,
-    isGhostModeOn: Boolean
+    results: List<com.ghostmode.app.shell.CommandResult>?
 ): CallStatusDiagnostic? {
     if (results == null) {
         return null
     }
 
     val maskOutput = results.find { it.command.contains("get-allowed-network-types") }?.stdout.orEmpty()
-    val hasLegacyNetworks = maskOutput.contains("GSM", ignoreCase = true) ||
-            maskOutput.contains("UMTS", ignoreCase = true) ||
-            maskOutput.contains("GPRS", ignoreCase = true) ||
-            maskOutput.contains("EDGE", ignoreCase = true) ||
-            maskOutput.contains("CDMA", ignoreCase = true)
+    val capturedMask = DIAGNOSTICS_MASK_PATTERN.findAll(maskOutput).lastOrNull()?.value
+    val isMaskLteOnly = when {
+        capturedMask != null -> capturedMask == BuiltInPresets.LTE_ONLY_MASK
+        maskOutput.isNotBlank() -> !containsLegacyNetworkNames(maskOutput)
+        else -> false
+    }
 
-    val imsOutput = results.filter { it.command.contains("ims") }.joinToString(" ") { it.stdout + " " + it.stderr }
-    val isImsDisabled = isGhostModeOn ||
-            imsOutput.contains("disabled", ignoreCase = true) ||
-            imsOutput.contains("Can't find service", ignoreCase = true) ||
-            imsOutput.contains("null", ignoreCase = true)
+    val imsOutput = results
+        .filter { it.command.contains("get-ims-service") }
+        .joinToString(" ") { result -> result.stdout + " " + result.stderr }
+    val imsServiceNameFound = IMS_SERVICE_NAME_PATTERN.containsMatchIn(imsOutput)
+    val isImsDisabled = !imsServiceNameFound && containsImsDisabledMarker(imsOutput)
 
-    val is2G3GDisabled = isGhostModeOn || (!hasLegacyNetworks && maskOutput.isNotBlank())
-    val areCallsBlocked = isGhostModeOn || (isImsDisabled && is2G3GDisabled)
+    val areCallsBlocked = isMaskLteOnly && isImsDisabled
 
     return CallStatusDiagnostic(
         areCallsBlocked = areCallsBlocked,
         isInternetWorking = true,
-        is2G3GDisabled = is2G3GDisabled,
+        is2G3GDisabled = isMaskLteOnly,
         isImsDisabled = isImsDisabled
     )
 }
+
+private fun containsLegacyNetworkNames(maskOutput: String): Boolean =
+    LEGACY_NETWORK_NAMES.any { name -> maskOutput.contains(name, ignoreCase = true) }
+
+private fun containsImsDisabledMarker(imsOutput: String): Boolean =
+    IMS_DISABLED_MARKERS.any { marker -> imsOutput.contains(marker, ignoreCase = true) }
 
 @Composable
 private fun DiagRow(label: String, value: String) {
