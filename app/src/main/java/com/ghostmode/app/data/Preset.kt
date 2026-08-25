@@ -104,14 +104,23 @@ object BuiltInPresets {
     private val samsungOneUi = Preset(
         id = ID_SAMSUNG_ONE_UI,
         title = "Samsung One UI",
-        description = "LTE-only плюс отключение системного IMS-сервиса Samsung. " +
+        description = "Расширенная связка: выключение IMS через телефонию и пакет Samsung, " +
+            "LTE-only через маску сетей и preferred_network_mode для всех подписок. " +
             "Если связка не сработает — переключитесь на пресет Stock.",
         onCommands = listOf(
+            IMS_DISABLE_COMMAND,
             setAllowedNetworkTypesCommand(LTE_ONLY_MASK),
+            preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_LTE_ONLY),
+            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_LTE_ONLY),
+            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_LTE_ONLY),
             "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE"
         ),
         offCommands = listOf(
             "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE",
+            IMS_ENABLE_COMMAND,
+            preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_GLOBAL),
+            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_GLOBAL),
+            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_GLOBAL),
             setAllowedNetworkTypesCommand(MASK_PLACEHOLDER)
         ),
         networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
