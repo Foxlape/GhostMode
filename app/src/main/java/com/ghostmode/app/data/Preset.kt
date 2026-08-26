@@ -24,6 +24,8 @@ object BuiltInPresets {
     const val IMS_DISABLE_COMMAND = "cmd phone ims disable -s 0"
     const val IMS_ENABLE_COMMAND = "cmd phone ims enable -s 0"
     const val SAMSUNG_IMS_PACKAGE = "com.sec.imsservice"
+    const val SAMSUNG_IMS_PACKAGE_NEW = "com.samsung.android.imsservice"
+    const val SAMSUNG_IMS_SETTINGS_PACKAGE = "com.sec.ims"
     const val QUALCOMM_IMS_PACKAGE = "org.codeaurora.ims"
     const val MEDIATEK_IMS_PACKAGE = "com.mediatek.ims"
     const val GOOGLE_IMS_PACKAGE = "com.google.android.ims"
@@ -104,8 +106,9 @@ object BuiltInPresets {
     private val samsungOneUi = Preset(
         id = ID_SAMSUNG_ONE_UI,
         title = "Samsung One UI",
-        description = "Расширенная связка: выключение IMS через телефонию и пакет Samsung, " +
-            "LTE-only через маску сетей и preferred_network_mode для всех подписок. " +
+        description = "Расширенная связка: выключение IMS на уровне телефонии, отключение " +
+            "всех IMS-пакетов Samsung (старый и новый стек), LTE-only через маску сетей " +
+            "и preferred_network_mode для всех подписок. " +
             "Если связка не сработает — переключитесь на пресет Stock.",
         onCommands = listOf(
             IMS_DISABLE_COMMAND,
@@ -113,10 +116,14 @@ object BuiltInPresets {
             preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_LTE_ONLY),
             preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_LTE_ONLY),
             preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_LTE_ONLY),
-            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE"
+            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE",
+            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX",
+            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_SETTINGS_PACKAGE$IGNORE_FAILURE_SUFFIX"
         ),
         offCommands = listOf(
             "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE",
+            "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX",
+            "$PM_ENABLE_COMMAND $SAMSUNG_IMS_SETTINGS_PACKAGE$IGNORE_FAILURE_SUFFIX",
             IMS_ENABLE_COMMAND,
             preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_GLOBAL),
             preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_GLOBAL),
