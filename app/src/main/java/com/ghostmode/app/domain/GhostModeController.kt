@@ -77,7 +77,7 @@ class GhostModeController(
                 BuiltInPresets.GET_IMS_SERVICE_DEVICE_COMMAND,
                 BuiltInPresets.GET_IMS_SERVICE_CARRIER_COMMAND
             )
-            val commands = expandCommandsForSlots(baseCommands, slots) + DIAGNOSTICS_IMS_COMMAND
+            val commands = expandCommandsForSlots(baseCommands, slots) + DIAGNOSTICS_IMS_COMMAND + DIAGNOSTICS_IMS_PACKAGES_COMMAND
             return commands.map { command -> executeAndLog(command) }
         } finally {
             isBusyFlow.value = false
@@ -211,6 +211,7 @@ class GhostModeController(
         const val EXIT_SKIPPED = -1
         const val SKIP_REASON_NO_MASK = "Пропущено: сохранённая маска сети не найдена"
         const val DIAGNOSTICS_IMS_COMMAND = "dumpsys ims"
+        const val DIAGNOSTICS_IMS_PACKAGES_COMMAND = "pm list packages | grep -i ims"
         const val FALLBACK_RESTORE_MASK = "11001111101111111111"
         const val SLOT_MARKER = "-s 0"
 
