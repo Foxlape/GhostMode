@@ -108,7 +108,8 @@ object BuiltInPresets {
         description = "Расширенная связка: выключение IMS на уровне телефонии, отключение " +
             "всех IMS-пакетов Samsung (старый и новый стек), LTE-only через маску сетей " +
             "и preferred_network_mode для всех подписок. " +
-            "Если связка не сработает — переключитесь на пресет Stock.",
+            "Если связка не сработает — переключитесь на пресет Stock. " +
+            "После первого включения может потребоваться перезагрузка, чтобы модем снял VoLTE-регистрацию.",
         onCommands = listOf(
             IMS_DISABLE_COMMAND,
             setAllowedNetworkTypesCommand(LTE_ONLY_MASK),
