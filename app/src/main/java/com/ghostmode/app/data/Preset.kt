@@ -32,6 +32,11 @@ object BuiltInPresets {
     const val NETWORK_MODE_GLOBAL = "0"
     const val SLOT_0 = "-s 0"
     const val IGNORE_FAILURE_SUFFIX = " || true"
+    const val VOLTE_SETTING_DISABLE_COMMAND = "settings put global volte_vt_enabled 0"
+    const val VOLTE_SETTING_ENABLE_COMMAND = "settings put global volte_vt_enabled 1"
+    const val ENHANCED_4G_DISABLE_COMMAND = "settings put global enhanced_4g_mode_enabled 0"
+    const val ENHANCED_4G_ENABLE_COMMAND = "settings put global enhanced_4g_mode_enabled 1"
+    const val CARRIER_CONFIG_REFRESH_COMMAND = "am broadcast -a android.telephony.action.CARRIER_CONFIG_CHANGED$IGNORE_FAILURE_SUFFIX"
     const val GET_IMS_SERVICE_DEVICE_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -d"
     const val GET_IMS_SERVICE_CARRIER_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -c"
 
@@ -117,9 +122,15 @@ object BuiltInPresets {
             preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_LTE_ONLY),
             preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_LTE_ONLY),
             "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE",
-            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX"
+            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX",
+            VOLTE_SETTING_DISABLE_COMMAND,
+            ENHANCED_4G_DISABLE_COMMAND,
+            CARRIER_CONFIG_REFRESH_COMMAND
         ),
         offCommands = listOf(
+            VOLTE_SETTING_ENABLE_COMMAND,
+            ENHANCED_4G_ENABLE_COMMAND,
+            CARRIER_CONFIG_REFRESH_COMMAND,
             "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE",
             "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX",
             IMS_ENABLE_COMMAND,
