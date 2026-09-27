@@ -1,0 +1,7 @@
+Complete rework and new design.
+• Turning off now restores exactly what was changed, even after switching preset/SIM or rebooting
+• Fixed: Universal preset left VoLTE disabled; preferred_network_mode restored to 3G-only
+• Mode is re-applied after reboot (root/Sui) or you get a notification
+• Schedule, timer, widget and tile work reliably with Shizuku
+• New UI: tabs, diagnostics per SIM, 7-day statistics
+• Update check is now opt-in

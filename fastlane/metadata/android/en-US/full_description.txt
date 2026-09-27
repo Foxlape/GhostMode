@@ -1,0 +1,29 @@
+<p>Ghost Mode makes your phone look <b>switched off</b> to anyone calling you — callers hear "subscriber unavailable" — while <b>mobile data keeps working</b>. Messengers, maps and music continue as usual; only cellular calls stop reaching you.</p>
+
+<p><b>How it works</b></p>
+<ul>
+<li>IMS (VoLTE / VoWiFi) is disabled through Android telephony shell commands.</li>
+<li>The modem is limited to LTE, so there is no 2G/3G fallback for calls.</li>
+<li>When you turn the mode off, everything is restored exactly as it was: the original network types, settings values and IMS services.</li>
+</ul>
+
+<p><b>Requirements</b></p>
+<ul>
+<li>Android 8.0+, Android 12+ recommended.</li>
+<li><a href="https://shizuku.rikka.app">Shizuku</a> (no root needed) or root access via KernelSU, Magisk or APatch.</li>
+</ul>
+
+<p><b>Features</b></p>
+<ul>
+<li>Presets for Pixel and stock Android, Samsung One UI, Xiaomi HyperOS, OnePlus, vivo / iQOO and Android 9–11, plus your own command sets with import and export.</li>
+<li>Dual SIM: make SIM 1, SIM 2 or both unreachable.</li>
+<li>Quick Settings tile, home screen widget and launcher shortcuts.</li>
+<li>Daily schedule and an auto turn-off timer.</li>
+<li>Re-applies itself after a reboot (root / Sui) or reminds you to.</li>
+<li>Diagnostics, a full command log and usage statistics.</li>
+<li>Material You design, dark and light themes, English and Russian.</li>
+</ul>
+
+<p><b>Privacy</b>: no ads, no trackers, no analytics. The app does not access the network unless you enable the optional update check.</p>
+
+<p><b>Please note</b>: do not rely on Ghost Mode when you must be reachable for emergencies. SMS may be delayed on carriers that deliver SMS over IMS, and calls may go to voicemail if you have "forward when unreachable" set up with your carrier.</p>
