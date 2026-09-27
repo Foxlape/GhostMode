@@ -25,8 +25,9 @@ jobs:
         id: version
         run: |
           TAG="${GITHUB_REF_NAME}"
-          VERSION_NAME=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
-          VERSION_CODE=$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts)
+          # Anchored patterns: the comment above versionCode must not match.
+          VERSION_NAME=$(sed -n 's/^ *versionName = "\([^"]*\)" *$/\1/p' app/build.gradle.kts)
+          VERSION_CODE=$(sed -n 's/^ *versionCode = \([0-9][0-9]*\) *$/\1/p' app/build.gradle.kts)
           if [ "v${VERSION_NAME}" != "${TAG}" ]; then
             echo "::error::Tag ${TAG} does not match versionName ${VERSION_NAME}"
             exit 1
