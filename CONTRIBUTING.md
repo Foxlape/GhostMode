@@ -1,50 +1,47 @@
-# Contributing to Ghost Mode
+# Contributing
 
-First off, thank you for considering contributing to Ghost Mode! 🎉
+Thanks for helping! The most valuable contributions are **working command sets for devices** and **bug reports with
+a command log**.
 
-Whether you're reporting bugs, suggesting new vendor presets, improving documentation, or submitting code changes, your help is appreciated.
+## Reporting a problem
 
----
+1. Reproduce it, then open *Settings → Diagnostics* and *Settings → Command log → Copy log*.
+2. Open a [bug report](https://github.com/Foxlape/GhostMode/issues/new?template=bug_report.yml) with your device,
+   firmware, carrier, preset and the log.
 
-## 🛠️ How Can You Contribute?
+## Proposing a preset
 
-### 1. Contributing New Device Presets
-Different Android manufacturers and carrier configurations handle IMS services and network masks differently. If you discovered working shell commands for your device model:
-1. Open a **[New Preset Request](https://github.com/foxlape/GhostMode/issues/new?template=preset_request.yml)**.
-2. Provide your phone model, Android / ROM version, and the enable/disable commands.
+Create a custom preset in the app, test it (call yourself, check mobile data, turn off and check that VoLTE comes
+back), export it and attach the JSON to a
+[preset request](https://github.com/Foxlape/GhostMode/issues/new?template=preset_request.yml).
 
-### 2. Reporting Bugs
-- Search existing issues before submitting a new one.
-- Use the **[Bug Report Form](https://github.com/foxlape/GhostMode/issues/new?template=bug_report.yml)**.
-- Include the exact output from the **Command Log** card inside the app.
+## Code changes
 
-### 3. Submitting Code / Pull Requests
-1. Fork the repository and create your feature branch:
-   ```bash
-   git checkout -b feature/awesome-feature
-   ```
-2. Follow standard Kotlin / Compose coding conventions.
-3. Verify that the project builds cleanly:
-   ```bash
-   ./gradlew assembleDebug testDebugUnitTest
-   ```
-4. Commit your changes with clear, semantic commit messages.
-5. Push to your branch and open a Pull Request.
+```bash
+git clone https://github.com/Foxlape/GhostMode.git
+cd GhostMode
+./gradlew testDebugUnitTest assembleDebug
+```
 
----
+- Kotlin official code style, Jetpack Compose + Material 3.
+- Every mode change goes through `system/GhostActions` → `domain/GhostModeController`; do not run shell commands
+  from UI code.
+- Anything the ON path changes must be restorable. The controller restores `settings put` keys and packages disabled
+  with `pm disable-user` automatically; other commands need an explicit OFF counterpart.
+- Add a unit test for controller or repository changes (`app/src/test`). `FakeShell` in `GhostModeControllerTest`
+  lets you script command output.
+- User-facing text goes to `values/strings.xml` **and** `values-ru/strings.xml`; `StringsLocalizationTest` checks both.
+- UI changes: regenerate screenshots with
+  `./gradlew testDebugUnitTest -Pscreenshots --tests '*ScreenshotTest*'` and look at the PNGs.
+- Add a line to `CHANGELOG.md` under *Unreleased*.
 
-## 🏛️ Codebase Structure
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`fix:`, `feat:`, `docs:`, …) and
+describe *what changed and why*.
 
-- `app/src/main/java/com/ghostmode/app/`
-  - `shell/` — Shizuku & Root execution engines
-  - `data/` — Presets, JSON parser, and state repository
-  - `domain/` — Mode state machine and network mask handling
-  - `scheduling/` — Exact alarm scheduling across reboots
-  - `service/` — Ongoing notification foreground service
-  - `ui/` — Jetpack Compose UI (Material 3)
-  - `tile/` & `widget/` — Quick Settings tile and AppWidget provider
+## Releasing (maintainers)
 
----
+1. Bump `versionCode` (`major × 10000 + minor × 100 + patch`) and `versionName` in `app/build.gradle.kts`.
+2. Move *Unreleased* in `CHANGELOG.md` to the new version; add `fastlane/metadata/android/{en-US,ru-RU}/changelogs/<versionCode>.txt`.
+3. Tag `vX.Y.Z` and push the tag — the release workflow builds, signs and publishes the APK with the changelog.
 
-## 📜 Code of Conduct
-Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all project interactions.
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
