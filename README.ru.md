@@ -130,7 +130,7 @@ SHA-256: FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53
 ```bash
 ./gradlew assembleDebug            # app/build/outputs/apk/debug/
 ./gradlew testDebugUnitTest        # юнит-тесты
-./gradlew assembleRelease          # подпись из keystore.properties, иначе debug-ключ
+./gradlew assembleRelease          # подпись из keystore.properties, иначе без подписи
 ./gradlew testDebugUnitTest -Pscreenshots --tests '*ScreenshotTest*'   # перегенерировать скриншоты
 ```
 

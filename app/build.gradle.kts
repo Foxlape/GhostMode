@@ -1,6 +1,25 @@
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
+data class ReleaseKey(val storeFile: File, val storePassword: String, val keyAlias: String, val keyPassword: String)
+
+fun releaseKeyOrNull(): ReleaseKey? {
+    val propertiesFile = rootProject.file("keystore.properties")
+    if (propertiesFile.exists()) {
+        val properties = Properties().apply { propertiesFile.inputStream().use { load(it) } }
+        return ReleaseKey(
+            storeFile = rootProject.file(properties.getProperty("storeFile")),
+            storePassword = properties.getProperty("storePassword"),
+            keyAlias = properties.getProperty("keyAlias"),
+            keyPassword = properties.getProperty("keyPassword")
+        )
+    }
+    val envFile = System.getenv("KEYSTORE_FILE")?.let { rootProject.file(it) } ?: return null
+    val storePassword = System.getenv("KEYSTORE_PASSWORD") ?: return null
+    if (!envFile.exists()) return null
+    return ReleaseKey(envFile, storePassword, System.getenv("KEY_ALIAS").orEmpty(), System.getenv("KEY_PASSWORD").orEmpty())
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -20,29 +39,16 @@ android {
         versionName = "0.2.0"
     }
 
-    signingConfigs {
-        create("release") {
-            val keystorePropertiesFile = rootProject.file("keystore.properties")
-            val envKeystoreFile = System.getenv("KEYSTORE_FILE")?.let { path -> rootProject.file(path) }
-            when {
-                keystorePropertiesFile.exists() -> {
-                    val properties = Properties().apply {
-                        keystorePropertiesFile.inputStream().use { stream -> load(stream) }
-                    }
-                    storeFile = rootProject.file(properties.getProperty("storeFile"))
-                    storePassword = properties.getProperty("storePassword")
-                    keyAlias = properties.getProperty("keyAlias")
-                    keyPassword = properties.getProperty("keyPassword")
-                }
-                envKeystoreFile != null && envKeystoreFile.exists() && System.getenv("KEYSTORE_PASSWORD") != null -> {
-                    storeFile = envKeystoreFile
-                    storePassword = System.getenv("KEYSTORE_PASSWORD")
-                    keyAlias = System.getenv("KEY_ALIAS")
-                    keyPassword = System.getenv("KEY_PASSWORD")
-                }
-                // No release key available (forks, F-Droid build server): fall back to the debug key.
-                else -> initWith(getByName("debug"))
-            }
+    // Release key from keystore.properties or KEYSTORE_* environment variables. Without it
+    // (forks, F-Droid / IzzyOnDroid build servers) the release APK is left unsigned so the
+    // builder can sign it with its own key.
+    val releaseKey = releaseKeyOrNull()
+    if (releaseKey != null) {
+        signingConfigs.create("release") {
+            storeFile = releaseKey.storeFile
+            storePassword = releaseKey.storePassword
+            keyAlias = releaseKey.keyAlias
+            keyPassword = releaseKey.keyPassword
         }
     }
 
@@ -50,7 +56,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

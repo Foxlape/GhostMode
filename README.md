@@ -130,7 +130,7 @@ Requirements: JDK 17+, Android SDK 35.
 ```bash
 ./gradlew assembleDebug            # app/build/outputs/apk/debug/
 ./gradlew testDebugUnitTest        # unit tests
-./gradlew assembleRelease          # signed if keystore.properties exists, debug-signed otherwise
+./gradlew assembleRelease          # signed if keystore.properties exists, unsigned otherwise
 ./gradlew testDebugUnitTest -Pscreenshots --tests '*ScreenshotTest*'   # regenerate store screenshots
 ```
 
