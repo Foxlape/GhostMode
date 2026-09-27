@@ -2,59 +2,85 @@ package com.ghostmode.app.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 
 class GhostStateRepositoryTest {
 
-    private lateinit var repository: GhostStateRepository
+    private var now = 1_000_000L
+    private val store = InMemoryStore()
+    private val repository = GhostStateRepository(store) { now }
 
-    @Before
-    fun setUp() {
-        repository = GhostStateRepository(null)
-    }
+    private fun snapshot(bootCount: Int = 3) = AppliedSnapshot(
+        presetId = BuiltInPresets.ID_STOCK_PIXEL,
+        offCommands = listOf("cmd phone ims enable -s 0"),
+        slots = listOf(0),
+        settingsOriginals = mapOf("global/preferred_network_mode" to "33", "global/volte_vt_enabled" to null),
+        disabledPackages = listOf("com.example.ims"),
+        bootCount = bootCount,
+        appliedAtMs = 1_000_000L
+    )
 
     @Test
-    fun setIsOn_updatesIsOnAndTimestamp() {
+    fun markOn_thenOff_recordsOneClosedSession() {
+        repository.markOn(snapshot())
+        now += 60_000L
+        repository.markOff()
+
         assertFalse(repository.isOn.value)
-        assertEquals(0L, repository.isOnTimestampMs.value)
-
-        repository.setIsOn(true)
-        assertTrue(repository.isOn.value)
-        assertTrue(repository.isOnTimestampMs.value > 0L)
-
-        repository.setIsOn(false)
-        assertFalse(repository.isOn.value)
-        assertEquals(0L, repository.isOnTimestampMs.value)
+        assertNull(repository.appliedSnapshot.value)
+        assertEquals(listOf(GhostSession(1_000_000L, 1_060_000L)), repository.sessions.value)
     }
 
     @Test
-    fun setNotificationEnabled_updatesFlow() {
-        assertFalse(repository.notificationEnabled.value)
-        repository.setNotificationEnabled(true)
-        assertTrue(repository.notificationEnabled.value)
+    fun reapply_keepsSessionStartAndDoesNotOpenSecondSession() {
+        repository.markOn(snapshot(bootCount = 3))
+        val since = repository.isOnTimestampMs.value
+        now += 5_000L
+        repository.markOn(snapshot(bootCount = 4))
+
+        assertEquals(since, repository.isOnTimestampMs.value)
+        assertEquals(1, repository.sessions.value.size)
+        assertEquals(4, repository.appliedSnapshot.value?.bootCount)
     }
 
     @Test
-    fun setSavedNetworkMask_updatesFlow() {
-        assertEquals(null, repository.savedNetworkMask.value)
-        repository.setSavedNetworkMask("11001111101111111111")
-        assertEquals("11001111101111111111", repository.savedNetworkMask.value)
+    fun markOff_clearsTimer() {
+        repository.markOn(snapshot())
+        repository.setTimerFireAtMs(now + 1000)
+        repository.markOff()
+
+        assertEquals(GhostStateRepository.NONE, repository.timerFireAtMs.value)
     }
 
     @Test
-    fun setSimSlotMode_updatesFlow() {
-        assertEquals(SimSlotMode.ALL, repository.simSlotMode.value)
+    fun stateSurvivesReload() {
+        repository.markOn(snapshot())
+        repository.setSavedNetworkMask(1, "0101")
+        repository.setSchedule(true, 22 * 60, 7 * 60)
         repository.setSimSlotMode(SimSlotMode.SIM_2)
-        assertEquals(SimSlotMode.SIM_2, repository.simSlotMode.value)
+
+        val reloaded = GhostStateRepository(store) { now }
+
+        assertTrue(reloaded.isOn.value)
+        assertEquals(snapshot(), reloaded.appliedSnapshot.value)
+        assertEquals("0101", reloaded.getSavedNetworkMask(1))
+        assertTrue(reloaded.scheduleEnabled.value)
+        assertEquals(22 * 60, reloaded.scheduleStartMinuteOfDay.value)
+        assertEquals(SimSlotMode.SIM_2, reloaded.simSlotMode.value)
+        assertEquals(1, reloaded.sessions.value.size)
     }
 
     @Test
-    fun setSavedNetworkMaskForSlot_managesPerSlot() {
-        repository.setSavedNetworkMaskForSlot(0, "mask0")
-        repository.setSavedNetworkMaskForSlot(1, "mask1")
-        assertEquals("mask0", repository.getSavedNetworkMaskForSlot(0))
-        assertEquals("mask1", repository.getSavedNetworkMaskForSlot(1))
+    fun log_isCappedAndClearable() {
+        repeat(GhostStateRepository.LOG_CAPACITY + 10) { index ->
+            repository.appendLog(CommandLogEntry(index.toLong(), "cmd $index", "", "", 0))
+        }
+        assertEquals(GhostStateRepository.LOG_CAPACITY, repository.logEntries.value.size)
+        assertEquals("cmd 10", repository.logEntries.value.first().command)
+
+        repository.clearLog()
+        assertTrue(repository.logEntries.value.isEmpty())
     }
 }

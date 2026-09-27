@@ -10,123 +10,85 @@ import android.util.Log
 import android.widget.RemoteViews
 import com.ghostmode.app.MainActivity
 import com.ghostmode.app.R
-import com.ghostmode.app.data.GhostStateRepository
-import com.ghostmode.app.data.PresetRepository
-import com.ghostmode.app.domain.GhostModeController
-import com.ghostmode.app.shell.AutoShellExecutor
-import com.ghostmode.app.shell.RootShellExecutor
-import com.ghostmode.app.shell.ShizukuManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import com.ghostmode.app.appGraph
 
 class GhostWidgetProvider : AppWidgetProvider() {
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        val isOn = GhostStateRepository.getInstance(context).isOn.value
-        appWidgetIds.forEach { appWidgetId ->
-            appWidgetManager.updateAppWidget(appWidgetId, buildRemoteViews(context, isOn))
-        }
+        val views = buildRemoteViews(context, context.appGraph.state.isOn.value)
+        appWidgetIds.forEach { id -> appWidgetManager.updateAppWidget(id, views) }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action != ACTION_TOGGLE) return
-        handleToggle(context)
-    }
-
-    private fun handleToggle(context: Context) {
+        val graph = context.appGraph
         val appContext = context.applicationContext
         val pendingResult = goAsync()
-        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
+        graph.actions.launch {
             try {
-                performToggle(appContext)
+                if (graph.shell.awaitReady(READY_TIMEOUT_MS)) {
+                    toggle()
+                } else {
+                    // No root / Shizuku yet: open the app so the user can see what is missing.
+                    appContext.startActivity(
+                        Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    )
+                }
             } catch (error: Exception) {
                 Log.e(TAG, "Widget toggle failed", error)
             } finally {
+                refreshSurfaces()
                 pendingResult.finish()
             }
         }
     }
 
-    private suspend fun performToggle(context: Context) {
-        val shizukuManager = ShizukuManager(context)
-        val stateRepository = GhostStateRepository.getInstance(context)
-        try {
-            shizukuManager.start()
-            val rootExecutor = RootShellExecutor()
-            val hasRoot = rootExecutor.probeRoot()
-            val ghostModeController = GhostModeController(
-                AutoShellExecutor(rootExecutor, shizukuManager),
-                PresetRepository.getInstance(context),
-                stateRepository
-            )
-            if (hasRoot || shizukuManager.status.value == com.ghostmode.app.shell.ShizukuStatus.READY) {
-                if (stateRepository.isOn.value) ghostModeController.turnOff() else ghostModeController.turnOn()
-            }
-            com.ghostmode.app.service.StatusNotificationManager.update(
-                context,
-                stateRepository.isOn.value,
-                stateRepository.notificationEnabled.value,
-                stateRepository.isOnTimestampMs.value
-            )
-        } finally {
-            refreshAll(context, stateRepository.isOn.value)
-            shizukuManager.stop()
-        }
-    }
-
     companion object {
         private const val TAG = "GhostWidget"
+        private const val READY_TIMEOUT_MS = 4_000L
+        private const val REQUEST_TOGGLE = 0
+        private const val REQUEST_OPEN = 1
 
         const val ACTION_TOGGLE = "com.ghostmode.app.widget.TOGGLE"
 
         fun refreshAll(context: Context, isOn: Boolean) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val remoteViews = buildRemoteViews(context, isOn)
-            val providerComponent = ComponentName(context, GhostWidgetProvider::class.java)
-            appWidgetManager.getAppWidgetIds(providerComponent).forEach { appWidgetId ->
-                appWidgetManager.updateAppWidget(appWidgetId, remoteViews)
+            val manager = AppWidgetManager.getInstance(context) ?: return
+            val ids = manager.getAppWidgetIds(ComponentName(context, GhostWidgetProvider::class.java))
+            if (ids.isEmpty()) return
+            val views = buildRemoteViews(context, isOn)
+            ids.forEach { id -> manager.updateAppWidget(id, views) }
+        }
+
+        private fun buildRemoteViews(context: Context, isOn: Boolean): RemoteViews =
+            RemoteViews(context.packageName, R.layout.widget_ghost).apply {
+                setInt(R.id.widget_root, "setBackgroundResource", if (isOn) R.drawable.widget_bg_on else R.drawable.widget_bg_off)
+                setImageViewResource(R.id.widget_icon, R.drawable.ic_ghost)
+                setInt(R.id.widget_icon, "setColorFilter", context.getColor(if (isOn) R.color.widget_on_content else R.color.widget_off_content))
+                setTextViewText(R.id.widget_label, context.getString(if (isOn) R.string.widget_state_on else R.string.widget_state_off))
+                setTextColor(R.id.widget_label, context.getColor(if (isOn) R.color.widget_on_content else R.color.widget_off_content))
+                setContentDescription(
+                    R.id.widget_root,
+                    context.getString(if (isOn) R.string.widget_cd_on else R.string.widget_cd_off)
+                )
+                setOnClickPendingIntent(
+                    R.id.widget_root,
+                    PendingIntent.getBroadcast(
+                        context,
+                        REQUEST_TOGGLE,
+                        Intent(context, GhostWidgetProvider::class.java).setAction(ACTION_TOGGLE),
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                )
+                setOnClickPendingIntent(
+                    R.id.widget_open,
+                    PendingIntent.getActivity(
+                        context,
+                        REQUEST_OPEN,
+                        Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                    )
+                )
             }
-        }
-
-        private fun buildRemoteViews(context: Context, isOn: Boolean): RemoteViews {
-            val remoteViews = RemoteViews(context.packageName, R.layout.widget_ghost)
-            remoteViews.setImageViewResource(R.id.widget_icon, R.drawable.ic_launcher_foreground)
-            remoteViews.setInt(R.id.widget_icon, IMAGE_ALPHA_METHOD, if (isOn) ALPHA_ON else ALPHA_OFF)
-            remoteViews.setInt(
-                R.id.widget_icon,
-                COLOR_FILTER_METHOD,
-                if (isOn) COLOR_ON else COLOR_OFF
-            )
-            val toggleIntent = Intent(context, GhostWidgetProvider::class.java).setAction(ACTION_TOGGLE)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                TOGGLE_REQUEST_CODE,
-                toggleIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            remoteViews.setOnClickPendingIntent(R.id.widget_icon, pendingIntent)
-            val openIntent = Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            val openPendingIntent = PendingIntent.getActivity(
-                context,
-                REQUEST_CODE_OPEN,
-                openIntent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-            remoteViews.setOnClickPendingIntent(R.id.widget_open, openPendingIntent)
-            return remoteViews
-        }
-
-        private const val TOGGLE_REQUEST_CODE = 0
-        private const val REQUEST_CODE_OPEN = 1
-        private const val ALPHA_ON = 255
-        private const val ALPHA_OFF = 90
-        private const val COLOR_ON = 0xFF8C9EFF.toInt()
-        private const val COLOR_OFF = 0xFFFFFFFF.toInt()
-        private const val IMAGE_ALPHA_METHOD = "setImageAlpha"
-        private const val COLOR_FILTER_METHOD = "setColorFilter"
     }
 }

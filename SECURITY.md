@@ -1,19 +1,27 @@
-# Security Policy
+# Security policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+Only the latest release receives fixes.
 
-## Reporting a Vulnerability
+| Version | Supported |
+|---------|-----------|
+| 0.2.x   | ✅        |
+| < 0.2   | ❌        |
 
-We take the security and privacy of Ghost Mode seriously. Because this application interacts with privileged system shell APIs and Android telephony components, we encourage responsible disclosure of potential vulnerabilities.
+## Reporting a vulnerability
 
-If you discover a security vulnerability or privilege issue:
-1. **Do not** report security vulnerabilities via public GitHub issues or discussions.
-2. Please submit a private security advisory report directly through GitHub:
-   👉 **[GitHub Private Vulnerability Report](https://github.com/Foxlape/GhostMode/security/advisories/new)**
-3. Include detailed steps to reproduce the issue, environment information (device model, Android version, Shizuku / Root state), and any relevant command logs.
+Ghost Mode runs shell commands with elevated privileges (Shizuku / root), so please report security issues
+privately through a [GitHub security advisory](https://github.com/Foxlape/GhostMode/security/advisories/new) —
+not in public issues.
 
-We will review reports promptly and release patches in upcoming updates.
+Include the app version, device, Android version, access method (Shizuku / Sui / root manager) and steps to
+reproduce.
+
+## Scope notes
+
+- Presets are arbitrary shell commands by design. Importing a preset shows every command before it is saved; only
+  import presets from people you trust.
+- The app has no network access unless the optional update check is enabled, which only queries the GitHub
+  Releases API.
+- Official APKs are signed with the key whose SHA-256 fingerprint is listed in the [README](README.md#install).

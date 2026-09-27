@@ -2,41 +2,39 @@ package com.ghostmode.app.shell
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withTimeoutOrNull
 
+/** Prefers root when it is granted, otherwise falls back to Shizuku (or Sui). */
 class AutoShellExecutor(
     private val root: RootShellExecutor,
-    private val shizuku: ShizukuManager
+    private val shizuku: ShizukuManager,
+    scope: CoroutineScope
 ) : ShellExecutor {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
     val backend: StateFlow<ShellBackend?> =
-        combine(root.isRootAvailable, shizuku.status) { isRootAvailable, status ->
-            resolveBackend(isRootAvailable, status)
-        }.stateIn(scope, SharingStarted.Eagerly, resolveBackend(root.isRootAvailable.value, shizuku.status.value))
+        combine(root.isRootAvailable, shizuku.status) { isRoot, status -> resolveBackend(isRoot, status) }
+            .stateIn(scope, SharingStarted.Eagerly, resolveBackend(root.isRootAvailable.value, shizuku.status.value))
 
     override val readiness: StateFlow<Boolean> =
-        backend.map { it != null }
-            .stateIn(scope, SharingStarted.Eagerly, resolveBackend(root.isRootAvailable.value, shizuku.status.value) != null)
+        backend.map { it != null }.stateIn(scope, SharingStarted.Eagerly, backend.value != null)
 
-    suspend fun isReady(): Boolean {
-        if (root.isRootAvailable.value || root.probeRoot()) return true
-        return shizuku.status.value == ShizukuStatus.READY
+    override suspend fun awaitReady(timeoutMs: Long): Boolean {
+        if (root.probeRoot()) return true
+        shizuku.refresh()
+        if (shizuku.status.value == ShizukuStatus.READY) return true
+        return withTimeoutOrNull(timeoutMs) {
+            shizuku.status.first { it == ShizukuStatus.READY }
+        } != null
     }
 
     override suspend fun execute(command: String): CommandResult =
-        if (root.isRootAvailable.value || root.probeRoot()) {
-            root.execute(command)
-        } else {
-            executeViaShizuku(command)
-        }
+        if (root.probeRoot()) root.execute(command) else executeViaShizuku(command)
 
     private suspend fun executeViaShizuku(command: String): CommandResult =
         try {
@@ -44,26 +42,16 @@ class AutoShellExecutor(
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            shizukuFailure(command, error.message ?: error.javaClass.simpleName)
+            CommandResult(command, "", error.message ?: error.javaClass.simpleName, EXIT_SHIZUKU_FAILURE)
         }
 
-    private fun resolveBackend(isRootAvailable: Boolean, status: ShizukuStatus): ShellBackend? =
-        when {
-            isRootAvailable -> ShellBackend.ROOT
-            status == ShizukuStatus.READY -> ShellBackend.SHIZUKU
-            else -> null
-        }
+    private fun resolveBackend(isRootAvailable: Boolean, status: ShizukuStatus): ShellBackend? = when {
+        isRootAvailable -> ShellBackend.ROOT
+        status == ShizukuStatus.READY -> ShellBackend.SHIZUKU
+        else -> null
+    }
 
-    private fun shizukuFailure(command: String, reason: String): CommandResult =
-        CommandResult(
-            command = command,
-            stdout = EMPTY_OUTPUT,
-            stderr = reason,
-            exitCode = EXIT_SHIZUKU_FAILURE
-        )
-
-    companion object {
-        private const val EXIT_SHIZUKU_FAILURE = -1
-        private const val EMPTY_OUTPUT = ""
+    private companion object {
+        const val EXIT_SHIZUKU_FAILURE = -1
     }
 }

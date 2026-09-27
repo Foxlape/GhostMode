@@ -1,53 +1,55 @@
-name: 📱 New Device / Preset Request
-description: Propose or share a working preset configuration for a specific device / carrier
-title: "[Preset]: "
-labels: ["preset", "enhancement"]
+name: Preset for a device
+description: Share commands that work (or a device where nothing works yet)
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Share shell commands or presets that make Ghost Mode work reliably on your device model!
+        Presets are shell commands run through Shizuku or root. Placeholders:
+        `-s 0` → selected SIM slot, `{{SAVED_MASK}}` → network mask saved before turning on,
+        `{{IMS_PACKAGES}}` → IMS services used by the selected SIMs.
+        You can export a custom preset from the app (Presets → ⋮ → Export) and attach the JSON file.
 
   - type: input
     id: device
     attributes:
-      label: Device Brand & Model
-      placeholder: e.g. Honor Magic6 Pro / Sony Xperia 1 VI
+      label: Device and firmware
+      placeholder: "Honor Magic6 Pro, MagicOS 8 (Android 14)"
     validations:
       required: true
 
   - type: input
-    id: os_version
+    id: carrier
     attributes:
-      label: OS / Firmware Version
-      placeholder: e.g. MagicOS 8.0 (Android 14)
-    validations:
-      required: true
+      label: Carrier and country
+      placeholder: "Beeline, Russia"
 
   - type: textarea
-    id: enable_commands
+    id: on_commands
     attributes:
-      label: Enable Commands
-      description: The shell commands used to turn on Ghost Mode (one per line).
+      label: Turn-on commands
+      render: shell
       placeholder: |
-        cmd phone ims disable
+        cmd phone ims disable -s 0
         cmd phone set-allowed-network-types-for-users -s 0 01000001000000000000
     validations:
       required: true
 
   - type: textarea
-    id: disable_commands
+    id: off_commands
     attributes:
-      label: Disable Commands
-      description: The shell commands used to restore normal connectivity (one per line).
+      label: Turn-off commands
+      render: shell
       placeholder: |
         cmd phone set-allowed-network-types-for-users -s 0 {{SAVED_MASK}}
-        cmd phone ims enable
+        cmd phone ims enable -s 0
     validations:
       required: true
 
   - type: textarea
-    id: test_notes
+    id: results
     attributes:
-      label: Testing Notes
-      description: Did incoming calls fail with "unavailable"? Did LTE/5G data stay connected?
+      label: Test results
+      description: Did callers hear "subscriber unavailable"? Did mobile data keep working? Did VoLTE come back after turning off?
+    validations:
+      required: true

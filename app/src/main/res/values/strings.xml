@@ -1,146 +1,307 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Ghost Mode</string>
-    <string name="tile_label">Ghost Mode</string>
-    <string name="status_title_on">Mode active</string>
-    <string name="status_title_off">Mode off</string>
-    <string name="status_subtitle_on">Incoming calls are blocked, mobile data works</string>
-    <string name="status_subtitle_off">Phone is reachable for calls</string>
-    <string name="toggle_turn_on">Turn on</string>
-    <string name="toggle_turn_off">Turn off</string>
-    <string name="shizuku_title">Shizuku</string>
-    <string name="shizuku_status_ready">Shizuku is ready</string>
-    <string name="shizuku_status_no_permission">Shizuku permission required</string>
-    <string name="shizuku_status_not_running">Shizuku is not running</string>
-    <string name="shizuku_status_not_installed">Shizuku is not installed</string>
-    <string name="root_status_title">Administrator rights</string>
-    <string name="root_status_ready">Root access active (KernelSU / Magisk) — commands run via su</string>
-    <string name="action_grant_permission">Grant permission</string>
-    <string name="action_open_shizuku">Open Shizuku</string>
-    <string name="presets_title">Presets</string>
-    <string name="preset_builtin">Built-in</string>
-    <string name="preset_custom">Custom</string>
+    <string name="app_name" translatable="false">Ghost Mode</string>
+    <string name="tile_label" translatable="false">Ghost Mode</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_presets">Presets</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common actions -->
+    <string name="action_allow">Allow</string>
+    <string name="action_back">Back</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_change">Change</string>
+    <string name="action_close">Close</string>
+    <string name="action_delete">Delete</string>
     <string name="action_duplicate">Duplicate</string>
     <string name="action_edit">Edit</string>
-    <string name="action_delete">Delete</string>
+    <string name="action_enable">Enable</string>
+    <string name="action_get_shizuku">Download Shizuku</string>
+    <string name="action_grant">Grant access</string>
+    <string name="action_import">Import</string>
+    <string name="action_later">Later</string>
+    <string name="action_more">More options</string>
+    <string name="action_ok">OK</string>
+    <string name="action_open_log">Open log</string>
+    <string name="action_open_release">Open release</string>
+    <string name="action_open_shizuku">Open Shizuku</string>
+    <string name="action_reapply">Re-apply</string>
+    <string name="action_save">Save</string>
+    <string name="action_turn_off">Turn off</string>
+
+    <!-- Values -->
+    <string name="value_off">Off</string>
+    <string name="value_allowed">Allowed</string>
+    <string name="value_unrestricted">Unrestricted</string>
+
+    <!-- Durations -->
+    <string name="duration_days_hours">%1$d d %2$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_less_than_minute">&lt; 1 min</string>
+
+    <!-- Home -->
+    <string name="status_title_on">You are unreachable</string>
+    <string name="status_title_off">You are reachable</string>
+    <string name="status_title_busy">Applying…</string>
+    <string name="status_subtitle_on">Callers hear “subscriber unavailable”. Mobile data keeps working.</string>
+    <string name="status_subtitle_off">Calls and mobile data work as usual. Tap the ghost to go invisible.</string>
+    <string name="status_subtitle_no_access">Ghost Mode needs Shizuku or root to change modem settings.</string>
+    <string name="chip_active_for">Active for %1$s</string>
+    <string name="backend_root">Root</string>
+    <string name="backend_shizuku">Shizuku</string>
+    <string name="backend_none">No access</string>
+    <string name="backend_no_permission">Needs permission</string>
+    <string name="home_preset_label">Preset</string>
+    <string name="tile_sim">SIM</string>
+    <string name="tile_schedule">Schedule</string>
+    <string name="tile_today">Today</string>
+    <string name="tile_diagnostics">Diagnostics</string>
+    <string name="tile_diagnostics_value">Check state</string>
+
+    <!-- Alerts -->
+    <string name="alert_reapply_title">A reboot reverted part of Ghost Mode</string>
+    <string name="alert_reapply_text">Some commands do not survive a restart, so calls may get through again. Re-apply the mode or turn it off to restore your normal settings.</string>
+    <string name="alert_access_title">Set up access</string>
+    <string name="alert_access_not_installed">Ghost Mode runs telephony shell commands. Download Shizuku from GitHub (no root needed) or grant root access in KernelSU / Magisk / APatch.</string>
+    <string name="alert_shizuku_stopped_title">Shizuku is not running</string>
+    <string name="alert_shizuku_stopped_text">Start Shizuku via wireless debugging, then come back.</string>
+    <string name="alert_shizuku_permission_title">Allow Shizuku access</string>
+    <string name="alert_shizuku_permission_text">Ghost Mode needs permission in Shizuku to run commands. If the prompt does not appear, enable Ghost Mode in Shizuku → Authorized applications.</string>
+    <string name="alert_update_title">Version %1$s is available</string>
+    <string name="alert_update_text">A new release is published on GitHub.</string>
+    <string name="alert_alarms_title">Exact alarms are not allowed</string>
+    <string name="alert_alarms_text">The schedule and the auto turn-off timer may fire several minutes late.</string>
+    <string name="alert_battery_title">Background work is restricted</string>
+    <string name="alert_battery_text">Battery optimization may delay the schedule and the timer. Allow unrestricted background use.</string>
+
+    <!-- Timer -->
+    <string name="timer_title">Auto turn-off</string>
+    <string name="timer_hint">Turn Ghost Mode off automatically after:</string>
+    <string name="timer_armed">Turns off at %1$s · in %2$s</string>
+    <string name="timer_cancel">Cancel timer</string>
+    <string name="timer_30m">30 min</string>
+    <string name="timer_1h">1 hour</string>
+    <string name="timer_2h">2 hours</string>
+    <string name="timer_morning">Until 8:00</string>
+
+    <!-- SIM -->
+    <string name="sim_sheet_title">SIM cards</string>
+    <string name="sim_sheet_subtitle">Choose which SIM should become unreachable.</string>
+    <string name="sim_both">Both SIMs</string>
+    <string name="sim_1">SIM 1</string>
+    <string name="sim_2">SIM 2</string>
+    <string name="sim_both_desc">Calls to both numbers are blocked</string>
+    <string name="sim_1_desc">SIM 2 keeps receiving calls</string>
+    <string name="sim_2_desc">SIM 1 keeps receiving calls</string>
+
+    <!-- Schedule -->
+    <string name="schedule_title">Schedule</string>
+    <string name="schedule_subtitle">Turn on and off automatically every day</string>
+    <string name="schedule_from">From</string>
+    <string name="schedule_to">To</string>
+    <string name="schedule_summary">Ghost Mode will be on for %1$s every day.</string>
+    <string name="schedule_empty_window">Start and end are the same — pick a different time.</string>
+    <string name="schedule_hint">If the phone was off at the start time, the mode turns on right after boot. A mode you turn on manually is never switched off by a reboot.</string>
+
+    <!-- Presets -->
+    <string name="presets_title">Presets</string>
+    <string name="presets_subtitle">Command sets for different phones. Start with Universal.</string>
+    <string name="presets_new">New preset</string>
+    <string name="presets_import">Import from file</string>
+    <string name="presets_export">Export custom presets</string>
+    <string name="presets_locked_title">Ghost Mode is on</string>
+    <string name="presets_locked_text">Turn it off to switch presets — the active preset is needed to restore your settings.</string>
+    <string name="preset_builtin">Built-in</string>
+    <string name="preset_custom">Custom</string>
+    <string name="preset_show_commands">Commands</string>
+    <string name="preset_hide_commands">Hide</string>
+    <string name="preset_on_commands">Turn on</string>
+    <string name="preset_off_commands">Turn off</string>
+    <string name="preset_copy_suffix">(copy)</string>
+    <string name="preset_delete_title">Delete preset?</string>
+    <string name="preset_delete_text">“%1$s” will be removed. This cannot be undone.</string>
+
+    <string name="preset_universal_title">Universal</string>
+    <string name="preset_universal_desc">Recommended first. Disables IMS (VoLTE) through telephony shell commands, locks the modem to LTE and turns off the IMS service it detects on your device. Everything is restored when you turn the mode off.</string>
+    <string name="preset_stock_title">Stock Android / Pixel</string>
+    <string name="preset_stock_desc">Minimal set: IMS off plus LTE-only network types. Works on Pixel, Motorola, Nothing and most near-stock Android 12+ firmware.</string>
+    <string name="preset_xiaomi_title">Xiaomi HyperOS / MIUI</string>
+    <string name="preset_xiaomi_desc">Same commands as Stock. The hidden network menu is locked on HyperOS, but telephony shell commands still work.</string>
+    <string name="preset_samsung_title">Samsung One UI</string>
+    <string name="preset_samsung_desc">Also turns off the VoLTE switches, locks preferred_network_mode to LTE for every subscription and disables Samsung IMS packages. On some models the modem drops VoLTE registration only after a reboot.</string>
+    <string name="preset_oneplus_title">OnePlus / OxygenOS</string>
+    <string name="preset_oneplus_desc">AOSP commands plus disabling the Qualcomm (org.codeaurora.ims) or MediaTek (com.mediatek.ims) IMS service. Confirmed on OnePlus 13.</string>
+    <string name="preset_vivo_title">vivo / iQOO</string>
+    <string name="preset_vivo_desc">Same approach as OnePlus for OriginOS / Funtouch OS. Not confirmed on every model — try Universal if it does not work.</string>
+    <string name="preset_legacy_title">Android 9–11</string>
+    <string name="preset_legacy_desc">For phones without the Android 12 telephony commands: sets preferred_network_mode to LTE-only and toggles airplane mode to apply it. Ignored by some firmware.</string>
+
+    <!-- Preset editor & import -->
     <string name="editor_title_new">New preset</string>
-    <string name="editor_title_edit">Preset editor</string>
-    <string name="editor_hint_title">Title</string>
-    <string name="editor_hint_description">Description</string>
-    <string name="editor_hint_on_commands">Turn-on commands — one per line</string>
-    <string name="editor_hint_off_commands">Turn-off commands — one per line</string>
-    <string name="editor_hint_capture">Network mask read command — optional</string>
-    <string name="editor_save">Save</string>
-    <string name="editor_cancel">Cancel</string>
-    <string name="diagnostics_title">Diagnostics</string>
-    <string name="action_run_diagnostics">Check network state</string>
-    <string name="diagnostics_mask_label">Saved network mask</string>
-    <string name="diagnostics_mask_none">not saved</string>
-    <string name="log_title">Command log</string>
-    <string name="log_empty">Log is empty</string>
-    <string name="action_clear_log">Clear</string>
-    <string name="log_exit_code">Code: %1$d</string>
-    <string name="log_action_copy_command">Copy command</string>
-    <string name="log_action_copy_output">Copy output</string>
-    <string name="log_action_delete_entry">Delete</string>
-    <string name="busy_message">Running command…</string>
-    <string name="widget_description">Ghost mode toggle: enables/disables call unavailability</string>
+    <string name="editor_title_edit">Edit preset</string>
+    <string name="editor_field_title">Name</string>
+    <string name="editor_field_description">Description</string>
+    <string name="editor_field_on">Turn-on commands</string>
+    <string name="editor_field_off">Turn-off commands</string>
+    <string name="editor_field_capture">Network mask read command (optional)</string>
+    <string name="editor_one_per_line">One shell command per line</string>
+    <string name="editor_capture_hint">Its output is saved before turning on and substituted for {{SAVED_MASK}}</string>
+    <string name="editor_placeholders_title">Placeholders</string>
+    <string name="editor_placeholders_text">“-s 0” is replaced with the selected SIM slot (the command runs once per slot).\n{{SAVED_MASK}} — the network mask saved before the mode was turned on.\n{{IMS_PACKAGES}} — IMS service packages currently used by the selected SIMs.\n\nOriginal values of “settings put” keys and packages disabled with “pm disable-user” are restored automatically when the mode is turned off.</string>
+    <plurals name="import_title">
+        <item quantity="one">Import %1$d preset?</item>
+        <item quantity="other">Import %1$d presets?</item>
+    </plurals>
+    <string name="import_warning">These commands will run with shell or root privileges. Import presets only from people you trust.</string>
+
+    <!-- Messages -->
+    <string name="message_busy">Commands are still running — please wait.</string>
+    <string name="message_not_ready">No access: start Shizuku or grant root.</string>
+    <string name="message_no_preset">The selected preset was not found.</string>
+    <string name="message_all_failed">Commands failed — nothing was changed.</string>
+    <string name="message_partial_on">Ghost Mode is on, but some commands failed.</string>
+    <string name="message_partial_off">Ghost Mode is off, but some restore commands failed.</string>
+    <string name="message_preset_locked">Turn Ghost Mode off to change the preset.</string>
+    <string name="message_sim_locked">Turn Ghost Mode off to change the SIM selection.</string>
+    <string name="message_export_done">Custom presets exported.</string>
+    <string name="message_export_failed">Could not write the file.</string>
+    <string name="message_import_done">Presets imported.</string>
+    <string name="message_import_duplicates">These presets already exist.</string>
+    <string name="message_import_empty">The file contains no valid presets.</string>
+    <string name="message_import_invalid">This is not a Ghost Mode presets file.</string>
+    <string name="message_packages_enabled">Packages enabled.</string>
+    <string name="message_tile_added">Tile added to Quick Settings.</string>
+    <string name="message_tile_already_added">The Ghost Mode tile is already in Quick Settings.</string>
+    <string name="message_tile_manual">Add it manually: open Quick Settings → ✏ Edit → drag “Ghost Mode” into the panel.</string>
+
+    <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_section_mode">Mode</string>
+    <string name="settings_section_quick">Quick access</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_updates">Updates</string>
+    <string name="settings_section_tools">Tools</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_notification">Status notification</string>
+    <string name="settings_notification_summary">Ongoing notification with elapsed time and a “Turn off” button</string>
+    <string name="settings_schedule_on">Every day %1$s – %2$s</string>
+    <string name="settings_exact_alarms">Alarms &amp; reminders</string>
+    <string name="settings_exact_alarms_denied">Not allowed — schedule may be late</string>
+    <string name="settings_battery">Background work</string>
+    <string name="settings_battery_restricted">Restricted by battery optimization</string>
+    <string name="settings_add_tile">Add Quick Settings tile</string>
+    <string name="settings_add_tile_summary">Toggle Ghost Mode from the notification shade</string>
+    <string name="settings_widget">Home screen widget</string>
+    <string name="settings_widget_summary">Long-press the home screen → Widgets → Ghost Mode</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_dynamic_color">Dynamic colors</string>
+    <string name="settings_dynamic_color_summary">Use colors from your wallpaper</string>
     <string name="settings_language">Language</string>
-    <string name="language_system">System</string>
-    <string name="language_russian">Русский</string>
-    <string name="language_english">English</string>
-    <string name="settings_notification">Mode notification</string>
-    <string name="settings_notification_summary">Persistent notification with elapsed time while ghost mode is on</string>
-    <string name="settings_donate_title">Buy me a coffee</string>
-    <string name="notification_channel_name">Ghost Mode status</string>
-    <string name="notification_title_on">Ghost mode is ON</string>
-    <string name="notification_text_on">Calls unreachable, mobile data working</string>
-    <string name="notification_action_turn_off">Turn off</string>
+    <string name="settings_update_auto">Check for updates</string>
+    <string name="settings_update_auto_summary">Look for new releases on GitHub when the app starts. Off by default — no network access otherwise.</string>
+    <string name="settings_update_now">Check now</string>
+    <string name="settings_diagnostics_summary">Network mode, IMS state and mobile data</string>
+    <string name="settings_log_summary">Every executed command with its output</string>
+    <string name="settings_stats_summary">How long you have been unreachable</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="language_system">System default</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_russian" translatable="false">Русский</string>
+    <string name="update_idle">Tap to check GitHub for a newer version</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_failed">Could not reach GitHub</string>
+
+    <!-- Diagnostics -->
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_run">Check again</string>
+    <string name="diagnostics_running">Reading modem state…</string>
+    <string name="diagnostics_failed">Diagnostics need access through Shizuku or root.</string>
+    <string name="diagnostics_details">Details</string>
+    <string name="diagnostics_hint">This is a best-effort reading of modem state. The most reliable test is to call yourself from another phone.</string>
+    <string name="diag_calls_label">Incoming calls</string>
+    <string name="diag_calls_blocked">Most likely blocked</string>
+    <string name="diag_calls_allowed">Most likely allowed</string>
+    <string name="diag_summary_blocked">No 2G/3G fallback and no bound IMS service: callers should hear “subscriber unavailable” while mobile data keeps working.</string>
+    <string name="diag_summary_allowed">Calls can reach the phone over 2G/3G or VoLTE. This is the normal state when Ghost Mode is off.</string>
+    <string name="diag_slot">SIM %1$d</string>
+    <string name="diag_network_label">Network types</string>
+    <string name="diag_network_lte_only">LTE only</string>
+    <string name="diag_network_all">2G/3G allowed</string>
+    <string name="diag_unknown">Unknown</string>
+    <string name="diag_ims_label">IMS (VoLTE) service</string>
+    <string name="diag_ims_bound">Bound</string>
+    <string name="diag_ims_not_bound">Not bound</string>
+    <string name="diag_mobile_data">Mobile data</string>
+    <string name="diag_mobile_data_active">Working</string>
+    <string name="diag_mobile_data_wifi">Available (Wi-Fi in use)</string>
+    <string name="diag_mobile_data_none">Not connected</string>
+    <string name="diag_disabled_packages">Disabled IMS packages</string>
+    <string name="diag_disabled_packages_text">These IMS packages are disabled. If VoLTE does not work while Ghost Mode is off (for example after using an older version of the app), enable them again.</string>
+    <string name="diag_enable_packages">Enable packages</string>
+    <string name="diag_enable_packages_confirm">Run “pm enable” for: %1$s?</string>
+
+    <!-- Log -->
+    <string name="log_title">Command log</string>
+    <string name="log_empty">No commands yet</string>
+    <string name="log_clear">Clear log</string>
+    <string name="log_copy_all">Copy log</string>
+    <string name="log_exit_code">exit %1$d</string>
+    <string name="log_note">note</string>
+
+    <!-- Statistics -->
     <string name="stats_title">Statistics</string>
     <string name="stats_today">Today</string>
     <string name="stats_week">Last 7 days</string>
     <string name="stats_all">All time</string>
-    <string name="stats_activations">Activations: %1$d</string>
-    <string name="stats_duration_hours_minutes">%1$d h %2$d min</string>
-    <string name="stats_duration_minutes">%1$d min</string>
-    <string name="schedule_title">Schedule</string>
-    <string name="schedule_enabled">Auto on/off</string>
-    <string name="schedule_from">From</string>
-    <string name="schedule_to">To</string>
-    <string name="schedule_hint">The mode will turn on and off automatically. Example: from 23:00 to 08:00. If the system restricts exact alarms, activation may be delayed by a few minutes — allow “Alarms and reminders” in the phone settings.</string>
-    <string name="schedule_apply">Apply</string>
-    <string name="schedule_cancel">Cancel</string>
-    <string name="presets_action_export">Export</string>
-    <string name="presets_action_import">Import</string>
-    <string name="action_download_shizuku">Download Shizuku</string>
-    <string name="shizuku_authorized_apps_hint">Make sure Ghost Mode is enabled in Shizuku → «Authorized Applications».</string>
-    <string name="shizuku_install_guide">Shizuku enables privileged telephony shell commands without root access.</string>
-    <string name="menu_diagnostics">Network Diagnostics</string>
-    <string name="menu_logs">Command Log</string>
-    <string name="menu_schedule">Schedule</string>
-    <string name="menu_notification">Mode Notification</string>
-    <string name="menu_language">Language</string>
-    <string name="menu_stats">Statistics</string>
-    <string name="menu_about">About Ghost Mode</string>
-    <string name="menu_donate">Buy me a coffee</string>
-    <string name="preset_layout_grid">Grid view</string>
-    <string name="preset_layout_list">List view</string>
-    <string name="about_title">Ghost Mode</string>
-    <string name="about_description">Prevents incoming cellular calls by disabling IMS and fixing modem in LTE-only mode, keeping mobile data fully active.</string>
-    <string name="about_cert_label">Release Certificate SHA-256</string>
-    <string name="dialog_close">Close</string>
-    <string name="diag_calls_label">Incoming calls</string>
-    <string name="diag_calls_blocked">Blocked (Unavailable)</string>
-    <string name="diag_calls_allowed">Allowed (Normal)</string>
-    <string name="diag_internet_label">Mobile data</string>
-    <string name="diag_internet_active">Active (LTE / 5G)</string>
-    <string name="diag_ims_label">VoLTE / IMS service</string>
-    <string name="diag_ims_disabled">Disabled</string>
-    <string name="diag_ims_enabled">Active</string>
-    <string name="diag_modem_label">Modem network mode</string>
-    <string name="diag_modem_lte_only">LTE-only (2G/3G disabled)</string>
-    <string name="diag_modem_all_networks">All networks (2G/3G/4G/5G)</string>
-    <string name="diag_summary_blocked">Ghost Mode is active: callers will hear «Number is currently unavailable», while mobile internet remains fully active.</string>
-    <string name="diag_summary_allowed">Normal cellular mode: incoming calls and SMS are active across all network bands.</string>
-    <string name="diagnostics_running">Checking network status…</string>
-    <string name="menu_add_tile">Add tile to quick settings</string>
-    <string name="settings_sim_slots">SIM Cards</string>
-    <string name="sim_selection_title">Active SIM Mode</string>
-    <string name="sim_slot_all">Both SIMs</string>
-    <string name="sim_slot_sim_1">SIM 1 Only</string>
-    <string name="sim_slot_sim_2">SIM 2 Only</string>
-    <string name="sim_slot_all_desc">Ghost Mode silences incoming calls on both SIM 1 and SIM 2</string>
-    <string name="sim_slot_1_desc">Ghost Mode silences SIM 1; SIM 2 remains active for calls</string>
-    <string name="sim_slot_2_desc">Ghost Mode silences SIM 2; SIM 1 remains active for calls</string>
-    <string name="app_version_label">Version 0.1.10</string>
-    <string name="diagnostics_not_run_hint">Run diagnostics to check the actual modem state.</string>
-    <string name="preset_commands_count">%1$d commands</string>
-    <string name="about_github">GitHub Repository</string>
-    <string name="donate_description">Ghost Mode is a fully free and open project with no ads or trackers.</string>
-    <string name="menu_updates">Updates</string>
-    <string name="menu_theme">Theme</string>
-    <string name="update_banner_new">Version %1$s is available</string>
-    <string name="update_download">Download APK</string>
-    <string name="update_later">Later</string>
-    <string name="update_none_hint">You are on the latest version. Tap "Check again" to retry.</string>
-    <string name="update_check_again">Check again</string>
-    <string name="theme_system">System default</string>
-    <string name="theme_dark">Dark</string>
-    <string name="theme_light">Light</string>
-    <string name="battery_title">Battery optimization</string>
-    <string name="battery_text">Allow Ghost Mode to run in the background without battery restrictions so timers and schedules fire on time.</string>
-    <string name="battery_action">Allow background work</string>
-    <string name="timer_title">Auto turn-off</string>
-    <string name="timer_chip_30m">+30 min</string>
-    <string name="timer_chip_1h">+1 hour</string>
-    <string name="timer_chip_2h">+2 hours</string>
-    <string name="timer_chip_morning">Until morning</string>
-    <string name="timer_armed_in">Will turn off at %1$s</string>
-    <string name="timer_minutes_left">%1$s left</string>
-    <string name="timer_cancel">Cancel timer</string>
+    <string name="stats_sessions">Sessions</string>
+    <string name="stats_last_7_days">Last 7 days</string>
+    <string name="stats_recent">Recent sessions</string>
+    <string name="stats_now">now</string>
+
+    <!-- About -->
+    <string name="about_title">About Ghost Mode</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_description">Makes your phone unreachable for cellular calls while mobile data keeps working. Free and open source, no ads, no trackers.</string>
+    <string name="about_links">Links</string>
+    <string name="about_source">Source code</string>
+    <string name="about_releases">Releases</string>
+    <string name="about_report_bug">Report a problem</string>
+    <string name="about_changelog">Changelog</string>
+    <string name="about_license">License</string>
+    <string name="about_cert_label">Signing certificate</string>
+    <string name="about_cert_title">SHA-256 fingerprint</string>
+    <string name="about_cert_summary">Official GitHub releases are signed with this key. Tap to copy.</string>
+    <string name="about_disclaimer">Do not rely on Ghost Mode when you must be reachable for emergencies. Use it only on your own device and in line with local regulations.</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_status">Ghost Mode status</string>
+    <string name="notification_channel_status_desc">Shown while Ghost Mode is on</string>
+    <string name="notification_channel_attention">Needs attention</string>
+    <string name="notification_channel_attention_desc">Shown when a reboot reverted part of Ghost Mode</string>
+    <string name="notification_title_on">Ghost Mode is on</string>
+    <string name="notification_text_on">Calls do not reach you · mobile data works</string>
+    <string name="notification_reapply_title">Ghost Mode was interrupted by a reboot</string>
+    <string name="notification_reapply_text">Calls may get through again. Re-apply the mode or turn it off to restore your normal settings.</string>
+    <string name="notification_action_turn_off">Turn off</string>
+
+    <!-- Tile, widget, shortcuts -->
+    <string name="tile_subtitle_on">Unreachable</string>
+    <string name="tile_subtitle_off">Reachable</string>
+    <string name="tile_subtitle_busy">Applying…</string>
+    <string name="tile_subtitle_setup">Setup needed</string>
+    <string name="widget_description">Turns Ghost Mode on and off with one tap</string>
+    <string name="widget_state_on">On</string>
+    <string name="widget_state_off">Off</string>
+    <string name="widget_cd_on">Ghost Mode is on. Tap to turn off.</string>
+    <string name="widget_cd_off">Ghost Mode is off. Tap to turn on.</string>
     <string name="shortcut_turn_on">Turn on</string>
     <string name="shortcut_turn_off">Turn off</string>
-    <string name="shortcut_timer_1h">1h timer</string>
-    <string name="shortcut_timer_1h_long">Turn on with a 1-hour timer</string>
+    <string name="shortcut_timer_1h">For 1 hour</string>
+    <string name="shortcut_timer_1h_long">Turn on for 1 hour</string>
 </resources>

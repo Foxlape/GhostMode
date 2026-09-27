@@ -1,182 +1,148 @@
 <div align="center">
 
-# 👻 Ghost Mode (Режим Призрака)
+<img src="fastlane/metadata/android/ru-RU/images/icon.png" width="96" alt="Иконка Ghost Mode">
 
-**Делает телефон «недоступным» для входящих голосовых звонков, сохраняя скоростной мобильный интернет LTE / 5G полностью активным.**
+# Ghost Mode
 
-[![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Shizuku](https://img.shields.io/badge/Shizuku-v10%2B-2196F3?style=for-the-badge)](https://shizuku.rikka.app)
-[![Root](https://img.shields.io/badge/Root-KernelSU%20%7C%20Magisk%20%7C%20APatch-E91E63?style=for-the-badge)](https://github.com/tiann/KernelSU)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)](LICENSE)
+**Недоступен для звонков — а мобильный интернет работает.**
 
-[**🇬🇧 Read documentation in English**](README.md)
+[![Release](https://img.shields.io/github/v/release/Foxlape/GhostMode?style=flat-square)](https://github.com/Foxlape/GhostMode/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/Foxlape/GhostMode/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Foxlape/GhostMode/actions/workflows/ci.yml)
+[![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](#требования)
+[![License](https://img.shields.io/github/license/Foxlape/GhostMode?style=flat-square)](LICENSE)
+
+[English version](README.md) · [Скачать](https://github.com/Foxlape/GhostMode/releases/latest) · [История изменений](CHANGELOG.md)
 
 </div>
 
----
+Ghost Mode делает телефон «выключенным» для всех, кто звонит, — они слышат *«абонент недоступен»*, — а LTE / 5G
+интернет продолжает работать. Мессенджеры, карты и музыка работают как обычно, не доходят только сотовые звонки.
+Без режима полёта и без правил блокировки вызовов.
 
-## 🌟 Что это такое
+<p align="center">
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/1_home_on_dark.png" width="200" alt="Режим включён">
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/2_home_off_dark.png" width="200" alt="Режим выключен">
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/3_presets_dark.png" width="200" alt="Пресеты">
+  <img src="fastlane/metadata/android/ru-RU/images/phoneScreenshots/4_stats_dark.png" width="200" alt="Статистика">
+</p>
 
-**Ghost Mode (Режим призрака)** — это Android-приложение, которое переводит устройство в состояние **«Абонент временно недоступен»** для всех входящих сотовых звонков (как если бы телефон был выключен), в то время как **мобильный интернет (LTE / 5G) продолжает работать на полной скорости**.
+## Возможности
 
-Вам больше не нужно включать режим полёта или сбрасывать звонки вручную: вы остаётесь онлайн во всех мессенджерах, соцсетях, играх и рабочих чатах, не отвлекаясь на нежелательные звонки и спам.
+- **Работает без root** через [Shizuku](https://shizuku.rikka.app) (а также Sui и совместимые форки); root через
+  KernelSU, Magisk или APatch определяется автоматически.
+- **Точное восстановление.** Перед включением приложение запоминает исходные типы сетей, значения всех изменяемых
+  настроек и отключаемые IMS-сервисы. Выключение возвращает ровно это — даже если вы сменили пресет или SIM либо
+  перезагрузили телефон.
+- **Пресеты** для Pixel / чистого Android, Samsung One UI, Xiaomi HyperOS, OnePlus, vivo / iQOO и Android 9–11, плюс
+  свои наборы команд с импортом и экспортом в JSON.
+- **Две SIM**: недоступной можно сделать SIM 1, SIM 2 или обе.
+- **Плитка в шторке, виджет на рабочий стол, ярлыки.**
+- **Расписание** (например, каждую ночь 23:00–07:30) и **таймер автовыключения**.
+- **Учитывает перезагрузку**: применяет режим заново, если есть root / Sui, иначе присылает уведомление.
+- **Диагностика** по каждой SIM, полный **журнал команд** и **статистика**.
+- Дизайн Material You, тёмная и светлая темы, русский и английский языки.
+- Без рекламы, трекеров и аналитики. В сеть выходит, только если вы включили проверку обновлений.
 
-### 💡 Принцип работы
-1. **Отключение регистрации IMS / VoLTE**: приложение отключает регистрацию модема в IMS-сервисах оператора (`cmd phone ims disable`), блокируя прохождение голосовых вызовов высокой чёткости через сеть передачи данных.
-2. **Жёсткая фиксация в LTE-only**: модем блокируется в режиме только пакетной передачи (`cmd phone set-allowed-network-types-for-users -s 0 01000001000000000000`), делая невозможным Circuit Switched Fallback (CSFB) в 2G/3G для голосового пейджинга.
-3. **Безопасное восстановление**: при выключении режима исходная маска разрешённых сетей оператора и стек IMS мгновенно восстанавливаются в исходное состояние.
+## Требования
 
-Все команды исполняются без рут-прав через **Shizuku** (ADB shell uid 2000) либо напрямую через **Root** (`su` в KernelSU, Magisk, APatch).
-
----
-
-## ✨ Ключевые возможности
-
-- ⚡ **Работа без Root**: управление сетевым стеком через [Shizuku](https://shizuku.rikka.app) с правами shell (со встроенной кнопкой быстрой загрузки и подсказками по настройке).
-- 🔥 **Поддержка Root (KernelSU / Magisk / APatch)**: встроенный исполнитель команд через `su` с автоопределением — готов к работе сразу после перезагрузки телефона без повторного запуска Shizuku.
-- 📱 **Встроенные пресеты под вендоров**: готовые конфигурации для Google Pixel, Xiaomi (MIUI / HyperOS), Samsung One UI, OnePlus OxygenOS, vivo/iQOO (OriginOS / Funtouch) и ранних версий Android.
-- ⊞ **Сетка плиток пресетов и список**: стильная 2-колоночная сетка плиток для быстрого переключения пресетов, с конструктором своих профилей и экспортом/импортом.
-- 🎛️ **Плитка в быстрых настройках**: включение и отключение режима в один клик из шторки Android (долгое нажатие открывает само приложение).
-- 🧩 **Виджет для рабочего стола**: удобный интерактивный переключатель прямо на домашнем экране.
-- ⏰ **Работа по расписанию**: автоматическое включение и выключение в заданные часы (например, с `23:00` до `08:00`), устойчивое к перезагрузкам устройства и смене часовых поясов.
-- 🔔 **Информативное уведомление**: постоянное уведомление во время работы с таймером сессии и кнопкой быстрого отключения в один клик.
-- 📊 **Детальная статистика**: учёт времени в режиме за сегодня, за 7 дней и за всё время, журнал последних 500 сессий.
-- 🌍 **Мультиязычность**: поддержка русского и английского языков с переключением на лету.
-- 🎨 **Современный Material 3 интерфейс**: аккуратная шапка с меню 3 точек (Диагностика сети, Журнал команд, Расписание, Язык, Статистика, О программе).
-
----
-
-## 📋 Совместимость и требования
-
-| Параметр | Минимально | Рекомендуется |
+| | Минимум | Рекомендуется |
 |---|---|---|
-| **Версия Android** | Android 8.0 (API 26) | Android 12+ (API 31+) |
-| **Бэкенд прав** | [Shizuku v10+](https://shizuku.rikka.app) | KernelSU / Magisk / Shizuku |
-| **Связь** | Поддержка VoLTE у оператора | Покрытие LTE / 5G |
+| Android | 8.0 (API 26) | 12+ (API 31+) — shell-команды телефонии, на которых работает большинство пресетов |
+| Права | Shizuku v11+ **или** root | — |
+| Сеть | Покрытие LTE | Оператор с VoLTE |
 
-### 🏷️ Таблица встроенных пресетов
+## Установка
 
-| Пресет | Устройства | Механизм |
-|---|---|---|
-| **Универсальный (автоопределение)** | Android 12+ (По умолчанию) | Автоматически ищет device/carrier IMS пакеты и отключает их; при выходе возвращает исходное состояние |
-| **Stock / Pixel** | Google Pixel, Motorola, AOSP | `cmd phone ims disable` + блокировка модема в LTE-only |
-| **Xiaomi MIUI / HyperOS** | Xiaomi, Redmi, POCO | Выполнение команд AOSP в обход заблокированного системного меню телефонии |
-| **Samsung One UI** | Galaxy S / A / Z / Note | Фиксация LTE-only + отключение системного пакета `com.sec.imsservice` |
-| **OnePlus (OxygenOS)** | OnePlus 8–13 | Команды телефонии AOSP + отключение IMS пакета Qualcomm/MTK (`org.codeaurora.ims`) |
-| **vivo / iQOO (OriginOS / Funtouch)** | vivo X/V серии, iQOO | Команды AOSP + управление SoC IMS службами (`com.mediatek.ims`) |
-| **Старый Android (9–11)** | Android 9.0 – 11.0 | Запись preferred network mode `11` в настройки + быстрый перезапуск радиомодуля |
+- **GitHub Releases** — [последний APK](https://github.com/Foxlape/GhostMode/releases/latest) и `SHA256SUMS.txt`.
+- **[Obtainium](https://github.com/ImranR98/Obtainium)** — добавьте `https://github.com/Foxlape/GhostMode`, чтобы получать обновления автоматически.
+- **F-Droid / IzzyOnDroid** — запрошено в [#3](https://github.com/Foxlape/GhostMode/issues/3); метаданные fastlane для
+  обоих каталогов уже в репозитории.
 
----
+Официальные сборки подписаны этим сертификатом (он же в *Настройки → О приложении*):
 
-## 🚀 Быстрый старт
-
-### 1. Подготовка бэкенда
-
-#### Вариант А: Без Root через Shizuku (Рекомендуется)
-1. Установите приложение [Shizuku](https://shizuku.rikka.app).
-2. Запустите службу Shizuku через **Беспроводную отладку** (Android 11+) или с компьютера по ADB:
-   ```bash
-   adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.sh
-   ```
-3. Откройте Ghost Mode, в карточке статуса Shizuku нажмите **«Выдать разрешение»** и подтвердите запрос.
-
-#### Вариант Б: При наличии Root (KernelSU / Magisk / APatch)
-1. Предоставьте права суперпользователя Ghost Mode в менеджере Root (KernelSU / Magisk).
-2. Запустите приложение — root определится автоматически (`su -c id`).
-3. Root-режим работает сразу после перезагрузки смартфона без каких-либо дополнительных действий.
-
-### 2. Включение Режима Призрака
-1. Выберите подходящий пресет (по умолчанию — **Универсальный**).
-2. Переведите главный тумблер в положение **«Включить»**.
-3. **Проверка**:
-   - Позвоните на свой номер с другого телефона — звонящий услышит «Абонент недоступен».
-   - Откройте браузер по мобильной сети (отключив Wi-Fi) — сайты и приложения работают без задержек.
-
----
-
-## 🔧 Сборка из исходников
-
-### Требования
-- JDK 17+
-- Android SDK 35 (Platform Tools и Build Tools 35.0.0)
-
-### Сборка отладочного APK (Debug)
-```bash
-# Клонирование репозитория
-git clone https://github.com/foxlape/GhostMode.git
-cd GhostMode
-
-# Сборка debug APK
-./gradlew assembleDebug
-
-# Готовый файл: app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Сборка релизного APK (Release)
-```bash
-./gradlew assembleRelease
-# Готовый файл: app/build/outputs/apk/release/app-release.apk
-```
-
-### 🔒 Сертификат подписи официальных релизов
-Для проверки подлинности скачанных APK-файлов:
 ```
 SHA-256: FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53:DD:47:12:28:D5:71:B0:50
 ```
 
----
+Проверка: `apksigner verify --print-certs GhostMode-vX.Y.Z.apk`.
 
-## 📂 Структура проекта
+## Быстрый старт
 
-```
-GhostMode/
-├── app/
-│   ├── src/main/
-│   │   ├── aidl/               # AIDL интерфейс UserService для Shizuku (IUserService.aidl)
-│   │   ├── java/com/ghostmode/app/
-│   │   │   ├── data/           # Модели пресетов, JSON-сериализатор, репозиторий состояния
-│   │   │   ├── domain/         # GhostModeController, парсинг масок и логика переключения
-│   │   │   ├── scheduling/     # Менеджер расписания (ScheduleManager) и ресивер автозапуска
-│   │   │   ├── service/        # Фоновая служба постоянного уведомления с таймером
-│   │   │   ├── shell/          # AutoShellExecutor, RootShell, ShizukuUserService
-│   │   │   ├── tile/           # Служба плитки быстрых настроек в шторке
-│   │   │   ├── widget/         # Провайдер виджета домашнего экрана
-│   │   │   └── ui/             # Интерфейс Jetpack Compose (карточки, диалоги, тема Material 3)
-│   │   └── res/                # Векторные иконки, ресурсы строк (RU, EN)
-│   └── build.gradle.kts        # Конфигурация сборки (Kotlin 2.0, Compose BOM, SDK 35)
-├── .github/
-│   ├── workflows/              # GitHub Actions CI и автосборка релизов
-│   └── ISSUE_TEMPLATE/         # Шаблоны баг-репортов и предложений пресетов
-├── LICENSE                     # Лицензия Apache-2.0
-├── README.md                   # Документация на английском
-└── README.ru.md                # Документация на русском
-```
+1. **Дайте доступ** — один из вариантов:
+   - *Shizuku*: скачайте APK с [GitHub](https://github.com/RikkaApps/Shizuku/releases/latest) (кнопка
+     *Скачать Shizuku* в приложении открывает эту же страницу), запустите через **беспроводную отладку** (Android 11+)
+     или ADB, затем нажмите **Дать доступ** в Ghost Mode. Подходит и поддерживаемый форк
+     [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku/releases/latest): он умеет запускаться сам после
+     перезагрузки, и Ghost Mode сможет применить режим заново без root.
+   - *Root*: откройте Ghost Mode и разрешите запрос в KernelSU / Magisk / APatch.
+2. **Выберите пресет** на вкладке *Пресеты*. Начните с **Универсального**; если звонки всё равно проходят —
+   попробуйте пресет вашего производителя.
+3. **Нажмите на призрака.** Позвоните себе с другого телефона: должно звучать «абонент недоступен», а мобильный
+   интернет — работать (для проверки выключите Wi-Fi).
 
----
+Не работает? Откройте *Настройки → Диагностика* и *Журнал команд*, затем
+[создайте issue](https://github.com/Foxlape/GhostMode/issues/new/choose) со скопированным журналом.
 
-## ⚠️ Ограничения и безопасность
+## Как это работает
+
+Пресет — это список shell-команд, которые выполняются через Shizuku или `su`. Встроенные пресеты комбинируют:
+
+| Рычаг | Команда | Эффект |
+|---|---|---|
+| IMS выкл. | `cmd phone ims disable -s <слот>` | Нет регистрации VoLTE / VoWiFi |
+| Только LTE | `cmd phone set-allowed-network-types-for-users -s <слот> 01000001000000000000` | Звонку некуда «откатиться» в 2G/3G (CSFB) |
+| IMS-пакет | `pm disable-user --user 0 <пакет IMS>` | Для прошивок, игнорирующих команду IMS |
+| Настройки | `settings put global preferred_network_mode… 11`, `volte_vt_enabled 0` | Samsung, Android 9–11 |
+
+| Пресет | Для кого | Что добавляет |
+|---|---|---|
+| **Универсальный** | Любой Android 12+ (по умолчанию) | Отключает IMS-сервис, который реально использует телефон (определяется на лету) |
+| **Чистый Android / Pixel** | Pixel, Motorola, Nothing, близкие к стоку | IMS выкл. + только LTE |
+| **Xiaomi HyperOS / MIUI** | Xiaomi, Redmi, POCO | Как у чистого Android |
+| **Samsung One UI** | Galaxy S / A / Z | Переключатели VoLTE, `preferred_network_mode` для всех подписок, IMS-пакеты Samsung |
+| **OnePlus / OxygenOS** | OnePlus 8–13 | IMS-пакеты Qualcomm / MediaTek |
+| **vivo / iQOO** | OriginOS, Funtouch OS | Как у OnePlus |
+| **Android 9–11** | Телефоны без команд Android 12 | `preferred_network_mode` + переключение режима полёта |
+
+В своих пресетах доступны подстановки:
+
+- `-s 0` — заменяется на выбранный слот SIM, команда выполняется для каждого слота.
+- `{{SAVED_MASK}}` — маска типов сетей, сохранённая до включения режима.
+- `{{IMS_PACKAGES}}` — IMS-пакеты, которые сейчас используют выбранные SIM.
+
+Исходные значения ключей `settings put` и пакеты, отключённые через `pm disable-user`, восстанавливаются автоматически.
+
+## Ограничения
 
 > [!WARNING]
-> **Экстренные службы**: Не используйте режим в ситуациях, когда вам жизненно необходима возможность приёма экстренных входящих звонков.
+> Не полагайтесь на Ghost Mode, если вы должны быть на связи в экстренных ситуациях.
 
-- **Доставка SMS**: У некоторых мобильных операторов доставка входящих SMS осуществляется через IMS-канал. При активном режиме SMS могут задерживаться до выключения режима.
-- **Условная переадресация**: Если у вас подключена голосовая почта или переадресация «при недоступности», звонящий будет перенаправлен на автоответчик.
-- **Особенности OnePlus**: На некоторых версиях OxygenOS после выключения режима может потребоваться кратковременный перезапуск сети или перезагрузка для повторной регистрации VoLTE.
-- **Ответственность**: Используйте приложение строго в личных целях и в соответствии с законодательством вашей страны.
+- **SMS** могут задерживаться до выключения режима у операторов, доставляющих SMS через IMS.
+- **Переадресация** «если недоступен» отправит звонящих на автоответчик.
+- Некоторые модели Samsung снимают регистрацию VoLTE только после перезагрузки.
+- Команды различаются между прошивками. Если пресет не работает — пришлите диагностику и журнал команд.
+- Используйте приложение только на своём устройстве и в рамках местного законодательства.
 
----
+## Сборка
 
-## 🤝 Вклад в проект
+Нужны JDK 17+ и Android SDK 35.
 
-Мы рады вашим идеям и доработкам!
-- Нашли рабочую комбинацию команд для новой модели смартфона? Создайте **[Preset Request](https://github.com/foxlape/GhostMode/issues/new?template=preset_request.yml)**.
-- Столкнулись с ошибкой? Откройте **[Bug Report](https://github.com/foxlape/GhostMode/issues/new?template=bug_report.yml)**.
-- Ознакомьтесь с [CONTRIBUTING.md](CONTRIBUTING.md) перед созданием Pull Request.
+```bash
+./gradlew assembleDebug            # app/build/outputs/apk/debug/
+./gradlew testDebugUnitTest        # юнит-тесты
+./gradlew assembleRelease          # подпись из keystore.properties, иначе debug-ключ
+./gradlew testDebugUnitTest -Pscreenshots --tests '*ScreenshotTest*'   # перегенерировать скриншоты
+```
 
----
+Подпись релиза читается из `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) или из
+переменных окружения `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
 
-## 📄 Лицензия
+## Участие
 
-Проект распространяется под свободной лицензией **Apache License 2.0** — подробности в файле [LICENSE](LICENSE).
+Нашли команды, которые работают на вашем телефоне? Создайте
+[запрос пресета](https://github.com/Foxlape/GhostMode/issues/new?template=preset_request.yml). Про изменения кода —
+[CONTRIBUTING.md](CONTRIBUTING.md). Уязвимости — [SECURITY.md](SECURITY.md).
+
+## Лицензия
+
+[Apache License 2.0](LICENSE)

@@ -8,21 +8,35 @@ composeBom = "2025.06.00"
 coroutines = "1.9.0"
 shizuku = "13.1.5"
 appcompat = "1.7.0"
+junit = "4.13.2"
+json = "20250517"
+robolectric = "4.15.1"
+roborazzi = "1.46.1"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-ui = { module = "androidx.compose.ui:ui" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidx-material3 = { module = "androidx.compose.material3:material3" }
+androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+junit = { module = "junit:junit", version.ref = "junit" }
+json = { module = "org.json:json", version.ref = "json" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

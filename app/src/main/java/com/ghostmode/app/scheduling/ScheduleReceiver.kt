@@ -4,108 +4,71 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.ghostmode.app.data.GhostStateRepository
-import com.ghostmode.app.data.PresetRepository
-import com.ghostmode.app.domain.GhostModeController
-import com.ghostmode.app.shell.AutoShellExecutor
-import com.ghostmode.app.shell.RootShellExecutor
-import com.ghostmode.app.shell.ShizukuManager
-import com.ghostmode.app.widget.GhostWidgetProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import java.util.Calendar
+import com.ghostmode.app.appGraph
 
+/**
+ * Handles schedule boundaries plus system events that invalidate alarms or the applied state
+ * (boot, clock / time zone change, app update, exact-alarm permission change).
+ */
 class ScheduleReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val appContext = context.applicationContext
         val action = intent.action ?: return
-        val isTick = action == ACTION_TICK
-        val isBoot = action == Intent.ACTION_BOOT_COMPLETED
-        val isSystemReschedule = action in SYSTEM_RESCHEDULE_ACTIONS
-        if (!isTick && !isSystemReschedule) return
+        if (action != ACTION_TICK && action !in SYSTEM_ACTIONS) return
+        val graph = context.appGraph
+        val appContext = context.applicationContext
         val pendingResult = goAsync()
-        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
-            val stateRepository = GhostStateRepository.getInstance(appContext)
-            val shizukuManager = ShizukuManager(appContext)
+        graph.actions.launch {
             try {
-                if (isSystemReschedule) ScheduleManager.update(appContext)
-                if (stateRepository.scheduleEnabled.value) {
-                    shizukuManager.start()
-                    val rootExecutor = RootShellExecutor()
-                    val ghostModeController = GhostModeController(
-                        AutoShellExecutor(rootExecutor, shizukuManager),
-                        PresetRepository.getInstance(appContext),
-                        stateRepository
-                    )
-                    rootExecutor.probeRoot()
-                    applyScheduledState(stateRepository, ghostModeController)
-                } else if (isBoot) {
-                    // On reboot without schedule enabled, modem state is reset by the OS.
-                    // Reset Ghost Mode state to OFF so UI / QS Tile / Widget reflect actual modem state.
-                    stateRepository.setIsOn(false)
+                if (action == Intent.ACTION_BOOT_COMPLETED && controller.needsReapply()) {
+                    reapply()
                 }
-            } catch (error: IllegalStateException) {
-                Log.e(TAG, "Scheduled ghost mode switch failed", error)
+                applySchedule(graph.state.scheduleEnabled.value, isBoundary = action == ACTION_TICK, context = appContext)
+            } catch (error: Exception) {
+                Log.e(TAG, "Handling $action failed", error)
             } finally {
                 ScheduleManager.update(appContext)
-                com.ghostmode.app.service.StatusNotificationManager.update(
-                    appContext,
-                    stateRepository.isOn.value,
-                    stateRepository.notificationEnabled.value,
-                    stateRepository.isOnTimestampMs.value
-                )
-                GhostWidgetProvider.refreshAll(appContext, stateRepository.isOn.value)
-                shizukuManager.stop()
+                refreshSurfaces()
                 pendingResult.finish()
             }
         }
     }
 
-    private suspend fun applyScheduledState(
-        stateRepository: GhostStateRepository,
-        ghostModeController: GhostModeController
+    /**
+     * At a boundary the mode follows the window in both directions. On other events it is only
+     * turned on (catching up a start missed while the phone was off) — never forced off, so a
+     * mode turned on manually survives a reboot.
+     */
+    private suspend fun com.ghostmode.app.system.GhostActions.applySchedule(
+        enabled: Boolean,
+        isBoundary: Boolean,
+        context: Context
     ) {
-        if (!stateRepository.scheduleEnabled.value) return
-        val inWindow = isMinuteOfDayInWindow(currentMinuteOfDay(), stateRepository)
-        val isOn = stateRepository.isOn.value
-        if (inWindow && !isOn) {
-            ghostModeController.turnOn()
-        } else if (!inWindow && isOn) {
-            ghostModeController.turnOff()
+        if (!enabled) return
+        val state = context.appGraph.state
+        val inWindow = ScheduleWindow.contains(
+            ScheduleWindow.currentMinuteOfDay(),
+            state.scheduleStartMinuteOfDay.value,
+            state.scheduleEndMinuteOfDay.value
+        )
+        val isOn = state.isOn.value
+        when {
+            inWindow && !isOn -> turnOn()
+            !inWindow && isOn && isBoundary -> turnOff()
         }
-    }
-
-    private fun isMinuteOfDayInWindow(
-        minuteOfDay: Int,
-        stateRepository: GhostStateRepository
-    ): Boolean {
-        val startMinute = stateRepository.scheduleStartMinuteOfDay.value
-        val endMinute = stateRepository.scheduleEndMinuteOfDay.value
-        return if (startMinute <= endMinute) {
-            minuteOfDay >= startMinute && minuteOfDay < endMinute
-        } else {
-            minuteOfDay >= startMinute || minuteOfDay < endMinute
-        }
-    }
-
-    private fun currentMinuteOfDay(): Int {
-        val calendar = Calendar.getInstance()
-        return calendar.get(Calendar.HOUR_OF_DAY) * MINUTES_PER_HOUR + calendar.get(Calendar.MINUTE)
     }
 
     companion object {
         private const val TAG = "GhostSchedule"
-
         const val ACTION_TICK = "com.ghostmode.app.schedule.TICK"
 
-        private val SYSTEM_RESCHEDULE_ACTIONS = setOf(
+        private val SYSTEM_ACTIONS = setOf(
             Intent.ACTION_BOOT_COMPLETED,
             Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED
+            Intent.ACTION_TIMEZONE_CHANGED,
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            // AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED (API 31); only ever delivered on 31+.
+            "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
         )
-        private const val MINUTES_PER_HOUR = 60
     }
 }

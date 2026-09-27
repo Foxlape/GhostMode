@@ -2,186 +2,115 @@ package com.ghostmode.app.tile
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import com.ghostmode.app.MainActivity
 import com.ghostmode.app.R
-import com.ghostmode.app.data.GhostStateRepository
-import com.ghostmode.app.data.PresetRepository
-import com.ghostmode.app.domain.GhostModeController
-import com.ghostmode.app.shell.AutoShellExecutor
-import com.ghostmode.app.shell.RootShellExecutor
-import com.ghostmode.app.shell.ShizukuManager
-import com.ghostmode.app.shell.ShizukuStatus
+import com.ghostmode.app.appGraph
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import rikka.shizuku.Shizuku
 
 class GhostTileService : TileService() {
 
-    private val binderReceivedListener = Shizuku.OnBinderReceivedListener { updateTile() }
-    private val binderDeadListener = Shizuku.OnBinderDeadListener { updateTile() }
-    private val permissionResultListener = Shizuku.OnRequestPermissionResultListener { _, _ -> updateTile() }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var listeningJob: Job? = null
 
-    private lateinit var scope: CoroutineScope
-    private lateinit var shizukuManager: ShizukuManager
-    private lateinit var rootExecutor: RootShellExecutor
-    private lateinit var autoExecutor: AutoShellExecutor
-    private lateinit var presetRepository: PresetRepository
-    private lateinit var stateRepository: GhostStateRepository
-    private lateinit var ghostModeController: GhostModeController
-
-    override fun onCreate() {
-        super.onCreate()
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-        shizukuManager = ShizukuManager(applicationContext)
-        rootExecutor = RootShellExecutor()
-        autoExecutor = AutoShellExecutor(rootExecutor, shizukuManager)
-        presetRepository = PresetRepository.getInstance(applicationContext)
-        stateRepository = GhostStateRepository.getInstance(applicationContext)
-        ghostModeController = GhostModeController(autoExecutor, presetRepository, stateRepository)
-        shizukuManager.start()
-        registerShizukuListeners()
-        stateRepository.isOn
-            .onEach { updateTile() }
+    override fun onStartListening() {
+        super.onStartListening()
+        val graph = appGraph
+        listeningJob?.cancel()
+        listeningJob = combine(graph.state.isOn, graph.shell.backend, graph.controller.isBusy) { _, _, _ -> updateTile() }
             .launchIn(scope)
+        graph.shizuku.refresh()
+    }
+
+    override fun onStopListening() {
+        listeningJob?.cancel()
+        listeningJob = null
+        super.onStopListening()
     }
 
     override fun onDestroy() {
-        unregisterShizukuListeners()
-        shizukuManager.stop()
         scope.cancel()
         super.onDestroy()
     }
 
-    override fun onTileAdded() {
-        super.onTileAdded()
-        updateTile()
-    }
-
-    override fun onStartListening() {
-        super.onStartListening()
-        scope.launch {
-            rootExecutor.probeRoot()
-            updateTile()
-        }
-    }
-
     override fun onClick() {
-        handleTileClick()
+        // Changing call reachability from the lock screen requires unlocking first.
+        if (isSecure) unlockAndRun { toggle() } else toggle()
     }
 
-    private fun handleTileClick() {
+    private fun toggle() {
+        val graph = appGraph
         scope.launch {
-            val hasRoot = rootExecutor.probeRoot()
-            if (hasRoot || shizukuManager.status.value == ShizukuStatus.READY) {
-                if (stateRepository.isOn.value) {
-                    ghostModeController.turnOff()
-                } else {
-                    ghostModeController.turnOn()
-                }
-                updateTile()
+            if (!graph.shell.awaitReady(QUICK_READY_TIMEOUT_MS)) {
+                openApp()
                 return@launch
             }
-            when (shizukuManager.status.value) {
-                ShizukuStatus.NO_PERMISSION -> requestShizukuPermission()
-                else -> launchAppTrampoline()
-            }
-            updateTile()
+            // The app scope outlives this service, so the command sequence is never cut short.
+            graph.actions.launch { this.toggle() }
         }
-    }
-
-    private fun launchAppTrampoline() {
-        val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        collapseQuickSettingsWith(launchIntent)
     }
 
     @SuppressLint("StartActivityAndCollapseDeprecated")
-    private fun collapseQuickSettingsWith(launchIntent: Intent) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startActivityAndCollapse(
-                PendingIntent.getActivity(
-                    this,
-                    LAUNCH_REQUEST_CODE,
-                    launchIntent,
-                    PendingIntent.FLAG_IMMUTABLE
+    private fun openApp() {
+        val intent = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startActivityAndCollapse(
+                    PendingIntent.getActivity(this, REQUEST_OPEN_APP, intent, PendingIntent.FLAG_IMMUTABLE)
                 )
-            )
-            return
+            } else {
+                @Suppress("DEPRECATION")
+                startActivityAndCollapse(intent)
+            }
+        } catch (_: Exception) {
+            // The tile may already be detached; nothing sensible to do.
         }
-        @Suppress("DEPRECATION")
-        startActivityAndCollapse(launchIntent)
-    }
-
-    private fun requestShizukuPermission() {
-        runShizukuCall { Shizuku.requestPermission(REQUEST_CODE) }
     }
 
     private fun updateTile() {
         val tile = qsTile ?: return
-        val isOn = stateRepository.isOn.value
+        val graph = appGraph
+        val isOn = graph.state.isOn.value
+        val isBusy = graph.controller.isBusy.value
+        val hasBackend = graph.shell.backend.value != null
         tile.label = getString(R.string.tile_label)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            tile.subtitle = getString(if (isOn) R.string.status_title_on else R.string.status_title_off)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            tile.stateDescription = getString(if (isOn) R.string.status_title_on else R.string.status_title_off)
-        }
-        tile.icon = android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_ghost)
-        tile.state = resolveTileState()
+        tile.icon = Icon.createWithResource(this, R.drawable.ic_ghost)
+        val subtitle = getString(
+            when {
+                isBusy -> R.string.tile_subtitle_busy
+                isOn -> R.string.tile_subtitle_on
+                hasBackend -> R.string.tile_subtitle_off
+                else -> R.string.tile_subtitle_setup
+            }
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) tile.subtitle = subtitle
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) tile.stateDescription = subtitle
+        tile.state = if (isOn) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.updateTile()
     }
 
-    private fun resolveTileState(): Int {
-        val status = shizukuManager.status.value
-        val isBackendAvailable = rootExecutor.isRootAvailable.value ||
-            status == ShizukuStatus.READY ||
-            status == ShizukuStatus.NO_PERMISSION
-        return when {
-            stateRepository.isOn.value -> Tile.STATE_ACTIVE
-            isBackendAvailable -> Tile.STATE_INACTIVE
-            else -> Tile.STATE_UNAVAILABLE
-        }
-    }
-
-    private fun registerShizukuListeners() {
-        runShizukuCall { Shizuku.addBinderReceivedListenerSticky(binderReceivedListener) }
-        runShizukuCall { Shizuku.addBinderDeadListener(binderDeadListener) }
-        runShizukuCall { Shizuku.addRequestPermissionResultListener(permissionResultListener) }
-    }
-
-    private fun unregisterShizukuListeners() {
-        runShizukuCall { Shizuku.removeBinderReceivedListener(binderReceivedListener) }
-        runShizukuCall { Shizuku.removeBinderDeadListener(binderDeadListener) }
-        runShizukuCall { Shizuku.removeRequestPermissionResultListener(permissionResultListener) }
-    }
-
-    private fun runShizukuCall(action: () -> Unit) {
-        try {
-            action()
-        } catch (_: IllegalStateException) {
-        }
-    }
-
     companion object {
-        private const val REQUEST_CODE = 101
-        private const val LAUNCH_REQUEST_CODE = 0
+        private const val REQUEST_OPEN_APP = 0
+        private const val QUICK_READY_TIMEOUT_MS = 2_000L
 
         fun requestTileUpdate(context: Context) {
             try {
-                requestListeningState(
-                    context,
-                    android.content.ComponentName(context, GhostTileService::class.java)
-                )
+                requestListeningState(context, ComponentName(context, GhostTileService::class.java))
             } catch (_: Exception) {
+                // Throws if the tile was never added; harmless.
             }
         }
     }

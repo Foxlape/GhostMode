@@ -1,6 +1,5 @@
 package com.ghostmode.app.data
 
-import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,306 +14,228 @@ data class CommandLogEntry(
     val stdout: String,
     val stderr: String,
     val exitCode: Int
-)
+) {
+    val isSuccess: Boolean get() = exitCode == 0
+}
 
 data class GhostSession(
     val startMs: Long,
     val endMs: Long
-)
+) {
+    val isOpen: Boolean get() = endMs == SESSION_END_OPEN
 
-open class GhostStateRepository(private val context: Context? = null) {
+    companion object {
+        const val SESSION_END_OPEN = 0L
+    }
+}
 
-    private val prefs = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val isOnFlow = MutableStateFlow(prefs?.getBoolean(KEY_IS_ON, false) ?: false)
-    private val isOnTimestampMsFlow = MutableStateFlow(prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE)
-    private val savedNetworkMaskFlow = MutableStateFlow(prefs?.getString(KEY_SAVED_MASK, null))
-    private val savedMaskTimestampMsFlow = MutableStateFlow(prefs?.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE) ?: TIMESTAMP_NONE)
-    private val savedMaskSlot1Flow = MutableStateFlow(prefs?.getString(KEY_SAVED_MASK_SLOT_1, null))
-    private val simSlotModeFlow = MutableStateFlow(
-        SimSlotMode.fromStorage(prefs?.getString(KEY_SIM_SLOT_MODE, null))
-    )
-    private val activePresetIdFlow = MutableStateFlow(
-        prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
-    )
-    private val logEntriesFlow = MutableStateFlow<List<CommandLogEntry>>(EMPTY_LOG)
-    private val sessionsLock = Any()
-    private val notificationEnabledFlow = MutableStateFlow(prefs?.getBoolean(KEY_NOTIFICATION_ENABLED, false) ?: false)
+/**
+ * Single source of truth for persisted app state. All components (activity, tile, widget,
+ * receivers) share one instance via [com.ghostmode.app.AppGraph], so flows are updated in place
+ * and no cross-instance synchronisation is needed.
+ */
+class GhostStateRepository(
+    private val store: KeyValueStore,
+    private val clock: () -> Long = System::currentTimeMillis
+) {
+
+    private val isOnFlow = MutableStateFlow(store.getBoolean(KEY_IS_ON, false))
+    private val isOnTimestampFlow = MutableStateFlow(store.getLong(KEY_IS_ON_TIMESTAMP, NONE))
+    private val savedMaskSlot0Flow = MutableStateFlow(store.getString(KEY_SAVED_MASK))
+    private val savedMaskSlot1Flow = MutableStateFlow(store.getString(KEY_SAVED_MASK_SLOT_1))
+    private val simSlotModeFlow = MutableStateFlow(SimSlotMode.fromStorage(store.getString(KEY_SIM_SLOT_MODE)))
+    private val activePresetIdFlow = MutableStateFlow(store.getString(KEY_ACTIVE_PRESET_ID) ?: BuiltInPresets.DEFAULT_ID)
+    private val notificationEnabledFlow = MutableStateFlow(store.getBoolean(KEY_NOTIFICATION_ENABLED, false))
+    private val scheduleEnabledFlow = MutableStateFlow(store.getBoolean(KEY_SCHEDULE_ENABLED, false))
+    private val scheduleStartFlow = MutableStateFlow(store.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START))
+    private val scheduleEndFlow = MutableStateFlow(store.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END))
+    private val themeModeFlow = MutableStateFlow(ThemeMode.fromStorage(store.getString(KEY_THEME_MODE)))
+    private val dynamicColorFlow = MutableStateFlow(store.getBoolean(KEY_DYNAMIC_COLOR, false))
+    private val timerFireAtFlow = MutableStateFlow(store.getLong(KEY_TIMER_FIRE_AT, NONE))
+    private val updateCheckEnabledFlow = MutableStateFlow(store.getBoolean(KEY_UPDATE_CHECK_ENABLED, false))
+    private val appliedSnapshotFlow = MutableStateFlow(AppliedSnapshot.fromJson(store.getString(KEY_APPLIED_SNAPSHOT)))
     private val sessionsFlow = MutableStateFlow(loadSessions())
-    private val scheduleEnabledFlow = MutableStateFlow(prefs?.getBoolean(KEY_SCHEDULE_ENABLED, SCHEDULE_DEFAULT_DISABLED) ?: SCHEDULE_DEFAULT_DISABLED)
-    private val scheduleStartMinuteOfDayFlow = MutableStateFlow(
-        prefs?.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START_MINUTE) ?: DEFAULT_SCHEDULE_START_MINUTE
-    )
-    private val scheduleEndMinuteOfDayFlow = MutableStateFlow(
-        prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
-    )
-    private val themeModeFlow = MutableStateFlow(
-        ThemeMode.fromStorage(prefs?.getString(KEY_THEME_MODE, null))
-    )
-    private val timerFireAtMsFlow = MutableStateFlow(
-        prefs?.getLong(KEY_TIMER_FIRE_AT, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
-    )
+    private val logEntriesFlow = MutableStateFlow<List<CommandLogEntry>>(emptyList())
+    private val sessionsLock = Any()
 
-    private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        when (key) {
-            KEY_IS_ON -> {
-                val newIsOn = prefs?.getBoolean(KEY_IS_ON, false) ?: false
-                if (isOnFlow.value != newIsOn) isOnFlow.value = newIsOn
-            }
-            KEY_IS_ON_TIMESTAMP -> {
-                val newTs = prefs?.getLong(KEY_IS_ON_TIMESTAMP, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
-                if (isOnTimestampMsFlow.value != newTs) isOnTimestampMsFlow.value = newTs
-            }
-            KEY_SAVED_MASK -> {
-                val newMask = prefs?.getString(KEY_SAVED_MASK, null)
-                if (savedNetworkMaskFlow.value != newMask) savedNetworkMaskFlow.value = newMask
-            }
-            KEY_SAVED_MASK_SLOT_1 -> {
-                val newMask1 = prefs?.getString(KEY_SAVED_MASK_SLOT_1, null)
-                if (savedMaskSlot1Flow.value != newMask1) savedMaskSlot1Flow.value = newMask1
-            }
-            KEY_SAVED_MASK_TS -> {
-                val newMaskTs = prefs?.getLong(KEY_SAVED_MASK_TS, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
-                if (savedMaskTimestampMsFlow.value != newMaskTs) savedMaskTimestampMsFlow.value = newMaskTs
-            }
-            KEY_SIM_SLOT_MODE -> {
-                val newMode = SimSlotMode.fromStorage(prefs?.getString(KEY_SIM_SLOT_MODE, null))
-                if (simSlotModeFlow.value != newMode) simSlotModeFlow.value = newMode
-            }
-            KEY_NOTIFICATION_ENABLED -> {
-                val newNotif = prefs?.getBoolean(KEY_NOTIFICATION_ENABLED, false) ?: false
-                if (notificationEnabledFlow.value != newNotif) notificationEnabledFlow.value = newNotif
-            }
-            KEY_SCHEDULE_ENABLED -> {
-                val newSched = prefs?.getBoolean(KEY_SCHEDULE_ENABLED, SCHEDULE_DEFAULT_DISABLED) ?: SCHEDULE_DEFAULT_DISABLED
-                if (scheduleEnabledFlow.value != newSched) scheduleEnabledFlow.value = newSched
-            }
-            KEY_SCHEDULE_START_MINUTE -> {
-                val newStart = prefs?.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START_MINUTE) ?: DEFAULT_SCHEDULE_START_MINUTE
-                if (scheduleStartMinuteOfDayFlow.value != newStart) scheduleStartMinuteOfDayFlow.value = newStart
-            }
-            KEY_SCHEDULE_END_MINUTE -> {
-                val newEnd = prefs?.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END_MINUTE) ?: DEFAULT_SCHEDULE_END_MINUTE
-                if (scheduleEndMinuteOfDayFlow.value != newEnd) scheduleEndMinuteOfDayFlow.value = newEnd
-            }
-            KEY_THEME_MODE -> {
-                val newTheme = ThemeMode.fromStorage(prefs?.getString(KEY_THEME_MODE, null))
-                if (themeModeFlow.value != newTheme) themeModeFlow.value = newTheme
-            }
-            KEY_TIMER_FIRE_AT -> {
-                val newFireAt = prefs?.getLong(KEY_TIMER_FIRE_AT, TIMESTAMP_NONE) ?: TIMESTAMP_NONE
-                if (timerFireAtMsFlow.value != newFireAt) timerFireAtMsFlow.value = newFireAt
-            }
-            KEY_ACTIVE_PRESET_ID -> {
-                val newPreset = prefs?.getString(KEY_ACTIVE_PRESET_ID, null) ?: BuiltInPresets.DEFAULT_ID
-                if (activePresetIdFlow.value != newPreset) activePresetIdFlow.value = newPreset
-            }
-            KEY_SESSIONS -> {
-                sessionsFlow.value = loadSessions()
-            }
+    val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
+    val isOnTimestampMs: StateFlow<Long> = isOnTimestampFlow.asStateFlow()
+    val simSlotMode: StateFlow<SimSlotMode> = simSlotModeFlow.asStateFlow()
+    val activePresetId: StateFlow<String> = activePresetIdFlow.asStateFlow()
+    val notificationEnabled: StateFlow<Boolean> = notificationEnabledFlow.asStateFlow()
+    val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
+    val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartFlow.asStateFlow()
+    val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndFlow.asStateFlow()
+    val themeMode: StateFlow<ThemeMode> = themeModeFlow.asStateFlow()
+    val dynamicColor: StateFlow<Boolean> = dynamicColorFlow.asStateFlow()
+    val timerFireAtMs: StateFlow<Long> = timerFireAtFlow.asStateFlow()
+    val updateCheckEnabled: StateFlow<Boolean> = updateCheckEnabledFlow.asStateFlow()
+    val appliedSnapshot: StateFlow<AppliedSnapshot?> = appliedSnapshotFlow.asStateFlow()
+    val sessions: StateFlow<List<GhostSession>> = sessionsFlow.asStateFlow()
+    val logEntries: StateFlow<List<CommandLogEntry>> = logEntriesFlow.asStateFlow()
+
+    // --- Mode state -------------------------------------------------------------------------
+
+    /**
+     * Marks the mode as applied. [snapshot] describes how to undo it; the timestamp of an
+     * already running session is preserved when the state is merely re-applied.
+     */
+    fun markOn(snapshot: AppliedSnapshot) {
+        val wasOn = isOnFlow.value
+        val timestampMs = if (wasOn && isOnTimestampFlow.value != NONE) isOnTimestampFlow.value else clock()
+        isOnFlow.value = true
+        isOnTimestampFlow.value = timestampMs
+        appliedSnapshotFlow.value = snapshot
+        store.edit {
+            putBoolean(KEY_IS_ON, true)
+            putLong(KEY_IS_ON_TIMESTAMP, timestampMs)
+            putString(KEY_APPLIED_SNAPSHOT, snapshot.toJson())
         }
+        if (!wasOn) openSession(timestampMs)
     }
 
-    init {
-        prefs?.registerOnSharedPreferenceChangeListener(prefsListener)
+    fun markOff() {
+        isOnFlow.value = false
+        isOnTimestampFlow.value = NONE
+        appliedSnapshotFlow.value = null
+        timerFireAtFlow.value = NONE
+        store.edit {
+            putBoolean(KEY_IS_ON, false)
+            putLong(KEY_IS_ON_TIMESTAMP, NONE)
+            remove(KEY_APPLIED_SNAPSHOT)
+            putLong(KEY_TIMER_FIRE_AT, NONE)
+        }
+        closeOpenSessions()
     }
 
-    open val isOn: StateFlow<Boolean> = isOnFlow.asStateFlow()
-    open val isOnTimestampMs: StateFlow<Long> = isOnTimestampMsFlow.asStateFlow()
-    open val savedNetworkMask: StateFlow<String?> = savedNetworkMaskFlow.asStateFlow()
-    open val savedNetworkMaskSlot1: StateFlow<String?> = savedMaskSlot1Flow.asStateFlow()
-    open val savedMaskTimestampMs: StateFlow<Long> = savedMaskTimestampMsFlow.asStateFlow()
-    open val simSlotMode: StateFlow<SimSlotMode> = simSlotModeFlow.asStateFlow()
-    open val activePresetId: StateFlow<String> = activePresetIdFlow.asStateFlow()
-    open val logEntries: StateFlow<List<CommandLogEntry>> = logEntriesFlow.asStateFlow()
-    open val notificationEnabled: StateFlow<Boolean> = notificationEnabledFlow.asStateFlow()
-    open val sessions: StateFlow<List<GhostSession>> = sessionsFlow.asStateFlow()
-    open val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
-    open val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartMinuteOfDayFlow.asStateFlow()
-    open val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndMinuteOfDayFlow.asStateFlow()
-    open val themeMode: StateFlow<ThemeMode> = themeModeFlow.asStateFlow()
-    open val timerFireAtMs: StateFlow<Long> = timerFireAtMsFlow.asStateFlow()
+    fun getSavedNetworkMask(slot: Int): String? =
+        if (slot == 1) savedMaskSlot1Flow.value else savedMaskSlot0Flow.value
 
-    open fun setSimSlotMode(mode: SimSlotMode) {
-        simSlotModeFlow.value = mode
-        prefs?.edit()?.putString(KEY_SIM_SLOT_MODE, mode.name)?.apply()
-    }
-
-    open fun setSavedNetworkMaskForSlot(slot: Int, mask: String?) {
-        val timestampMs = if (mask != null) System.currentTimeMillis() else TIMESTAMP_NONE
+    fun setSavedNetworkMask(slot: Int, mask: String?) {
         if (slot == 1) {
             savedMaskSlot1Flow.value = mask
-            prefs?.edit()?.putString(KEY_SAVED_MASK_SLOT_1, mask)?.apply()
+            store.edit { putString(KEY_SAVED_MASK_SLOT_1, mask) }
         } else {
-            savedNetworkMaskFlow.value = mask
-            savedMaskTimestampMsFlow.value = timestampMs
-            prefs?.edit()
-                ?.putString(KEY_SAVED_MASK, mask)
-                ?.putLong(KEY_SAVED_MASK_TS, timestampMs)
-                ?.apply()
+            savedMaskSlot0Flow.value = mask
+            store.edit {
+                putString(KEY_SAVED_MASK, mask)
+                putLong(KEY_SAVED_MASK_TS, if (mask == null) NONE else clock())
+            }
         }
     }
 
-    open fun getSavedNetworkMaskForSlot(slot: Int): String? =
-        if (slot == 1) savedMaskSlot1Flow.value else savedNetworkMaskFlow.value
+    // --- Preferences ------------------------------------------------------------------------
 
-    open fun setIsOn(value: Boolean) {
-        val timestampMs = if (value) System.currentTimeMillis() else TIMESTAMP_NONE
-        isOnFlow.value = value
-        isOnTimestampMsFlow.value = timestampMs
-        if (value) openSession() else closeOpenSessions()
-        prefs?.edit()
-            ?.putBoolean(KEY_IS_ON, value)
-            ?.putLong(KEY_IS_ON_TIMESTAMP, timestampMs)
-            ?.apply()
-        context?.let { ctx ->
-            com.ghostmode.app.widget.GhostWidgetProvider.refreshAll(ctx, value)
-            com.ghostmode.app.tile.GhostTileService.requestTileUpdate(ctx)
-            com.ghostmode.app.service.StatusNotificationManager.update(
-                ctx,
-                value,
-                notificationEnabledFlow.value,
-                timestampMs
-            )
-        }
+    fun setSimSlotMode(mode: SimSlotMode) {
+        simSlotModeFlow.value = mode
+        store.edit { putString(KEY_SIM_SLOT_MODE, mode.name) }
     }
 
-    open fun setNotificationEnabled(value: Boolean) {
+    fun setActivePresetId(presetId: String) {
+        activePresetIdFlow.value = presetId
+        store.edit { putString(KEY_ACTIVE_PRESET_ID, presetId) }
+    }
+
+    fun setNotificationEnabled(value: Boolean) {
         notificationEnabledFlow.value = value
-        prefs?.edit()?.putBoolean(KEY_NOTIFICATION_ENABLED, value)?.apply()
-        context?.let { ctx ->
-            com.ghostmode.app.service.StatusNotificationManager.update(
-                ctx,
-                isOnFlow.value,
-                value,
-                isOnTimestampMsFlow.value
-            )
+        store.edit { putBoolean(KEY_NOTIFICATION_ENABLED, value) }
+    }
+
+    fun setSchedule(enabled: Boolean, startMinuteOfDay: Int, endMinuteOfDay: Int) {
+        scheduleEnabledFlow.value = enabled
+        scheduleStartFlow.value = startMinuteOfDay
+        scheduleEndFlow.value = endMinuteOfDay
+        store.edit {
+            putBoolean(KEY_SCHEDULE_ENABLED, enabled)
+            putInt(KEY_SCHEDULE_START_MINUTE, startMinuteOfDay)
+            putInt(KEY_SCHEDULE_END_MINUTE, endMinuteOfDay)
         }
     }
 
-    open fun setScheduleEnabled(value: Boolean) {
-        scheduleEnabledFlow.value = value
-        prefs?.edit()?.putBoolean(KEY_SCHEDULE_ENABLED, value)?.apply()
-    }
-
-    open fun setScheduleStartMinuteOfDay(minuteOfDay: Int) {
-        scheduleStartMinuteOfDayFlow.value = minuteOfDay
-        prefs?.edit()?.putInt(KEY_SCHEDULE_START_MINUTE, minuteOfDay)?.apply()
-    }
-
-    open fun setScheduleEndMinuteOfDay(minuteOfDay: Int) {
-        scheduleEndMinuteOfDayFlow.value = minuteOfDay
-        prefs?.edit()?.putInt(KEY_SCHEDULE_END_MINUTE, minuteOfDay)?.apply()
-    }
-
-    open fun setThemeMode(mode: ThemeMode) {
+    fun setThemeMode(mode: ThemeMode) {
         themeModeFlow.value = mode
-        prefs?.edit()?.putString(KEY_THEME_MODE, mode.name)?.apply()
+        store.edit { putString(KEY_THEME_MODE, mode.name) }
     }
 
-    open fun setTimerFireAtMs(valueMs: Long) {
-        timerFireAtMsFlow.value = valueMs
-        prefs?.edit()?.putLong(KEY_TIMER_FIRE_AT, valueMs)?.apply()
+    fun setDynamicColor(enabled: Boolean) {
+        dynamicColorFlow.value = enabled
+        store.edit { putBoolean(KEY_DYNAMIC_COLOR, enabled) }
     }
 
-    open fun clearTimerFireAt() {
-        setTimerFireAtMs(TIMESTAMP_NONE)
+    fun setUpdateCheckEnabled(enabled: Boolean) {
+        updateCheckEnabledFlow.value = enabled
+        store.edit { putBoolean(KEY_UPDATE_CHECK_ENABLED, enabled) }
     }
 
-    private fun openSession() {
-        val hasOpenSession = sessionsFlow.value.any { session -> session.endMs == SESSION_END_OPEN }
-        if (hasOpenSession) return
-        updateSessions { sessions -> sessions + GhostSession(System.currentTimeMillis(), SESSION_END_OPEN) }
+    fun setTimerFireAtMs(valueMs: Long) {
+        timerFireAtFlow.value = valueMs
+        store.edit { putLong(KEY_TIMER_FIRE_AT, valueMs) }
+    }
+
+    fun clearTimer() = setTimerFireAtMs(NONE)
+
+    // --- Command log (in memory only) -------------------------------------------------------
+
+    fun appendLog(entry: CommandLogEntry) {
+        logEntriesFlow.update { current -> (current + entry).takeLast(LOG_CAPACITY) }
+    }
+
+    fun removeLogEntry(entry: CommandLogEntry) {
+        logEntriesFlow.update { current -> current - entry }
+    }
+
+    fun clearLog() {
+        logEntriesFlow.value = emptyList()
+    }
+
+    // --- Sessions ---------------------------------------------------------------------------
+
+    private fun openSession(startMs: Long) {
+        if (sessionsFlow.value.any { it.isOpen }) return
+        updateSessions { it + GhostSession(startMs, GhostSession.SESSION_END_OPEN) }
     }
 
     private fun closeOpenSessions() {
-        val nowMs = System.currentTimeMillis()
+        val nowMs = clock()
         updateSessions { sessions ->
-            sessions.map { session ->
-                if (session.endMs == SESSION_END_OPEN) session.copy(endMs = nowMs) else session
-            }
+            sessions.map { session -> if (session.isOpen) session.copy(endMs = nowMs) else session }
         }
     }
 
     private fun updateSessions(transform: (List<GhostSession>) -> List<GhostSession>) {
         synchronized(sessionsLock) {
-            val updatedSessions = transform(sessionsFlow.value).takeLast(SESSION_CAPACITY)
-            sessionsFlow.value = updatedSessions
-            prefs?.edit()?.putString(KEY_SESSIONS, sessionsToJson(updatedSessions))?.apply()
+            val updated = transform(sessionsFlow.value).takeLast(SESSION_CAPACITY)
+            sessionsFlow.value = updated
+            store.edit { putString(KEY_SESSIONS, sessionsToJson(updated)) }
         }
     }
 
     private fun loadSessions(): List<GhostSession> {
-        val storedJson = prefs?.getString(KEY_SESSIONS, null) ?: return emptyList()
+        val json = store.getString(KEY_SESSIONS) ?: return emptyList()
         return try {
-            sessionsFromJson(storedJson)
+            val array = JSONArray(json)
+            List(array.length()) { index ->
+                val item = array.getJSONObject(index)
+                GhostSession(item.getLong(KEY_START_MS), item.getLong(KEY_END_MS))
+            }
         } catch (_: JSONException) {
             emptyList()
         }
     }
 
-    private fun sessionsFromJson(storedJson: String): List<GhostSession> {
-        val jsonArray = JSONArray(storedJson)
-        return buildList {
-            for (index in 0 until jsonArray.length()) {
-                val sessionJson = jsonArray.getJSONObject(index)
-                add(GhostSession(sessionJson.getLong(KEY_START_MS), sessionJson.getLong(KEY_END_MS)))
-            }
-        }
-    }
-
     private fun sessionsToJson(sessions: List<GhostSession>): String {
-        val jsonArray = JSONArray()
+        val array = JSONArray()
         sessions.forEach { session ->
-            jsonArray.put(
-                JSONObject()
-                    .put(KEY_START_MS, session.startMs)
-                    .put(KEY_END_MS, session.endMs)
-            )
+            array.put(JSONObject().put(KEY_START_MS, session.startMs).put(KEY_END_MS, session.endMs))
         }
-        return jsonArray.toString()
-    }
-
-    open fun setSavedNetworkMask(mask: String?) {
-        val timestampMs = if (mask == null) TIMESTAMP_NONE else System.currentTimeMillis()
-        savedNetworkMaskFlow.value = mask
-        savedMaskTimestampMsFlow.value = timestampMs
-        prefs?.edit()
-            ?.putString(KEY_SAVED_MASK, mask)
-            ?.putLong(KEY_SAVED_MASK_TS, timestampMs)
-            ?.apply()
-    }
-
-    fun effectiveDurationMs(session: GhostSession, nowMs: Long): Long =
-        (if (session.endMs == SESSION_END_OPEN) nowMs else session.endMs) - session.startMs
-
-    fun totalDurationMs(sessions: List<GhostSession>, fromMs: Long, nowMs: Long): Long =
-        sessions.filter { it.startMs >= fromMs }.sumOf { session -> effectiveDurationMs(session, nowMs) }
-
-    fun totalDurationAllTimeMs(sessions: List<GhostSession>, nowMs: Long): Long =
-        sessions.sumOf { session -> effectiveDurationMs(session, nowMs) }
-
-    open fun setActivePresetId(presetId: String) {
-        activePresetIdFlow.value = presetId
-        prefs?.edit()?.putString(KEY_ACTIVE_PRESET_ID, presetId)?.apply()
-    }
-
-    open fun appendLog(entry: CommandLogEntry) {
-        logEntriesFlow.update { current -> (current + entry).takeLast(LOG_CAPACITY) }
-    }
-
-    open fun removeLogEntry(timestampMs: Long) {
-        logEntriesFlow.update { current ->
-            current.filterNot { entry -> entry.timestampMs == timestampMs }
-        }
-    }
-
-    open fun clearLog() {
-        logEntriesFlow.value = EMPTY_LOG
+        return array.toString()
     }
 
     companion object {
-        const val LOG_CAPACITY = 200
-        private const val PREFS_NAME = "ghost_state"
+        const val LOG_CAPACITY = 300
+        const val PREFS_NAME = "ghost_state"
+        const val NONE = 0L
+
         private const val KEY_IS_ON = "is_on"
         private const val KEY_IS_ON_TIMESTAMP = "is_on_timestamp"
         private const val KEY_NOTIFICATION_ENABLED = "notification_enabled"
@@ -330,22 +251,13 @@ open class GhostStateRepository(private val context: Context? = null) {
         private const val KEY_SCHEDULE_START_MINUTE = "schedule_start_minute"
         private const val KEY_SCHEDULE_END_MINUTE = "schedule_end_minute"
         private const val KEY_THEME_MODE = "theme_mode"
+        private const val KEY_DYNAMIC_COLOR = "dynamic_color"
         private const val KEY_TIMER_FIRE_AT = "timer_fire_at"
-        private const val TIMESTAMP_NONE = 0L
-        private const val SESSION_END_OPEN = 0L
+        private const val KEY_UPDATE_CHECK_ENABLED = "update_check_enabled"
+        private const val KEY_APPLIED_SNAPSHOT = "applied_snapshot"
+
         private const val SESSION_CAPACITY = 500
-        private const val SCHEDULE_DEFAULT_DISABLED = false
-        private const val DEFAULT_SCHEDULE_START_MINUTE = 1380
-        private const val DEFAULT_SCHEDULE_END_MINUTE = 480
-        private val EMPTY_LOG: List<CommandLogEntry> = emptyList()
-
-        @Volatile
-        private var instance: GhostStateRepository? = null
-
-        fun getInstance(context: Context): GhostStateRepository {
-            return instance ?: synchronized(this) {
-                instance ?: GhostStateRepository(context.applicationContext).also { instance = it }
-            }
-        }
+        private const val DEFAULT_SCHEDULE_START = 23 * 60
+        private const val DEFAULT_SCHEDULE_END = 8 * 60
     }
 }

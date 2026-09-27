@@ -1,47 +1,48 @@
 package com.ghostmode.app
 
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
+/** Every translatable English string must exist in Russian (and vice versa) with the same format arguments. */
 class StringsLocalizationTest {
 
+    private val en = File("src/main/res/values/strings.xml")
+    private val ru = File("src/main/res/values-ru/strings.xml")
+
     @Test
-    fun verifyRussianAndEnglishStringsMatch() {
-        val baseDir = File("src/main/res")
-        val enFile = File(baseDir, "values/strings.xml")
-        val ruFile = File(baseDir, "values-ru/strings.xml")
+    fun englishAndRussianHaveTheSameKeys() {
+        val enKeys = strings(en).filterValues { it.translatable }.keys
+        val ruKeys = strings(ru).keys
 
-        assertTrue("English strings.xml must exist", enFile.exists())
-        assertTrue("Russian strings.xml must exist", ruFile.exists())
-
-        val enKeys = extractStringKeys(enFile)
-        val ruKeys = extractStringKeys(ruFile)
-
-        val missingInRu = enKeys - ruKeys
-        val missingInEn = ruKeys - enKeys
-
-        assertTrue("Missing in values-ru: $missingInRu", missingInRu.isEmpty())
-        assertTrue("Missing in values (en): $missingInEn", missingInEn.isEmpty())
-        assertEquals("Both files must have the same number of keys", enKeys.size, ruKeys.size)
+        assertTrue("Missing in values-ru: ${enKeys - ruKeys}", (enKeys - ruKeys).isEmpty())
+        assertTrue("Missing in values: ${ruKeys - enKeys}", (ruKeys - enKeys).isEmpty())
     }
 
-    private fun extractStringKeys(file: File): Set<String> {
-        val factory = DocumentBuilderFactory.newInstance()
-        val builder = factory.newDocumentBuilder()
-        val doc = builder.parse(file)
-        val stringNodes = doc.getElementsByTagName("string")
+    @Test
+    fun formatArgumentsMatch() {
+        val enStrings = strings(en)
+        val mismatched = strings(ru).filter { (key, value) ->
+            enStrings[key]?.let { formatArgs(it.text) != formatArgs(value.text) } ?: false
+        }.keys
+        assertTrue("Format arguments differ: $mismatched", mismatched.isEmpty())
+    }
 
-        val keys = mutableSetOf<String>()
-        for (i in 0 until stringNodes.length) {
-            val node = stringNodes.item(i)
-            val nameAttr = node.attributes.getNamedItem("name")?.nodeValue
-            if (nameAttr != null) {
-                keys.add(nameAttr)
-            }
+    private data class Entry(val text: String, val translatable: Boolean)
+
+    private fun strings(file: File): Map<String, Entry> {
+        assertTrue("${file.path} must exist", file.exists())
+        val nodes = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file).getElementsByTagName("string")
+        return (0 until nodes.length).associate { index ->
+            val node = nodes.item(index)
+            node.attributes.getNamedItem("name").nodeValue to Entry(
+                text = node.textContent,
+                translatable = node.attributes.getNamedItem("translatable")?.nodeValue != "false"
+            )
         }
-        return keys
     }
+
+    private fun formatArgs(text: String): List<String> =
+        Regex("%\\d+\\$[sd]").findAll(text).map { it.value }.sorted().toList()
 }

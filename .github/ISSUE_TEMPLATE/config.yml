@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: 💬 Community Discussions & Questions
-    url: https://github.com/foxlape/GhostMode/discussions
-    about: Ask questions, share feedback, or chat with other users.
+  - name: Security vulnerability
+    url: https://github.com/Foxlape/GhostMode/security/advisories/new
+    about: Report security problems privately, not in a public issue.
+  - name: Setup help and limitations
+    url: https://github.com/Foxlape/GhostMode#quick-start
+    about: Shizuku / root setup, preset selection and known limitations.

@@ -1,24 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background">
+    android:background="@drawable/widget_bg_off"
+    android:padding="8dp">
 
-    <ImageView
-        android:id="@+id/widget_icon"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:contentDescription="@string/app_name"
-        android:src="@drawable/ic_launcher_foreground" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/widget_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_ghost" />
+
+        <TextView
+            android:id="@+id/widget_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="1"
+            android:text="@string/widget_state_off"
+            android:textColor="@color/widget_off_content"
+            android:textSize="12sp" />
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/widget_open"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="3dp"
-        android:layout_marginBottom="3dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="top|end"
+        android:alpha="0.6"
         android:contentDescription="@string/app_name"
+        android:padding="4dp"
         android:src="@drawable/ic_widget_open" />
 </FrameLayout>

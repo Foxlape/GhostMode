@@ -1,182 +1,167 @@
 <div align="center">
 
-# 👻 Ghost Mode
+<img src="fastlane/metadata/android/en-US/images/icon.png" width="96" alt="Ghost Mode icon">
 
-**Seamlessly turn your Android device "unavailable" for incoming cellular calls while keeping high-speed LTE / mobile data fully active.**
+# Ghost Mode
 
-[![Android](https://img.shields.io/badge/Android-8.0%2B%20(API%2026%2B)-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=for-the-badge&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Shizuku](https://img.shields.io/badge/Shizuku-v10%2B-2196F3?style=for-the-badge)](https://shizuku.rikka.app)
-[![Root](https://img.shields.io/badge/Root-KernelSU%20%7C%20Magisk%20%7C%20APatch-E91E63?style=for-the-badge)](https://github.com/tiann/KernelSU)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)](LICENSE)
+**Become unreachable for cellular calls while mobile data keeps working.**
 
-[**🇷🇺 Читать документацию на русском языке**](README.ru.md)
+[![Release](https://img.shields.io/github/v/release/Foxlape/GhostMode?style=flat-square)](https://github.com/Foxlape/GhostMode/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/Foxlape/GhostMode/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Foxlape/GhostMode/actions/workflows/ci.yml)
+[![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](#requirements)
+[![License](https://img.shields.io/github/license/Foxlape/GhostMode?style=flat-square)](LICENSE)
+
+[Русская версия](README.ru.md) · [Download](https://github.com/Foxlape/GhostMode/releases/latest) · [Changelog](CHANGELOG.md)
 
 </div>
 
----
+Ghost Mode makes your phone look switched off to anyone who calls — they hear *"subscriber unavailable"* — while
+LTE / 5G data keeps working. Messengers, maps and music continue as usual; only cellular calls stop reaching you.
+No airplane mode, no call-blocking rules.
 
-## 🌟 Overview
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_home_on_dark.png" width="200" alt="Mode on">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_home_off_dark.png" width="200" alt="Mode off">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_presets_dark.png" width="200" alt="Presets">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_stats_dark.png" width="200" alt="Statistics">
+</p>
 
-**Ghost Mode** is an open-source Android utility that makes your phone appear as **"Subscriber unavailable" / "Out of service"** to all incoming cellular callers (just as if the phone were switched off), while **LTE / 5G mobile data continues to work at full speed**.
+## Features
 
-No more airplane mode, missed internet notifications, or clumsy call reject rules. You remain fully connected to the web, instant messengers, and cloud services without being disturbed by unsolicited calls.
+- **Works without root** through [Shizuku](https://shizuku.rikka.app) (or Sui and compatible forks); root via KernelSU,
+  Magisk or APatch is detected automatically.
+- **Exact restore.** Before turning on, the app records the original network types, the values of every setting it
+  changes and the IMS services it disables. Turning off puts back exactly that — even if you switched preset or SIM
+  in between, or rebooted.
+- **Presets** for Pixel / stock Android, Samsung One UI, Xiaomi HyperOS, OnePlus, vivo / iQOO and Android 9–11, plus
+  your own command sets with JSON import and export.
+- **Dual SIM**: make SIM 1, SIM 2 or both unreachable.
+- **Quick Settings tile, home screen widget, launcher shortcuts.**
+- **Schedule** (e.g. every night 23:00–07:30) and an **auto turn-off timer**.
+- **Reboot-aware**: re-applies itself after a restart when root / Sui is available, otherwise shows a notification.
+- **Diagnostics** per SIM, a full **command log** and **statistics**.
+- Material You design, dark and light themes, English and Russian.
+- No ads, no trackers, no analytics. No network access unless you enable the optional update check.
 
-### 💡 How It Works
-1. **IMS / VoLTE Deregistration**: Disables telephony IMS registration (`cmd phone ims disable`), preventing VoLTE and VoWiFi calls from reaching the device.
-2. **Strict LTE-Only Lock**: Locks the modem to LTE packet transmission (`cmd phone set-allowed-network-types-for-users -s 0 01000001000000000000`), disabling Circuit Switched Fallback (CSFB) to 2G/3G.
-3. **Restoration**: When toggled off, your exact original network mask and IMS stack are cleanly restored.
+## Requirements
 
-All commands run via **Shizuku** (rootless shell via ADB UID 2000) or direct **Root** (`su` via KernelSU / Magisk / APatch).
-
----
-
-## ✨ Features
-
-- ⚡ **No Root Required**: Executes privileged telephony commands seamlessly via [Shizuku](https://shizuku.rikka.app) (with built-in 1-click download & setup guidance).
-- 🔥 **Root Superuser Support**: Direct `su` backend with automatic privilege detection (KernelSU, Magisk, APatch) — works instantly after device reboot without relaunching Shizuku.
-- 📱 **Multi-Vendor Presets**: Pre-configured profiles for Google Pixel (AOSP), Xiaomi (MIUI / HyperOS), Samsung (One UI), OnePlus (OxygenOS), vivo/iQOO (OriginOS / Funtouch), and legacy Android versions.
-- ⊞ **Preset Grid Tiles & List View**: Interactive 2-column preset grid with instant switching, custom creator, and export/import.
-- 🎛️ **Quick Settings Tile**: Toggle Ghost Mode directly from your Android notification shade with one tap; long-press opens app directly.
-- 🧩 **Home Screen Widget**: Sleek interactive desktop widget for instant state switching.
-- ⏰ **Automated Schedules**: Daily quiet hours (e.g. `23:00` → `08:00`) with persistent boot-aware exact alarms.
-- 🔔 **Persistent Status Notification**: Optional active mode notification featuring an elapsed timer and direct one-click "Turn Off" action.
-- 📊 **Usage Statistics**: Track total time in Ghost Mode, session history (up to 500 records), and usage trends (today, 7 days, all-time).
-- 🌍 **Bilingual Interface**: Full English and Russian localization with instant runtime language switching.
-- 🎨 **Modern Material 3 UI**: Clean adaptive design with 3-dots action menu (Diagnostics, Command Log, Schedule, Language, Stats, About).
-
----
-
-## 📋 Compatibility & Requirements
-
-| Requirement | Minimum | Recommended |
+| | Minimum | Recommended |
 |---|---|---|
-| **Android OS** | Android 8.0 (API 26) | Android 12+ (API 31+) |
-| **Privilege Provider** | [Shizuku v10+](https://shizuku.rikka.app) | KernelSU / Magisk / Shizuku |
-| **Carrier** | VoLTE enabled | LTE / 5G coverage |
+| Android | 8.0 (API 26) | 12+ (API 31+) — telephony shell commands used by most presets |
+| Privileges | Shizuku v11+ **or** root | — |
+| Network | LTE coverage | VoLTE-capable carrier |
 
-### 🏷️ Vendor Presets Matrix
+## Install
 
-| Preset | Target Systems | Core Strategy |
-|---|---|---|
-| **Universal (Auto-detect)** | Android 12+ (Default) | Automatically discovers device & carrier IMS package names and toggles them |
-| **Stock / Pixel** | Google Pixel, Moto, Clean AOSP | `cmd phone ims disable` + LTE-only network mask lock |
-| **Xiaomi MIUI / HyperOS** | Xiaomi, Redmi, POCO | AOSP telephony shell commands bypass hidden MIUI lockouts |
-| **Samsung One UI** | Galaxy S / A / Z series | LTE-only lock + disables `com.sec.imsservice` user package |
-| **OnePlus (OxygenOS)** | OnePlus 8-13 (Snapdragon / MTK) | AOSP commands + toggles Qualcomm/MediaTek IMS packages (`org.codeaurora.ims`) |
-| **vivo / iQOO (OriginOS / Funtouch)** | vivo X/V series, iQOO | AOSP commands + handles SoC IMS services (`com.mediatek.ims`) |
-| **Legacy Android (9–11)** | Android 9.0 – 11.0 | Global preferred network mode `11` + fast airplane toggle |
+- **GitHub Releases** — [latest APK](https://github.com/Foxlape/GhostMode/releases/latest) with `SHA256SUMS.txt`.
+- **[Obtainium](https://github.com/ImranR98/Obtainium)** — add `https://github.com/Foxlape/GhostMode` to get updates automatically.
+- **F-Droid / IzzyOnDroid** — requested in [#3](https://github.com/Foxlape/GhostMode/issues/3); the repository ships
+  fastlane metadata for both.
 
----
+Official releases are signed with this certificate (also shown in *Settings → About*):
 
-## 🚀 Quick Start Guide
-
-### 1. Choose Your Execution Backend
-
-#### Option A: Rootless via Shizuku (Recommended for non-rooted phones)
-1. Install [Shizuku](https://shizuku.rikka.app) on your device.
-2. Start the Shizuku service via **Wireless Debugging** (Android 11+) or via ADB from a PC:
-   ```bash
-   adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.sh
-   ```
-3. Open Ghost Mode, tap **Grant Permission** on the backend status card, and authorize.
-
-#### Option B: Direct Root (KernelSU / Magisk / APatch)
-1. Grant root permissions to Ghost Mode in your superuser manager (KernelSU / Magisk).
-2. Open Ghost Mode — root will be detected automatically (`su -c id`).
-3. Root mode is completely persistent across device reboots.
-
-### 2. Enable Ghost Mode
-1. Select the preset matching your device (or keep **Universal**).
-2. Toggle the main switch to **ON**.
-3. Verify:
-   - Call your number from another phone: should hear "Subscriber unavailable".
-   - Open a browser on LTE (Wi-Fi off): web pages load fast without interruptions.
-
----
-
-## 🔧 Building from Source
-
-### Prerequisites
-- JDK 17+
-- Android SDK 35 (Platform tools & build-tools 35.0.0)
-
-### Build Debug APK
-```bash
-# Clone the repository
-git clone https://github.com/foxlape/GhostMode.git
-cd GhostMode
-
-# Build debug APK
-./gradlew assembleDebug
-
-# Output APK path: app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Build Release APK
-```bash
-./gradlew assembleRelease
-# Output APK path: app/build/outputs/apk/release/app-release.apk
-```
-
-### 🔒 Official Release Signing Certificate
-To verify the authenticity of official Ghost Mode releases:
 ```
 SHA-256: FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53:DD:47:12:28:D5:71:B0:50
 ```
 
----
+Verify with `apksigner verify --print-certs GhostMode-vX.Y.Z.apk`.
 
-## 📂 Project Architecture
+## Quick start
 
-```
-GhostMode/
-├── app/
-│   ├── src/main/
-│   │   ├── aidl/               # Shizuku UserService AIDL interface (IUserService.aidl)
-│   │   ├── java/com/ghostmode/app/
-│   │   │   ├── data/           # Preset models, JSON serializer, State Repository
-│   │   │   ├── domain/         # GhostModeController state machine & mask parser
-│   │   │   ├── scheduling/     # ScheduleManager & Boot/Time receiver
-│   │   │   ├── service/        # Ongoing Status Notification Foreground Service
-│   │   │   ├── shell/          # AutoShellExecutor, RootShell, ShizukuUserService
-│   │   │   ├── tile/           # Quick Settings QS Tile Provider
-│   │   │   ├── widget/         # Home Screen AppWidgetProvider
-│   │   │   └── ui/             # Jetpack Compose UI (Cards, Dialogs, Material3 Theme)
-│   │   └── res/                # Vector drawables, localization strings (EN, RU)
-│   └── build.gradle.kts        # App build config (Kotlin 2.0, Compose BOM, SDK 35)
-├── .github/
-│   ├── workflows/              # CI build & automated GitHub Release workflows
-│   └── ISSUE_TEMPLATE/         # Bug report & preset request templates
-├── LICENSE                     # Apache-2.0 License
-├── README.md                   # English Documentation
-└── README.ru.md                # Russian Documentation
-```
+1. **Get access** — one of:
+   - *Shizuku*: download the APK from [GitHub](https://github.com/RikkaApps/Shizuku/releases/latest) (the
+     *Download Shizuku* button in the app opens the same page), start it via **Wireless debugging** (Android 11+) or
+     ADB, then tap **Grant access** in Ghost Mode. The actively maintained fork
+     [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku/releases/latest) works too and can start itself after a
+     reboot, so Ghost Mode can re-apply the mode without root.
+   - *Root*: open Ghost Mode and allow the root request in KernelSU / Magisk / APatch.
+2. **Pick a preset** on the *Presets* tab. Start with **Universal**; switch to your vendor's preset if calls still get
+   through.
+3. **Tap the ghost.** Check from another phone: you should hear "subscriber unavailable", while mobile data keeps
+   working (turn Wi-Fi off to be sure).
 
----
+Not working? Open *Settings → Diagnostics* and *Command log*, then
+[open an issue](https://github.com/Foxlape/GhostMode/issues/new/choose) with the copied log.
 
-## ⚠️ Limitations & Disclaimers
+## How it works
+
+Presets are lists of shell commands executed through Shizuku or `su`. The built-in ones combine:
+
+| Lever | Command | Effect |
+|---|---|---|
+| IMS off | `cmd phone ims disable -s <slot>` | No VoLTE / VoWiFi registration |
+| LTE only | `cmd phone set-allowed-network-types-for-users -s <slot> 01000001000000000000` | No 2G/3G fallback (CSFB) for calls |
+| IMS package | `pm disable-user --user 0 <ims package>` | For firmware that ignores the IMS command |
+| Settings | `settings put global preferred_network_mode… 11`, `volte_vt_enabled 0` | Samsung, Android 9–11 |
+
+| Preset | For | What it adds |
+|---|---|---|
+| **Universal** | Any Android 12+ (default) | Disables the IMS service the phone actually uses (detected at runtime) |
+| **Stock Android / Pixel** | Pixel, Motorola, Nothing, near-stock | IMS off + LTE only |
+| **Xiaomi HyperOS / MIUI** | Xiaomi, Redmi, POCO | Same as stock |
+| **Samsung One UI** | Galaxy S / A / Z | VoLTE switches, `preferred_network_mode` for all subscriptions, Samsung IMS packages |
+| **OnePlus / OxygenOS** | OnePlus 8–13 | Qualcomm / MediaTek IMS packages |
+| **vivo / iQOO** | OriginOS, Funtouch OS | Same as OnePlus |
+| **Android 9–11** | Phones without the Android 12 commands | `preferred_network_mode` + airplane-mode toggle |
+
+When you create your own preset, these placeholders are available:
+
+- `-s 0` — rewritten to the selected SIM slot; the command runs once per slot.
+- `{{SAVED_MASK}}` — the network-type mask captured before the mode was turned on.
+- `{{IMS_PACKAGES}}` — the IMS service packages currently used by the selected SIMs.
+
+Original values of `settings put` keys and packages disabled with `pm disable-user` are restored automatically.
+
+## Limitations
 
 > [!WARNING]
-> **Emergency Calls**: Never rely on this mode in critical situations where emergency availability is essential. Always turn Ghost Mode off when urgent call reception is needed.
+> Do not rely on Ghost Mode when you must be reachable for emergencies.
 
-- **SMS Delivery**: On some cellular carriers, SMS text messages are routed through IMS. Disabling IMS might delay SMS until Ghost Mode is turned off.
-- **Conditional Call Forwarding**: If you have active voicemail or carrier call forwarding set up for "When unreachable", callers may be redirected to your voicemail.
-- **OnePlus Devices**: After disabling Ghost Mode on certain OxygenOS versions, a quick network toggle or restart might be required if VoLTE does not immediately re-register.
-- **Responsibility**: Use this software strictly on your own hardware in accordance with local telecommunications regulations.
+- **SMS** may be delayed until the mode is off on carriers that deliver SMS over IMS.
+- **Call forwarding** "when unreachable" sends callers to voicemail instead.
+- Some Samsung models drop VoLTE registration only after a reboot.
+- Commands differ between firmware versions. If a preset does not work, send the diagnostics and command log.
+- Use the app only on your own device and in line with local regulations.
 
----
+## Building
 
-## 🤝 Contributing
+Requirements: JDK 17+, Android SDK 35.
 
-Contributions are welcome!
-- Found a command combination that works for a new phone vendor? Submit a **[Preset Request](https://github.com/foxlape/GhostMode/issues/new?template=preset_request.yml)**.
-- Encountered a bug? File a **[Bug Report](https://github.com/foxlape/GhostMode/issues/new?template=bug_report.yml)**.
-- Want to improve code or translations? Check out [CONTRIBUTING.md](CONTRIBUTING.md) and open a Pull Request!
+```bash
+./gradlew assembleDebug            # app/build/outputs/apk/debug/
+./gradlew testDebugUnitTest        # unit tests
+./gradlew assembleRelease          # signed if keystore.properties exists, debug-signed otherwise
+./gradlew testDebugUnitTest -Pscreenshots --tests '*ScreenshotTest*'   # regenerate store screenshots
+```
 
----
+Release signing reads `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) or the
+`KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` environment variables.
 
-## 📄 License
+<details>
+<summary>Project structure</summary>
 
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
+```
+app/src/main/java/com/ghostmode/app/
+├── AppGraph.kt        process-wide objects: state, presets, shell, controller
+├── data/              presets, persisted state, applied-state snapshot, statistics
+├── domain/            GhostModeController (apply / restore / diagnostics), network masks
+├── shell/             root and Shizuku executors, Shizuku user service
+├── system/            GhostActions: entry point for every mode change
+├── scheduling/        schedule and timer alarms, boot handling
+├── service/           status notification and its actions
+├── tile/, widget/     Quick Settings tile, home screen widget
+└── ui/                Jetpack Compose UI (home, presets, settings, tools)
+fastlane/metadata/     store listing texts and screenshots (F-Droid / IzzyOnDroid)
+```
+
+</details>
+
+## Contributing
+
+Found commands that work on your phone? Open a
+[preset request](https://github.com/Foxlape/GhostMode/issues/new?template=preset_request.yml). For code changes see
+[CONTRIBUTING.md](CONTRIBUTING.md). Security issues: see [SECURITY.md](SECURITY.md).
+
+## License
+
+[Apache License 2.0](LICENSE)

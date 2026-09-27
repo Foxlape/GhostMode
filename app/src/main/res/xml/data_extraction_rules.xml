@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app stores device-specific modem state (network masks, applied commands); restoring it
+     on another phone would restore wrong values, so neither backup nor transfer is allowed. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

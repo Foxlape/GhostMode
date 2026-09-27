@@ -1,43 +1,54 @@
-name: Build & Publish Release
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    tags: [ 'v*' ]
 
 permissions:
   contents: write
 
 jobs:
   release:
-    name: Build & Create GitHub Release
+    name: Build & publish
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
+      - uses: actions/setup-java@6a0805fcefea3d4657a47ac4c165951e33482018 # v4.2.2
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Check version matches tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION_NAME=$(sed -n 's/.*versionName = "\(.*\)".*/\1/p' app/build.gradle.kts)
+          VERSION_CODE=$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' app/build.gradle.kts)
+          if [ "v${VERSION_NAME}" != "${TAG}" ]; then
+            echo "::error::Tag ${TAG} does not match versionName ${VERSION_NAME}"
+            exit 1
+          fi
+          echo "name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "code=${VERSION_CODE}" >> "$GITHUB_OUTPUT"
 
-      - name: Decode Release Keystore
-        if: ${{ env.KEYSTORE_BASE64 != '' }}
+      # Publishing an APK signed with a debug key would break updates for every user.
+      - name: Decode release keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > ghostmode-release.keystore
+          if [ -z "${KEYSTORE_BASE64}" ]; then
+            echo "::error::KEYSTORE_BASE64 secret is not set"
+            exit 1
+          fi
+          echo "${KEYSTORE_BASE64}" | base64 -d > ghostmode-release.keystore
 
-      - name: Build Signed Release APK
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Build signed APK
         env:
           KEYSTORE_FILE: ghostmode-release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -45,28 +56,40 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
-      - name: Prepare Release Artifacts
-        id: prepare_artifacts
+      - name: Verify signing certificate
         run: |
-          mkdir -p release_assets
-          TAG_NAME="${GITHUB_REF#refs/tags/}"
-          [ "$TAG_NAME" = "refs/heads/main" ] && TAG_NAME="nightly"
-          
-          # Copy release APK with clean name
-          cp app/build/outputs/apk/release/app-release.apk release_assets/GhostMode-${TAG_NAME}.apk
-          
-          # Generate SHA256 Checksums
-          cd release_assets
-          sha256sum * > SHA256SUMS.txt
-          cd ..
-          
-          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk | tee signer.txt
+          grep -qi "fb2ae9c480bb0f045565f7b5cabf017d981821a933f07853dd471228d571b050" signer.txt
 
-      - name: Create GitHub Release
+      - name: Prepare assets and notes
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/GhostMode-${GITHUB_REF_NAME}.apk"
+          (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
+
+          VERSION="${{ steps.version.outputs.name }}"
+          CODE="${{ steps.version.outputs.code }}"
+          # English notes: the CHANGELOG.md section of this version.
+          awk -v v="## [${VERSION}]" 'index($0, v) == 1 {on = 1; next} /^## \[/ {on = 0} on' CHANGELOG.md > notes.md
+          RU="fastlane/metadata/android/ru-RU/changelogs/${CODE}.txt"
+          if [ -f "$RU" ]; then
+            { echo; echo "<details><summary>🇷🇺 На русском</summary>"; echo; cat "$RU"; echo; echo "</details>"; } >> notes.md
+          fi
+          {
+            echo
+            echo "---"
+            echo "**Verify:** \`apksigner verify --print-certs\` must show SHA-256 \`FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53:DD:47:12:28:D5:71:B0:50\`; checksums are in \`SHA256SUMS.txt\`."
+            echo
+            echo "Full changelog: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md)"
+          } >> notes.md
+          cat notes.md
+
+      - name: Publish release
         uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
         with:
-          files: release_assets/*
-          name: Ghost Mode ${{ steps.prepare_artifacts.outputs.tag_name }}
+          name: Ghost Mode ${{ github.ref_name }}
+          body_path: notes.md
+          files: dist/*
           draft: false
-          prerelease: false
-          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
