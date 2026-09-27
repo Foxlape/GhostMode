@@ -20,7 +20,8 @@ def changelog_section(version: str) -> str:
         if line.startswith("## ["):
             inside = line.startswith(f"## [{version}]")
             continue
-        if inside:
+        # Link reference definitions ("[0.2.0]: https://…") at the end of the file are not notes.
+        if inside and not re.match(r"^\[[^\]]+\]: ", line):
             out.append(line)
     return "\n".join(out).strip()
 
