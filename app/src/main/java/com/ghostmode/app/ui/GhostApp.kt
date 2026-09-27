@@ -93,7 +93,7 @@ fun GhostApp(vm: MainViewModel, host: AppHost, initialTab: Tab = Tab.HOME, initi
             val result = snackbar.showSnackbar(
                 message = context.getString(message.text),
                 actionLabel = if (message.showLogAction) context.getString(R.string.action_open_log) else null,
-                duration = if (message.showLogAction) SnackbarDuration.Long else SnackbarDuration.Short
+                duration = if (message.long) SnackbarDuration.Long else SnackbarDuration.Short
             )
             if (result == SnackbarResult.ActionPerformed) push(Page.LOG)
         }

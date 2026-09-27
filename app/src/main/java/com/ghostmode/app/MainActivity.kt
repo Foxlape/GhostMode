@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.tile_label),
             Icon.createWithResource(this, R.drawable.ic_ghost),
             mainExecutor
-        ) { }
+        ) { result -> vm.onTileRequestResult(result) }
     }
 
     private companion object {

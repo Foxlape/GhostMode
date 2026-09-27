@@ -126,6 +126,27 @@ class GhostModeControllerTest {
     }
 
     @Test
+    fun turnOn_bothSims_skipsSlotWithoutSimCard() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_STOCK_PIXEL)
+        val singleSim = GhostModeController(shell, presets, state, activeSlots = { setOf(0) })
+
+        val outcome = singleSim.turnOn()
+
+        assertTrue(outcome is TurnOutcome.Success)
+        assertTrue(shell.executedMatching("-s 1").isEmpty())
+        assertEquals(listOf(0), state.appliedSnapshot.value?.slots)
+    }
+
+    @Test
+    fun turnOn_unknownSimState_keepsSelection() = runTest {
+        val unknown = GhostModeController(shell, presets, state, activeSlots = { emptySet() })
+
+        unknown.turnOn()
+
+        assertEquals(listOf(0, 1), state.appliedSnapshot.value?.slots)
+    }
+
+    @Test
     fun turnOff_restoresCapturedMaskPerSlot() = runTest {
         state.setActivePresetId(BuiltInPresets.ID_STOCK_PIXEL)
         controller.turnOn()

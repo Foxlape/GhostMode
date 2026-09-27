@@ -61,6 +61,8 @@ class GhostModeController(
     private val presets: PresetRepository,
     private val state: GhostStateRepository,
     private val bootCount: () -> Int = { AppliedSnapshot.BOOT_COUNT_UNKNOWN },
+    /** SIM slots with a ready SIM card, or `null` if unknown. Empty slots are skipped. */
+    private val activeSlots: () -> Set<Int>? = { null },
     private val clock: () -> Long = System::currentTimeMillis,
     private val readyTimeoutMs: Long = DEFAULT_READY_TIMEOUT_MS
 ) {
@@ -101,7 +103,7 @@ class GhostModeController(
         busyFlow.value = true
         try {
             if (!shell.awaitReady(readyTimeoutMs)) return null
-            val slots = state.appliedSnapshot.value?.slots ?: state.simSlotMode.value.slots
+            val slots = state.appliedSnapshot.value?.slots ?: selectedSlots()
             val slotReports = slots.map { slot ->
                 val maskResult = execute(forSlot(BuiltInPresets.MASK_CAPTURE_COMMAND, slot))
                 SlotDiagnostics(
@@ -134,7 +136,7 @@ class GhostModeController(
         val preset = (if (wasOn && previous != null) presets.getPreset(previous.presetId) else null)
             ?: resolveActivePreset()
             ?: return TurnOutcome.Failure(FailureReason.NO_PRESET)
-        val slots = if (wasOn && previous != null) previous.slots else state.simSlotMode.value.slots
+        val slots = if (wasOn && previous != null) previous.slots else selectedSlots()
 
         captureNetworkMasks(preset, slots, freshCapture = !wasOn)
 
@@ -268,7 +270,7 @@ class GhostModeController(
         return AppliedSnapshot(
             presetId = preset.id,
             offCommands = preset.offCommands,
-            slots = state.simSlotMode.value.slots,
+            slots = selectedSlots(),
             settingsOriginals = emptyMap(),
             disabledPackages = (explicit + discovered).distinct(),
             bootCount = AppliedSnapshot.BOOT_COUNT_UNKNOWN,
@@ -307,6 +309,16 @@ class GhostModeController(
             busyFlow.value = false
             mutex.unlock()
         }
+    }
+
+    /**
+     * Slots chosen by the user, minus slots without a SIM card: "both SIMs" on a single-SIM
+     * phone would otherwise run every slot-specific command against an empty slot and fail.
+     */
+    private fun selectedSlots(): List<Int> {
+        val selected = state.simSlotMode.value.slots
+        val active = activeSlots() ?: return selected
+        return selected.filter { it in active }.ifEmpty { selected }
     }
 
     private fun resolveActivePreset(): Preset? =

@@ -49,6 +49,10 @@ returns the phone to exactly the state it was in before — whatever happens in 
 - White flash on start in the dark theme; missing edge-to-edge layout before Android 15.
 - An unexpected error in the schedule receiver could crash the app.
 - Removed the empty "Buy me a coffee" dialog.
+- "Both SIMs" on a single-SIM phone ran every slot-specific command against the empty slot and reported errors;
+  slots without a ready SIM card are now skipped.
+- "Add Quick Settings tile" did nothing when the tile was already added or the firmware does not support the
+  request; the result is now shown, with manual instructions when needed.
 
 ### Added
 

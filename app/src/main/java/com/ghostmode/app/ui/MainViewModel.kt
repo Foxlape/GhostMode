@@ -31,7 +31,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class UiMessage(@param:StringRes val text: Int, val showLogAction: Boolean = false)
+data class UiMessage(
+    @param:StringRes val text: Int,
+    val showLogAction: Boolean = false,
+    val long: Boolean = showLogAction
+)
 
 enum class MobileDataStatus { ACTIVE, STANDBY_WIFI, UNAVAILABLE }
 
@@ -46,6 +50,9 @@ data class SystemStatus(
     val isBatteryExempt: Boolean = true,
     val canScheduleExact: Boolean = true
 )
+
+private const val TILE_ALREADY_ADDED = 1 // StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ALREADY_ADDED
+private const val TILE_ADDED = 2 // StatusBarManager.TILE_ADD_REQUEST_RESULT_TILE_ADDED
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -107,6 +114,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             isBatteryExempt = power?.isIgnoringBatteryOptimizations(app.packageName) ?: true,
             canScheduleExact = ScheduleManager.canScheduleExact(app)
         )
+    }
+
+    /** Result of `StatusBarManager.requestAddTileService`; silence would look like a broken button. */
+    fun onTileRequestResult(result: Int) {
+        val text = when (result) {
+            TILE_ADDED -> R.string.message_tile_added
+            TILE_ALREADY_ADDED -> R.string.message_tile_already_added
+            else -> R.string.message_tile_manual
+        }
+        viewModelScope.launch { messageChannel.send(UiMessage(text, long = text == R.string.message_tile_manual)) }
     }
 
     fun openShizuku() {

@@ -172,6 +172,9 @@
     <string name="message_import_empty">В файле нет корректных пресетов.</string>
     <string name="message_import_invalid">Это не файл пресетов Ghost Mode.</string>
     <string name="message_packages_enabled">Пакеты включены.</string>
+    <string name="message_tile_added">Плитка добавлена в шторку.</string>
+    <string name="message_tile_already_added">Плитка Ghost Mode уже есть в шторке.</string>
+    <string name="message_tile_manual">Добавьте вручную: откройте шторку → ✏ «Изменить» → перетащите «Ghost Mode» в панель.</string>
 
     <!-- Настройки -->
     <string name="settings_title">Настройки</string>

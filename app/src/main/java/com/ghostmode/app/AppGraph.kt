@@ -1,6 +1,8 @@
 package com.ghostmode.app
 
 import android.content.Context
+import android.os.Build
+import android.telephony.TelephonyManager
 import android.provider.Settings
 import com.ghostmode.app.data.AppliedSnapshot
 import com.ghostmode.app.data.GhostStateRepository
@@ -44,12 +46,29 @@ class AppGraph(context: Context) {
         shell = shell,
         presets = presets,
         state = state,
-        bootCount = { readBootCount() }
+        bootCount = { readBootCount() },
+        activeSlots = { readActiveSlots() }
     )
 
     val actions = GhostActions(appContext, controller, state, scope)
 
     val updates = UpdateManager(scope)
+
+    /** Slots whose SIM is ready; `getSimState(slot)` needs no permission. */
+    private fun readActiveSlots(): Set<Int>? {
+        val telephony = appContext.getSystemService(TelephonyManager::class.java) ?: return null
+        val slotCount = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            telephony.activeModemCount
+        } else {
+            @Suppress("DEPRECATION")
+            telephony.phoneCount
+        }
+        return try {
+            (0 until slotCount).filter { telephony.getSimState(it) == TelephonyManager.SIM_STATE_READY }.toSet()
+        } catch (_: RuntimeException) {
+            null
+        }
+    }
 
     private fun readBootCount(): Int =
         Settings.Global.getInt(appContext.contentResolver, Settings.Global.BOOT_COUNT, AppliedSnapshot.BOOT_COUNT_UNKNOWN)
