@@ -63,3 +63,6 @@ Thumbs.db
 *.key
 secrets.properties
 keystore.properties
+
+# Local tooling
+graft/

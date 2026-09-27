@@ -1,19 +1,15 @@
-## Description
-<!-- Briefly describe the changes introduced by this pull request. -->
+## What and why
 
-## Type of Change
-- [ ] 🐛 Bug fix (non-breaking change fixing an issue)
-- [ ] ✨ New feature / enhancement (adding or updating functionality)
-- [ ] 📱 New device preset / vendor profile
-- [ ] 📝 Documentation update
-- [ ] 🎨 UI / UX refinement
-- [ ] ⚡ Performance or refactoring improvement
+<!-- What does this change and which problem does it solve? Link issues: "Fixes #123". -->
 
-## Testing Checklist
-- [ ] App compiles cleanly (`./gradlew assembleDebug`)
-- [ ] Verified on real hardware / emulator
-- [ ] Backend tested: [ ] Shizuku [ ] KernelSU [ ] Magisk [ ] APatch
-- [ ] Device model tested: (e.g. Pixel 8, Xiaomi 13, OnePlus 12)
+## How it was tested
 
-## Related Issues
-<!-- Link related issues, e.g. Fixes #123 -->
+- [ ] `./gradlew testDebugUnitTest assembleDebug` passes
+- [ ] Tested on a device (model, Android version, Shizuku / root):
+- [ ] UI changes: screenshots attached (or `-Pscreenshots` renders updated)
+
+## Checklist
+
+- [ ] New user-facing strings exist in both `values/strings.xml` and `values-ru/strings.xml`
+- [ ] Presets: every ON command has a matching way back (OFF command, `settings put` or `pm disable-user`)
+- [ ] `CHANGELOG.md` updated under *Unreleased*
