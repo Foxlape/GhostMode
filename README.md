@@ -69,8 +69,11 @@ Verify with `apksigner verify --print-certs GhostMode-vX.Y.Z.apk`.
 ## Quick start
 
 1. **Get access** — one of:
-   - *Shizuku*: install it, start it via **Wireless debugging** (Android 11+) or ADB, then tap **Grant access** in
-     Ghost Mode.
+   - *Shizuku*: download the APK from [GitHub](https://github.com/RikkaApps/Shizuku/releases/latest) (the
+     *Download Shizuku* button in the app opens the same page), start it via **Wireless debugging** (Android 11+) or
+     ADB, then tap **Grant access** in Ghost Mode. The actively maintained fork
+     [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku/releases/latest) works too and can start itself after a
+     reboot, so Ghost Mode can re-apply the mode without root.
    - *Root*: open Ghost Mode and allow the root request in KernelSU / Magisk / APatch.
 2. **Pick a preset** on the *Presets* tab. Start with **Universal**; switch to your vendor's preset if calls still get
    through.

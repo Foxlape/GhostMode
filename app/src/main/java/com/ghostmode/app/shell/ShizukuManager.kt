@@ -103,18 +103,18 @@ open class ShizukuManager(private val context: Context? = null) {
         return false
     }
 
+    /**
+     * Opens the latest Shizuku release on GitHub in the browser. Google Play is not used:
+     * it is missing or disabled on many of the phones this app targets.
+     */
     fun openShizukuDownload() {
         val ctx = context ?: return
-        val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$SHIZUKU_PACKAGE"))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
-            ctx.startActivity(marketIntent)
-        } catch (_: ActivityNotFoundException) {
-            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(SHIZUKU_DOWNLOAD_URL))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        for (url in listOf(SHIZUKU_RELEASES_URL, SHIZUKU_SITE_URL)) {
             try {
-                ctx.startActivity(webIntent)
+                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return
             } catch (_: ActivityNotFoundException) {
+                // No app for this link; try the next one.
             }
         }
     }
@@ -229,7 +229,8 @@ open class ShizukuManager(private val context: Context? = null) {
         const val PROCESS_NAME_SUFFIX = "service"
         const val PERMISSION_REQUEST_CODE = 101
         const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
-        const val SHIZUKU_DOWNLOAD_URL = "https://shizuku.rikka.app/download/"
+        const val SHIZUKU_RELEASES_URL = "https://github.com/RikkaApps/Shizuku/releases/latest"
+        const val SHIZUKU_SITE_URL = "https://shizuku.rikka.app/download/"
         val SHIZUKU_PACKAGES = listOf(SHIZUKU_PACKAGE, "rikka.sui")
         const val MIN_SHIZUKU_VERSION = 11
         const val BIND_TIMEOUT_MS = 10_000L

@@ -66,6 +66,8 @@ returns the phone to exactly the state it was in before — whatever happens in 
 ### Changed
 
 - The update check is **opt-in** and off by default; without it the app never accesses the network.
+- *Download Shizuku* opens the latest release on GitHub instead of Google Play, which is missing or disabled on many
+  phones.
 - The preset and SIM selection are locked while the mode is on.
 - Importing presets shows every command and requires confirmation — imported commands run with shell/root rights.
 - The Quick Settings tile asks to unlock the device first on a secure lock screen.

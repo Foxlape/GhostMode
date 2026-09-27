@@ -10,7 +10,7 @@
 <p><b>Требования</b></p>
 <ul>
 <li>Android 8.0+, рекомендуется Android 12+.</li>
-<li><a href="https://shizuku.rikka.app">Shizuku</a> (root не нужен) или root через KernelSU, Magisk или APatch.</li>
+<li><a href="https://github.com/RikkaApps/Shizuku/releases/latest">Shizuku</a> (root не нужен) или root через KernelSU, Magisk или APatch.</li>
 </ul>
 
 <p><b>Возможности</b></p>

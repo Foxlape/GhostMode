@@ -15,7 +15,7 @@
     <string name="action_duplicate">Дублировать</string>
     <string name="action_edit">Изменить</string>
     <string name="action_enable">Включить</string>
-    <string name="action_get_shizuku">Установить Shizuku</string>
+    <string name="action_get_shizuku">Скачать Shizuku</string>
     <string name="action_grant">Дать доступ</string>
     <string name="action_import">Импортировать</string>
     <string name="action_later">Позже</string>
@@ -62,7 +62,7 @@
     <string name="alert_reapply_title">Перезагрузка сбросила часть настроек</string>
     <string name="alert_reapply_text">Некоторые команды не переживают перезагрузку, поэтому звонки снова могут проходить. Примените режим заново или выключите его, чтобы вернуть обычные настройки.</string>
     <string name="alert_access_title">Настройте доступ</string>
-    <string name="alert_access_not_installed">Ghost Mode выполняет shell-команды телефонии. Установите Shizuku (root не нужен) или выдайте root-доступ в KernelSU / Magisk / APatch.</string>
+    <string name="alert_access_not_installed">Ghost Mode выполняет shell-команды телефонии. Скачайте Shizuku с GitHub (root не нужен) или выдайте root-доступ в KernelSU / Magisk / APatch.</string>
     <string name="alert_shizuku_stopped_title">Shizuku не запущен</string>
     <string name="alert_shizuku_stopped_text">Запустите Shizuku через беспроводную отладку и вернитесь сюда.</string>
     <string name="alert_shizuku_permission_title">Разрешите доступ в Shizuku</string>

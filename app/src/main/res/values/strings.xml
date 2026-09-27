@@ -18,7 +18,7 @@
     <string name="action_duplicate">Duplicate</string>
     <string name="action_edit">Edit</string>
     <string name="action_enable">Enable</string>
-    <string name="action_get_shizuku">Get Shizuku</string>
+    <string name="action_get_shizuku">Download Shizuku</string>
     <string name="action_grant">Grant access</string>
     <string name="action_import">Import</string>
     <string name="action_later">Later</string>
@@ -65,7 +65,7 @@
     <string name="alert_reapply_title">A reboot reverted part of Ghost Mode</string>
     <string name="alert_reapply_text">Some commands do not survive a restart, so calls may get through again. Re-apply the mode or turn it off to restore your normal settings.</string>
     <string name="alert_access_title">Set up access</string>
-    <string name="alert_access_not_installed">Ghost Mode runs telephony shell commands. Install Shizuku (no root needed) or grant root access in KernelSU / Magisk / APatch.</string>
+    <string name="alert_access_not_installed">Ghost Mode runs telephony shell commands. Download Shizuku from GitHub (no root needed) or grant root access in KernelSU / Magisk / APatch.</string>
     <string name="alert_shizuku_stopped_title">Shizuku is not running</string>
     <string name="alert_shizuku_stopped_text">Start Shizuku via wireless debugging, then come back.</string>
     <string name="alert_shizuku_permission_title">Allow Shizuku access</string>
