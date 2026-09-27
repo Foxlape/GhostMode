@@ -69,21 +69,9 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk "dist/GhostMode-${GITHUB_REF_NAME}.apk"
           (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
 
-          VERSION="${{ steps.version.outputs.name }}"
-          CODE="${{ steps.version.outputs.code }}"
-          # English notes: the CHANGELOG.md section of this version.
-          awk -v v="## [${VERSION}]" 'index($0, v) == 1 {on = 1; next} /^## \[/ {on = 0} on' CHANGELOG.md > notes.md
-          RU="fastlane/metadata/android/ru-RU/changelogs/${CODE}.txt"
-          if [ -f "$RU" ]; then
-            { echo; echo "<details><summary>🇷🇺 На русском</summary>"; echo; cat "$RU"; echo; echo "</details>"; } >> notes.md
-          fi
-          {
-            echo
-            echo "---"
-            echo "**Verify:** \`apksigner verify --print-certs\` must show SHA-256 \`FB:2A:E9:C4:80:BB:0F:04:55:65:F7:B5:CA:BF:01:7D:98:18:21:A9:33:F0:78:53:DD:47:12:28:D5:71:B0:50\`; checksums are in \`SHA256SUMS.txt\`."
-            echo
-            echo "Full changelog: [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md)"
-          } >> notes.md
+          python3 .github/scripts/release_notes.py \
+            "${{ steps.version.outputs.name }}" "${{ steps.version.outputs.code }}" \
+            "${GITHUB_REF_NAME}" "${GITHUB_REPOSITORY}"
           cat notes.md
 
       - name: Publish release
