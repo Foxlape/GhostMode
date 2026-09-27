@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Status notification and the "re-apply after reboot" alert. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Re-apply the mode and restore the schedule after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Schedule boundaries and the auto turn-off timer fire on time. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Diagnostics: check that mobile data is really up. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Optional update check against GitHub Releases (off by default). -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
@@ -14,17 +22,21 @@
     <application
         android:name=".GhostModeApp"
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GhostMode">
+        android:theme="@style/Theme.GhostMode"
+        tools:targetApi="33">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -39,7 +51,6 @@
 
         <service
             android:name=".tile.GhostTileService"
-            android:enabled="true"
             android:exported="true"
             android:icon="@drawable/ic_ghost"
             android:label="@string/tile_label"
@@ -47,23 +58,28 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+
+        <!-- Persists the in-app language choice on Android 12 and older. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
         </service>
 
         <receiver
             android:name=".service.NotificationActionReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.ghostmode.app.notification.TURN_OFF" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".service.TimerReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.ghostmode.app.timer.FIRE" />
-            </intent-filter>
-        </receiver>
+            android:exported="false" />
 
         <receiver
             android:name=".widget.GhostWidgetProvider"
@@ -81,10 +97,11 @@
             android:name=".scheduling.ScheduleReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.ghostmode.app.schedule.TICK" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.TIME_SET" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
 

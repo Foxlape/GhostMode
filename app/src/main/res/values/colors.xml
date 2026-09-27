@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1C1B2E</color>
+    <color name="ghost_accent">#7B5CFF</color>
+    <color name="window_background">#F8F6FD</color>
+
+    <!-- Widget -->
+    <color name="widget_on_content">#FFFFFF</color>
+    <color name="widget_off_content">#C8C3DA</color>
+    <color name="widget_off_background">#E6181A25</color>
 </resources>

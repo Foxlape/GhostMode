@@ -1,5 +1,15 @@
 package com.ghostmode.app.data
 
+import androidx.annotation.StringRes
+import com.ghostmode.app.R
+import com.ghostmode.app.domain.NetworkMask
+
+/**
+ * A pair of shell command lists that turn Ghost Mode on and off.
+ *
+ * Built-in presets carry string resources instead of literal texts so they follow the app
+ * language; custom presets store user-entered [title] / [description].
+ */
 data class Preset(
     val id: String,
     val title: String,
@@ -7,208 +17,186 @@ data class Preset(
     val onCommands: List<String>,
     val offCommands: List<String>,
     val networkMaskCaptureCommand: String?,
-    val isBuiltIn: Boolean
+    val isBuiltIn: Boolean,
+    @param:StringRes val titleRes: Int = 0,
+    @param:StringRes val descriptionRes: Int = 0
 )
 
+/**
+ * Placeholders understood by [com.ghostmode.app.domain.GhostModeController]:
+ * - [MASK_PLACEHOLDER] — the network mask captured before the mode was turned on;
+ * - [IMS_PACKAGES_PLACEHOLDER] — IMS service packages currently bound for the selected SIM slots;
+ * - `-s 0` — rewritten to the selected SIM slot(s).
+ */
 object BuiltInPresets {
-    const val ID_STOCK_PIXEL = "builtin_stock_pixel"
-    const val ID_SAMSUNG_ONE_UI = "builtin_samsung_one_ui"
-    const val ID_XIAOMI_HYPEROS = "builtin_xiaomi_hyperos"
-    const val ID_LEGACY = "builtin_legacy"
     const val ID_UNIVERSAL = "builtin_universal"
+    const val ID_STOCK_PIXEL = "builtin_stock_pixel"
+    const val ID_XIAOMI_HYPEROS = "builtin_xiaomi_hyperos"
+    const val ID_SAMSUNG_ONE_UI = "builtin_samsung_one_ui"
     const val ID_ONEPLUS = "builtin_oneplus"
     const val ID_ORIGINOS = "builtin_originos"
+    const val ID_LEGACY = "builtin_legacy"
+
     const val MASK_PLACEHOLDER = "{{SAVED_MASK}}"
-    const val LTE_ONLY_MASK = "01000001000000000000"
-    const val MASK_CAPTURE_COMMAND = "cmd phone get-allowed-network-types-for-users -s 0"
-    const val IMS_DISABLE_COMMAND = "cmd phone ims disable -s 0"
-    const val IMS_ENABLE_COMMAND = "cmd phone ims enable -s 0"
+    const val IMS_PACKAGES_PLACEHOLDER = "{{IMS_PACKAGES}}"
+    const val SLOT_0 = "-s 0"
+
+    const val MASK_CAPTURE_COMMAND = "cmd phone get-allowed-network-types-for-users $SLOT_0"
+    const val IMS_DISABLE_COMMAND = "cmd phone ims disable $SLOT_0"
+    const val IMS_ENABLE_COMMAND = "cmd phone ims enable $SLOT_0"
+    const val GET_IMS_SERVICE_DEVICE_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -d"
+    const val GET_IMS_SERVICE_CARRIER_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -c"
+    const val CARRIER_CONFIG_REFRESH_COMMAND =
+        "am broadcast -a android.telephony.action.CARRIER_CONFIG_CHANGED || true"
+
     const val SAMSUNG_IMS_PACKAGE = "com.sec.imsservice"
     const val SAMSUNG_IMS_PACKAGE_NEW = "com.samsung.android.imsservice"
     const val QUALCOMM_IMS_PACKAGE = "org.codeaurora.ims"
     const val MEDIATEK_IMS_PACKAGE = "com.mediatek.ims"
-    const val GOOGLE_IMS_PACKAGE = "com.google.android.ims"
-    const val NETWORK_MODE_LTE_ONLY = "11"
-    const val NETWORK_MODE_GLOBAL = "0"
-    const val SLOT_0 = "-s 0"
-    const val IGNORE_FAILURE_SUFFIX = " || true"
-    const val VOLTE_SETTING_DISABLE_COMMAND = "settings put global volte_vt_enabled 0"
-    const val VOLTE_SETTING_ENABLE_COMMAND = "settings put global volte_vt_enabled 1"
-    const val ENHANCED_4G_DISABLE_COMMAND = "settings put global enhanced_4g_mode_enabled 0"
-    const val ENHANCED_4G_ENABLE_COMMAND = "settings put global enhanced_4g_mode_enabled 1"
-    const val CARRIER_CONFIG_REFRESH_COMMAND = "am broadcast -a android.telephony.action.CARRIER_CONFIG_CHANGED$IGNORE_FAILURE_SUFFIX"
-    const val GET_IMS_SERVICE_DEVICE_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -d"
-    const val GET_IMS_SERVICE_CARRIER_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -c"
 
-    private const val SET_ALLOWED_NETWORK_TYPES_COMMAND = "cmd phone set-allowed-network-types-for-users"
-    private const val PM_DISABLE_USER_COMMAND = "pm disable-user --user 0"
-    private const val PM_ENABLE_COMMAND = "pm enable"
-    private const val PREFERRED_NETWORK_MODE_COMMAND = "settings put global preferred_network_mode"
-    private const val MODE_SUFFIX_PRIMARY = ""
-    private const val MODE_SUFFIX_SUBSCRIPTION_1 = "1"
-    private const val MODE_SUFFIX_SUBSCRIPTION_2 = "2"
-    private const val AIRPLANE_MODE_ENABLE_COMMAND = "cmd connectivity airplane-mode enable"
-    private const val AIRPLANE_MODE_DISABLE_COMMAND = "cmd connectivity airplane-mode disable"
+    /** `RILConstants.NETWORK_MODE_LTE_ONLY`. */
+    const val NETWORK_MODE_LTE_ONLY = "11"
+
+    /**
+     * Restore value used only if the original `preferred_network_mode*` could not be read:
+     * `NETWORK_MODE_LTE_CDMA_EVDO_GSM_WCDMA` (global incl. LTE). Normally the captured original
+     * value is written back instead.
+     */
+    const val NETWORK_MODE_RESTORE_FALLBACK = "10"
+
+    private const val IGNORE_FAILURE = " || true"
+    private const val PM_DISABLE_USER = "pm disable-user --user 0"
+    private const val PM_ENABLE = "pm enable"
 
     private val universal = Preset(
         id = ID_UNIVERSAL,
-        title = "Универсальный (автоопределение)",
-        description = "Сам находит IMS-сервис устройства через cmd phone и отключает его. " +
-            "Начните с этого пресета: он работает везде, где доступны команды телефонии AOSP.",
+        title = "Universal",
+        description = "",
         onCommands = listOf(
             IMS_DISABLE_COMMAND,
-            setAllowedNetworkTypesCommand(LTE_ONLY_MASK),
-            disableImsServiceByDiscoveryCommand(GET_IMS_SERVICE_DEVICE_COMMAND),
-            disableImsServiceByDiscoveryCommand(GET_IMS_SERVICE_CARRIER_COMMAND)
+            setAllowedNetworkTypes(NetworkMask.LTE_ONLY),
+            "$PM_DISABLE_USER $IMS_PACKAGES_PLACEHOLDER$IGNORE_FAILURE"
         ),
         offCommands = listOf(
-            setAllowedNetworkTypesCommand(MASK_PLACEHOLDER),
-            IMS_ENABLE_COMMAND,
-            enableImsPackageCommand(QUALCOMM_IMS_PACKAGE),
-            enableImsPackageCommand(MEDIATEK_IMS_PACKAGE),
-            enableImsPackageCommand(SAMSUNG_IMS_PACKAGE),
-            enableImsPackageCommand(GOOGLE_IMS_PACKAGE)
+            setAllowedNetworkTypes(MASK_PLACEHOLDER),
+            IMS_ENABLE_COMMAND
         ),
         networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
-        isBuiltIn = true
+        isBuiltIn = true,
+        titleRes = R.string.preset_universal_title,
+        descriptionRes = R.string.preset_universal_desc
     )
 
     private val stockPixel = Preset(
         id = ID_STOCK_PIXEL,
-        title = "Stock / Pixel (Android 12+)",
-        description = "Проверенная связка: отключение IMS и блокировка в LTE-only. " +
-            "Звонящие слышат «абонент недоступен», мобильный интернет работает.",
+        title = "Stock / Pixel",
+        description = "",
         onCommands = listOf(
             IMS_DISABLE_COMMAND,
-            setAllowedNetworkTypesCommand(LTE_ONLY_MASK)
+            setAllowedNetworkTypes(NetworkMask.LTE_ONLY)
         ),
         offCommands = listOf(
-            setAllowedNetworkTypesCommand(MASK_PLACEHOLDER),
+            setAllowedNetworkTypes(MASK_PLACEHOLDER),
             IMS_ENABLE_COMMAND
         ),
         networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
-        isBuiltIn = true
+        isBuiltIn = true,
+        titleRes = R.string.preset_stock_title,
+        descriptionRes = R.string.preset_stock_desc
     )
 
-    private val xiaomiHyperOs = Preset(
+    private val xiaomiHyperOs = stockPixel.copy(
         id = ID_XIAOMI_HYPEROS,
-        title = "Xiaomi MIUI / HyperOS",
-        description = "Те же команды, что для стока: на HyperOS скрытое меню заблокировано, " +
-            "но shell-команды телефонии работают.",
-        onCommands = listOf(
-            IMS_DISABLE_COMMAND,
-            setAllowedNetworkTypesCommand(LTE_ONLY_MASK)
-        ),
-        offCommands = listOf(
-            setAllowedNetworkTypesCommand(MASK_PLACEHOLDER),
-            IMS_ENABLE_COMMAND
-        ),
-        networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
-        isBuiltIn = true
+        title = "Xiaomi HyperOS / MIUI",
+        titleRes = R.string.preset_xiaomi_title,
+        descriptionRes = R.string.preset_xiaomi_desc
     )
 
     private val samsungOneUi = Preset(
         id = ID_SAMSUNG_ONE_UI,
         title = "Samsung One UI",
-        description = "Расширенная связка: выключение IMS на уровне телефонии, отключение " +
-            "всех IMS-пакетов Samsung (старый и новый стек), LTE-only через маску сетей " +
-            "и preferred_network_mode для всех подписок. " +
-            "Если связка не сработает — переключитесь на пресет Stock. " +
-            "После первого включения может потребоваться перезагрузка, чтобы модем снял VoLTE-регистрацию.",
+        description = "",
         onCommands = listOf(
             IMS_DISABLE_COMMAND,
-            setAllowedNetworkTypesCommand(LTE_ONLY_MASK),
-            preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_LTE_ONLY),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_LTE_ONLY),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_LTE_ONLY),
-            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE",
-            "$PM_DISABLE_USER_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX",
-            VOLTE_SETTING_DISABLE_COMMAND,
-            ENHANCED_4G_DISABLE_COMMAND,
+            setAllowedNetworkTypes(NetworkMask.LTE_ONLY),
+            preferredNetworkMode("", NETWORK_MODE_LTE_ONLY),
+            preferredNetworkMode("1", NETWORK_MODE_LTE_ONLY),
+            preferredNetworkMode("2", NETWORK_MODE_LTE_ONLY),
+            "$PM_DISABLE_USER $SAMSUNG_IMS_PACKAGE$IGNORE_FAILURE",
+            "$PM_DISABLE_USER $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE",
+            "settings put global volte_vt_enabled 0",
+            "settings put global enhanced_4g_mode_enabled 0",
             CARRIER_CONFIG_REFRESH_COMMAND
         ),
         offCommands = listOf(
-            VOLTE_SETTING_ENABLE_COMMAND,
-            ENHANCED_4G_ENABLE_COMMAND,
-            CARRIER_CONFIG_REFRESH_COMMAND,
-            "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE",
-            "$PM_ENABLE_COMMAND $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE_SUFFIX",
+            "settings put global volte_vt_enabled 1",
+            "settings put global enhanced_4g_mode_enabled 1",
             IMS_ENABLE_COMMAND,
-            preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_GLOBAL),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_GLOBAL),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_GLOBAL),
-            setAllowedNetworkTypesCommand(MASK_PLACEHOLDER)
+            preferredNetworkMode("", NETWORK_MODE_RESTORE_FALLBACK),
+            preferredNetworkMode("1", NETWORK_MODE_RESTORE_FALLBACK),
+            preferredNetworkMode("2", NETWORK_MODE_RESTORE_FALLBACK),
+            setAllowedNetworkTypes(MASK_PLACEHOLDER),
+            CARRIER_CONFIG_REFRESH_COMMAND
         ),
         networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
-        isBuiltIn = true
+        isBuiltIn = true,
+        titleRes = R.string.preset_samsung_title,
+        descriptionRes = R.string.preset_samsung_desc
     )
 
     private val onePlusOxygenOs = Preset(
         id = ID_ONEPLUS,
-        title = "OnePlus (OxygenOS, OnePlus 13+)",
-        description = "Проверено на OnePlus 13 (OxygenOS 15/16): команды AOSP работают. " +
-            "Запасной вариант — отключение IMS-сервиса org.codeaurora.ims (Snapdragon) " +
-            "или com.mediatek.ims (MediaTek).",
+        title = "OnePlus OxygenOS",
+        description = "",
         onCommands = listOf(
             IMS_DISABLE_COMMAND,
-            setAllowedNetworkTypesCommand(LTE_ONLY_MASK),
-            disableImsPackageCommand(QUALCOMM_IMS_PACKAGE),
-            disableImsPackageCommand(MEDIATEK_IMS_PACKAGE)
+            setAllowedNetworkTypes(NetworkMask.LTE_ONLY),
+            "$PM_DISABLE_USER $QUALCOMM_IMS_PACKAGE$IGNORE_FAILURE",
+            "$PM_DISABLE_USER $MEDIATEK_IMS_PACKAGE$IGNORE_FAILURE"
         ),
         offCommands = listOf(
-            setAllowedNetworkTypesCommand(MASK_PLACEHOLDER),
-            IMS_ENABLE_COMMAND,
-            enableImsPackageCommand(QUALCOMM_IMS_PACKAGE),
-            enableImsPackageCommand(MEDIATEK_IMS_PACKAGE)
+            setAllowedNetworkTypes(MASK_PLACEHOLDER),
+            IMS_ENABLE_COMMAND
         ),
         networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
-        isBuiltIn = true
+        isBuiltIn = true,
+        titleRes = R.string.preset_oneplus_title,
+        descriptionRes = R.string.preset_oneplus_desc
     )
 
-    private val vivoOriginOs = Preset(
+    private val vivoOriginOs = onePlusOxygenOs.copy(
         id = ID_ORIGINOS,
-        title = "vivo / iQOO (OriginOS / Funtouch)",
-        description = "Те же команды AOSP: на OriginOS 6 публично не подтверждены — если не сработает, " +
-            "попробуйте «Универсальный». IMS-пакеты: Dimensity → com.mediatek.ims, " +
-            "Snapdragon → org.codeaurora.ims.",
-        onCommands = listOf(
-            IMS_DISABLE_COMMAND,
-            setAllowedNetworkTypesCommand(LTE_ONLY_MASK),
-            disableImsPackageCommand(QUALCOMM_IMS_PACKAGE),
-            disableImsPackageCommand(MEDIATEK_IMS_PACKAGE)
-        ),
-        offCommands = listOf(
-            setAllowedNetworkTypesCommand(MASK_PLACEHOLDER),
-            IMS_ENABLE_COMMAND,
-            enableImsPackageCommand(QUALCOMM_IMS_PACKAGE),
-            enableImsPackageCommand(MEDIATEK_IMS_PACKAGE)
-        ),
-        networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
-        isBuiltIn = true
+        title = "vivo / iQOO",
+        titleRes = R.string.preset_vivo_title,
+        descriptionRes = R.string.preset_vivo_desc
     )
 
     private val legacy = Preset(
         id = ID_LEGACY,
-        title = "Старый Android (9–11)",
-        description = "Запасной вариант через settings global. " +
-            "На части прошивок игнорируется (известно на Samsung S21+).",
+        title = "Android 9–11",
+        description = "",
         onCommands = listOf(
-            preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_LTE_ONLY),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_LTE_ONLY),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_LTE_ONLY),
-            AIRPLANE_MODE_ENABLE_COMMAND,
-            AIRPLANE_MODE_DISABLE_COMMAND
+            preferredNetworkMode("", NETWORK_MODE_LTE_ONLY),
+            preferredNetworkMode("1", NETWORK_MODE_LTE_ONLY),
+            preferredNetworkMode("2", NETWORK_MODE_LTE_ONLY),
+            AIRPLANE_MODE_ENABLE,
+            AIRPLANE_MODE_DISABLE
         ),
         offCommands = listOf(
-            preferredNetworkModeCommand(MODE_SUFFIX_PRIMARY, NETWORK_MODE_GLOBAL),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_1, NETWORK_MODE_GLOBAL),
-            preferredNetworkModeCommand(MODE_SUFFIX_SUBSCRIPTION_2, NETWORK_MODE_GLOBAL),
-            AIRPLANE_MODE_ENABLE_COMMAND,
-            AIRPLANE_MODE_DISABLE_COMMAND
+            preferredNetworkMode("", NETWORK_MODE_RESTORE_FALLBACK),
+            preferredNetworkMode("1", NETWORK_MODE_RESTORE_FALLBACK),
+            preferredNetworkMode("2", NETWORK_MODE_RESTORE_FALLBACK),
+            AIRPLANE_MODE_ENABLE,
+            AIRPLANE_MODE_DISABLE
         ),
         networkMaskCaptureCommand = null,
-        isBuiltIn = true
+        isBuiltIn = true,
+        titleRes = R.string.preset_legacy_title,
+        descriptionRes = R.string.preset_legacy_desc
     )
+
+    private const val AIRPLANE_MODE_ENABLE = "cmd connectivity airplane-mode enable"
+    private const val AIRPLANE_MODE_DISABLE = "cmd connectivity airplane-mode disable"
 
     val ALL: List<Preset> = listOf(
         universal,
@@ -219,22 +207,12 @@ object BuiltInPresets {
         vivoOriginOs,
         legacy
     )
-    val DEFAULT_ID: String = ID_UNIVERSAL
 
-    private fun setAllowedNetworkTypesCommand(networkMask: String): String =
-        "$SET_ALLOWED_NETWORK_TYPES_COMMAND $SLOT_0 $networkMask"
+    const val DEFAULT_ID: String = ID_UNIVERSAL
 
-    private fun preferredNetworkModeCommand(modeSuffix: String, networkMode: String): String =
-        "$PREFERRED_NETWORK_MODE_COMMAND$modeSuffix $networkMode"
+    private fun setAllowedNetworkTypes(mask: String): String =
+        "cmd phone set-allowed-network-types-for-users $SLOT_0 $mask"
 
-    private fun disableImsServiceByDiscoveryCommand(getImsServiceCommand: String): String =
-        "p=\"\$($getImsServiceCommand | head -n1 | tr -d '\\r')\"; " +
-            "[ -n \"\$p\" ] && [ \"\$p\" != \"null\" ] && " +
-            "$PM_DISABLE_USER_COMMAND \"\$p\"$IGNORE_FAILURE_SUFFIX"
-
-    private fun disableImsPackageCommand(imsPackage: String): String =
-        "$PM_DISABLE_USER_COMMAND $imsPackage$IGNORE_FAILURE_SUFFIX"
-
-    private fun enableImsPackageCommand(imsPackage: String): String =
-        "$PM_ENABLE_COMMAND $imsPackage$IGNORE_FAILURE_SUFFIX"
+    private fun preferredNetworkMode(suffix: String, mode: String): String =
+        "settings put global preferred_network_mode$suffix $mode"
 }

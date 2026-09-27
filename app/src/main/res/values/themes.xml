@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.GhostMode" parent="Theme.AppCompat.Light.NoActionBar" />
+    <!-- Compose draws the UI. The window background matches it so there is no white flash
+         on start in dark mode. -->
+    <style name="Theme.GhostMode" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="colorPrimary">@color/ghost_accent</item>
+        <item name="colorAccent">@color/ghost_accent</item>
+    </style>
 </resources>

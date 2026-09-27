@@ -4,7 +4,7 @@ import android.util.Log
 import com.ghostmode.app.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,24 +16,65 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 data class GitHubRelease(
-    val tagName: String,
     val versionName: String,
     val changelog: String?,
-    val apkUrl: String
+    val pageUrl: String,
+    val apkUrl: String?
 )
 
+sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object UpToDate : UpdateState
+    data object Failed : UpdateState
+    data class Available(val release: GitHubRelease) : UpdateState
+}
+
+/** Checks GitHub Releases. Network access happens only when the user enabled it or asked for it. */
+class UpdateManager(private val scope: CoroutineScope) {
+
+    private val stateFlow = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val state: StateFlow<UpdateState> = stateFlow.asStateFlow()
+
+    private var job: Job? = null
+
+    fun check() {
+        if (job?.isActive == true) return
+        job = scope.launch {
+            stateFlow.value = UpdateState.Checking
+            val release = UpdateChecker.fetchLatestRelease()
+            stateFlow.value = when {
+                release == null -> UpdateState.Failed
+                UpdateChecker.isNewerVersion(release.versionName, BuildConfig.VERSION_NAME) -> UpdateState.Available(release)
+                else -> UpdateState.UpToDate
+            }
+        }
+    }
+
+    fun dismiss() {
+        stateFlow.value = UpdateState.Idle
+    }
+}
+
 object UpdateChecker {
+
+    const val REPOSITORY_URL = "https://github.com/Foxlape/GhostMode"
+    const val RELEASES_URL = "$REPOSITORY_URL/releases"
+    private const val LATEST_RELEASE_API = "https://api.github.com/repos/Foxlape/GhostMode/releases/latest"
+    private const val TAG = "GhostUpdate"
+    private const val TIMEOUT_MS = 10_000
 
     suspend fun fetchLatestRelease(): GitHubRelease? = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
         try {
-            connection = URL(LATEST_RELEASE_URL).openConnection() as HttpURLConnection
-            connection.connectTimeout = CONNECT_TIMEOUT_MS
-            connection.readTimeout = READ_TIMEOUT_MS
-            connection.setRequestProperty(HEADER_ACCEPT, HEADER_ACCEPT_VALUE)
-            connection.setRequestProperty(HEADER_USER_AGENT, HEADER_USER_AGENT_VALUE)
-            val payload = connection.inputStream.bufferedReader().use { reader -> reader.readText() }
-            parseRelease(payload)
+            connection = (URL(LATEST_RELEASE_API).openConnection() as HttpURLConnection).apply {
+                connectTimeout = TIMEOUT_MS
+                readTimeout = TIMEOUT_MS
+                setRequestProperty("Accept", "application/vnd.github+json")
+                setRequestProperty("User-Agent", "GhostMode/${BuildConfig.VERSION_NAME}")
+            }
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) return@withContext null
+            parseRelease(connection.inputStream.bufferedReader().use { it.readText() })
         } catch (error: Exception) {
             Log.w(TAG, "Update check failed", error)
             null
@@ -42,79 +83,43 @@ object UpdateChecker {
         }
     }
 
-    internal fun parseRelease(payload: String): GitHubRelease? = try {
+    fun parseRelease(payload: String): GitHubRelease? = try {
         val root = JSONObject(payload)
-        val tagName = root.optString(KEY_TAG_NAME).removePrefix(VERSION_PREFIX).removePrefix(VERSION_PREFIX_UPPER)
-        val changelog = root.optString(KEY_BODY).ifEmpty { null }
-        val apkUrl = findApkDownloadUrl(root)
-        if (tagName.isEmpty() || apkUrl.isNullOrEmpty()) {
+        val version = root.optString("tag_name").trim().removePrefix("v").removePrefix("V")
+        if (version.isEmpty() || root.optBoolean("draft") || root.optBoolean("prerelease")) {
             null
         } else {
-            GitHubRelease(tagName, tagName, changelog, apkUrl)
+            GitHubRelease(
+                versionName = version,
+                changelog = root.optString("body").trim().ifEmpty { null },
+                pageUrl = root.optString("html_url").ifEmpty { RELEASES_URL },
+                apkUrl = findApkUrl(root)
+            )
         }
     } catch (_: JSONException) {
         null
     }
 
-    fun isNewerVersion(remoteVersion: String, currentVersion: String): Boolean {
-        val remoteParts = remoteVersion.split(".").map { part -> part.trim().toIntOrNull() ?: 0 }
-        val currentParts = currentVersion.split(".").map { part -> part.trim().toIntOrNull() ?: 0 }
+    /** Compares dotted numeric versions; a pre-release suffix (`0.2.0-beta1`) sorts before the release. */
+    fun isNewerVersion(remote: String, current: String): Boolean {
+        val remoteParts = remote.substringBefore('-').split('.').map { it.trim().toIntOrNull() ?: 0 }
+        val currentParts = current.substringBefore('-').split('.').map { it.trim().toIntOrNull() ?: 0 }
         for (index in 0 until maxOf(remoteParts.size, currentParts.size)) {
-            val remotePart = remoteParts.getOrElse(index) { 0 }
-            val currentPart = currentParts.getOrElse(index) { 0 }
-            if (remotePart != currentPart) return remotePart > currentPart
+            val r = remoteParts.getOrElse(index) { 0 }
+            val c = currentParts.getOrElse(index) { 0 }
+            if (r != c) return r > c
         }
-        return false
+        return current.contains('-') && !remote.contains('-')
     }
 
-    private fun findApkDownloadUrl(root: JSONObject): String? {
-        val assets = root.optJSONArray(KEY_ASSETS) ?: return null
+    private fun findApkUrl(root: JSONObject): String? {
+        val assets = root.optJSONArray("assets") ?: return null
         for (index in 0 until assets.length()) {
-            val asset = assets.getJSONObject(index)
-            if (asset.optString(KEY_ASSET_NAME).endsWith(APK_SUFFIX, ignoreCase = true)) {
-                return asset.optString(KEY_DOWNLOAD_URL).ifEmpty { null }
+            val asset = assets.optJSONObject(index) ?: continue
+            if (asset.optString("name").endsWith(".apk", ignoreCase = true)) {
+                return asset.optString("browser_download_url").ifEmpty { null }
             }
         }
         return null
-    }
-
-    private const val TAG = "GhostUpdate"
-    private const val LATEST_RELEASE_URL = "https://api.github.com/repos/Foxlape/GhostMode/releases/latest"
-    private const val CONNECT_TIMEOUT_MS = 10_000
-    private const val READ_TIMEOUT_MS = 15_000
-    private const val HEADER_ACCEPT = "Accept"
-    private const val HEADER_ACCEPT_VALUE = "application/vnd.github+json"
-    private const val HEADER_USER_AGENT = "User-Agent"
-    private const val HEADER_USER_AGENT_VALUE = "GhostMode-App"
-    private const val KEY_TAG_NAME = "tag_name"
-    private const val KEY_BODY = "body"
-    private const val KEY_ASSETS = "assets"
-    private const val KEY_ASSET_NAME = "name"
-    private const val KEY_DOWNLOAD_URL = "browser_download_url"
-    private const val VERSION_PREFIX = "v"
-    private const val VERSION_PREFIX_UPPER = "V"
-    private const val APK_SUFFIX = ".apk"
-}
-
-object UpdateManager {
-
-    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private val availableUpdateFlow = MutableStateFlow<GitHubRelease?>(null)
-    val availableUpdate: StateFlow<GitHubRelease?> = availableUpdateFlow.asStateFlow()
-
-    fun refresh() {
-        backgroundScope.launch {
-            availableUpdateFlow.value = findAvailableUpdate(BuildConfig.VERSION_NAME)
-        }
-    }
-
-    fun dismiss() {
-        availableUpdateFlow.value = null
-    }
-
-    internal suspend fun findAvailableUpdate(currentVersionName: String): GitHubRelease? {
-        val release = runCatching { UpdateChecker.fetchLatestRelease() }.getOrNull() ?: return null
-        return if (UpdateChecker.isNewerVersion(release.versionName, currentVersionName)) release else null
     }
 }

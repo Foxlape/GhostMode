@@ -1,146 +1,301 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Режим призрака</string>
-    <string name="tile_label">Режим призрака</string>
-    <string name="status_title_on">Режим активен</string>
-    <string name="status_title_off">Режим выключен</string>
-    <string name="status_subtitle_on">Входящие звонки блокируются, мобильный интернет работает</string>
-    <string name="status_subtitle_off">Телефон доступен для звонков</string>
-    <string name="toggle_turn_on">Включить</string>
-    <string name="toggle_turn_off">Выключить</string>
-    <string name="shizuku_title">Shizuku</string>
-    <string name="shizuku_status_ready">Shizuku готов</string>
-    <string name="shizuku_status_no_permission">Требуется разрешение Shizuku</string>
-    <string name="shizuku_status_not_running">Shizuku не запущен</string>
-    <string name="shizuku_status_not_installed">Shizuku не установлен</string>
-    <string name="root_status_title">Права администратора</string>
-    <string name="root_status_ready">Root-доступ активен (KernelSU / Magisk) — команды выполняются через su</string>
-    <string name="action_grant_permission">Выдать разрешение</string>
-    <string name="action_open_shizuku">Открыть Shizuku</string>
-    <string name="presets_title">Пресеты</string>
-    <string name="preset_builtin">Системный</string>
-    <string name="preset_custom">Пользовательский</string>
+    <!-- Навигация -->
+    <string name="nav_home">Главная</string>
+    <string name="nav_presets">Пресеты</string>
+    <string name="nav_settings">Настройки</string>
+
+    <!-- Общие действия -->
+    <string name="action_allow">Разрешить</string>
+    <string name="action_back">Назад</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_change">Изменить</string>
+    <string name="action_close">Закрыть</string>
+    <string name="action_delete">Удалить</string>
     <string name="action_duplicate">Дублировать</string>
     <string name="action_edit">Изменить</string>
-    <string name="action_delete">Удалить</string>
-    <string name="editor_title_new">Новый пресет</string>
-    <string name="editor_title_edit">Редактор пресета</string>
-    <string name="editor_hint_title">Название</string>
-    <string name="editor_hint_description">Описание</string>
-    <string name="editor_hint_on_commands">Команды включения — по одной в строке</string>
-    <string name="editor_hint_off_commands">Команды выключения — по одной в строке</string>
-    <string name="editor_hint_capture">Команда чтения маски сети — необязательно</string>
-    <string name="editor_save">Сохранить</string>
-    <string name="editor_cancel">Отмена</string>
-    <string name="diagnostics_title">Диагностика</string>
-    <string name="action_run_diagnostics">Проверить состояние сети</string>
-    <string name="diagnostics_mask_label">Сохранённая маска сети</string>
-    <string name="diagnostics_mask_none">не сохранена</string>
-    <string name="log_title">Журнал команд</string>
-    <string name="log_empty">Журнал пуст</string>
-    <string name="action_clear_log">Очистить</string>
-    <string name="log_exit_code">Код: %1$d</string>
-    <string name="log_action_copy_command">Копировать команду</string>
-    <string name="log_action_copy_output">Копировать вывод</string>
-    <string name="log_action_delete_entry">Удалить</string>
-    <string name="busy_message">Выполняется команда…</string>
-    <string name="widget_description">Тумблер режима призрака: включает/выключает недоступность для звонков</string>
-    <string name="settings_title">Настройки</string>
-    <string name="settings_language">Язык</string>
-    <string name="language_system">Системный</string>
-    <string name="language_russian">Русский</string>
-    <string name="language_english">English</string>
-    <string name="settings_notification">Уведомление о режиме</string>
-    <string name="settings_notification_summary">Постоянное уведомление со временем работы режима</string>
-    <string name="settings_donate_title">Поддержать автора</string>
-    <string name="notification_channel_name">Статус режима призрака</string>
-    <string name="notification_title_on">Режим призрака включён</string>
-    <string name="notification_text_on">Звонки недоступны, мобильный интернет работает</string>
-    <string name="notification_action_turn_off">Выключить</string>
-    <string name="stats_title">Статистика</string>
-    <string name="stats_today">Сегодня</string>
-    <string name="stats_week">7 дней</string>
-    <string name="stats_all">Всего</string>
-    <string name="stats_activations">Включений: %1$d</string>
-    <string name="stats_duration_hours_minutes">%1$d ч %2$d мин</string>
-    <string name="stats_duration_minutes">%1$d мин</string>
+    <string name="action_enable">Включить</string>
+    <string name="action_get_shizuku">Установить Shizuku</string>
+    <string name="action_grant">Дать доступ</string>
+    <string name="action_import">Импортировать</string>
+    <string name="action_later">Позже</string>
+    <string name="action_more">Ещё</string>
+    <string name="action_ok">ОК</string>
+    <string name="action_open_log">Журнал</string>
+    <string name="action_open_release">Открыть релиз</string>
+    <string name="action_open_shizuku">Открыть Shizuku</string>
+    <string name="action_reapply">Применить снова</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_turn_off">Выключить</string>
+
+    <!-- Значения -->
+    <string name="value_off">Выключено</string>
+    <string name="value_allowed">Разрешено</string>
+    <string name="value_unrestricted">Без ограничений</string>
+
+    <!-- Длительность -->
+    <string name="duration_days_hours">%1$d д %2$d ч</string>
+    <string name="duration_hours_minutes">%1$d ч %2$d мин</string>
+    <string name="duration_minutes">%1$d мин</string>
+    <string name="duration_less_than_minute">&lt; 1 мин</string>
+
+    <!-- Главная -->
+    <string name="status_title_on">Вы недоступны</string>
+    <string name="status_title_off">Вы на связи</string>
+    <string name="status_title_busy">Применяю…</string>
+    <string name="status_subtitle_on">Звонящие слышат «абонент недоступен». Мобильный интернет работает.</string>
+    <string name="status_subtitle_off">Звонки и интернет работают как обычно. Нажмите на призрака, чтобы исчезнуть.</string>
+    <string name="status_subtitle_no_access">Для изменения настроек модема нужен Shizuku или root.</string>
+    <string name="chip_active_for">Включён %1$s</string>
+    <string name="backend_root">Root</string>
+    <string name="backend_shizuku">Shizuku</string>
+    <string name="backend_none">Нет доступа</string>
+    <string name="backend_no_permission">Нужно разрешение</string>
+    <string name="home_preset_label">Пресет</string>
+    <string name="tile_sim">SIM</string>
+    <string name="tile_schedule">Расписание</string>
+    <string name="tile_today">Сегодня</string>
+    <string name="tile_diagnostics">Диагностика</string>
+    <string name="tile_diagnostics_value">Проверить</string>
+
+    <!-- Предупреждения -->
+    <string name="alert_reapply_title">Перезагрузка сбросила часть настроек</string>
+    <string name="alert_reapply_text">Некоторые команды не переживают перезагрузку, поэтому звонки снова могут проходить. Примените режим заново или выключите его, чтобы вернуть обычные настройки.</string>
+    <string name="alert_access_title">Настройте доступ</string>
+    <string name="alert_access_not_installed">Ghost Mode выполняет shell-команды телефонии. Установите Shizuku (root не нужен) или выдайте root-доступ в KernelSU / Magisk / APatch.</string>
+    <string name="alert_shizuku_stopped_title">Shizuku не запущен</string>
+    <string name="alert_shizuku_stopped_text">Запустите Shizuku через беспроводную отладку и вернитесь сюда.</string>
+    <string name="alert_shizuku_permission_title">Разрешите доступ в Shizuku</string>
+    <string name="alert_shizuku_permission_text">Ghost Mode нужно разрешение Shizuku для выполнения команд. Если запрос не появился — включите Ghost Mode в Shizuku → «Авторизованные приложения».</string>
+    <string name="alert_update_title">Доступна версия %1$s</string>
+    <string name="alert_update_text">На GitHub опубликован новый релиз.</string>
+    <string name="alert_alarms_title">Точные будильники запрещены</string>
+    <string name="alert_alarms_text">Расписание и таймер автовыключения могут срабатывать с опозданием на несколько минут.</string>
+    <string name="alert_battery_title">Фоновая работа ограничена</string>
+    <string name="alert_battery_text">Оптимизация батареи может задерживать расписание и таймер. Разрешите работу в фоне без ограничений.</string>
+
+    <!-- Таймер -->
+    <string name="timer_title">Автовыключение</string>
+    <string name="timer_hint">Выключить Ghost Mode автоматически через:</string>
+    <string name="timer_armed">Выключится в %1$s · через %2$s</string>
+    <string name="timer_cancel">Отменить таймер</string>
+    <string name="timer_30m">30 мин</string>
+    <string name="timer_1h">1 час</string>
+    <string name="timer_2h">2 часа</string>
+    <string name="timer_morning">До 8:00</string>
+
+    <!-- SIM -->
+    <string name="sim_sheet_title">SIM-карты</string>
+    <string name="sim_sheet_subtitle">Выберите, какая SIM станет недоступной.</string>
+    <string name="sim_both">Обе SIM</string>
+    <string name="sim_1">SIM 1</string>
+    <string name="sim_2">SIM 2</string>
+    <string name="sim_both_desc">Звонки не проходят на оба номера</string>
+    <string name="sim_1_desc">SIM 2 продолжает принимать звонки</string>
+    <string name="sim_2_desc">SIM 1 продолжает принимать звонки</string>
+
+    <!-- Расписание -->
     <string name="schedule_title">Расписание</string>
-    <string name="schedule_enabled">Включать по расписанию</string>
+    <string name="schedule_subtitle">Включать и выключать автоматически каждый день</string>
     <string name="schedule_from">С</string>
     <string name="schedule_to">До</string>
-    <string name="schedule_hint">Режим будет включаться и выключаться автоматически. Пример: с 23:00 до 08:00. Если система ограничивает точные будильники, срабатывание может задержаться до нескольких минут — разрешите «Будильники и напоминания» в настройках телефона.</string>
-    <string name="schedule_apply">Применить</string>
-    <string name="schedule_cancel">Отмена</string>
-    <string name="presets_action_export">Экспорт</string>
-    <string name="presets_action_import">Импорт</string>
-    <string name="action_download_shizuku">Скачать Shizuku</string>
-    <string name="shizuku_authorized_apps_hint">Убедитесь, что в Shizuku в разделе «Разрешённые приложения» выдан доступ приложению «Режим призрака».</string>
-    <string name="shizuku_install_guide">Shizuku позволяет выполнять системные команды телефонии без root-прав.</string>
-    <string name="menu_diagnostics">Диагностика сети</string>
-    <string name="menu_logs">Журнал команд</string>
-    <string name="menu_schedule">Расписание</string>
-    <string name="menu_notification">Уведомление в шторке</string>
-    <string name="menu_language">Язык интерфейса</string>
-    <string name="menu_stats">Статистика</string>
-    <string name="menu_about">О программе</string>
-    <string name="menu_donate">Поддержать автора</string>
-    <string name="preset_layout_grid">Плитки</string>
-    <string name="preset_layout_list">Список</string>
-    <string name="about_title">Режим призрака</string>
-    <string name="about_description">Делает телефон недоступным для входящих голосовых звонков, блокируя модем в LTE-only и отключая IMS, при этом интернет работает на полной скорости.</string>
-    <string name="about_cert_label">SHA-256 релизного сертификата</string>
-    <string name="dialog_close">Закрыть</string>
-    <string name="diag_calls_label">Входящие звонки</string>
-    <string name="diag_calls_blocked">Заблокированы (Недоступен)</string>
-    <string name="diag_calls_allowed">Принимаются (Обычный режим)</string>
-    <string name="diag_internet_label">Мобильный интернет</string>
-    <string name="diag_internet_active">Работает (LTE / 5G)</string>
-    <string name="diag_ims_label">Служба VoLTE / IMS</string>
-    <string name="diag_ims_disabled">Отключена</string>
-    <string name="diag_ims_enabled">Активна</string>
-    <string name="diag_modem_label">Режим сети модема</string>
-    <string name="diag_modem_lte_only">Только LTE (2G/3G отключены)</string>
-    <string name="diag_modem_all_networks">Все сети (2G/3G/4G/5G)</string>
-    <string name="diag_summary_blocked">Режим призрака активен: звонящие слышат «Абонент временно недоступен», мобильный интернет работает на полной скорости.</string>
-    <string name="diag_summary_allowed">Обычный режим связи: входящие звонки и SMS принимаются в штатном режиме.</string>
-    <string name="diagnostics_running">Проверка состояния сети…</string>
-    <string name="menu_add_tile">Добавить кнопку в шторку</string>
-    <string name="settings_sim_slots">SIM-карты</string>
-    <string name="sim_selection_title">Режим SIM-карт</string>
-    <string name="sim_slot_all">Обе SIM</string>
-    <string name="sim_slot_sim_1">Только SIM 1</string>
-    <string name="sim_slot_sim_2">Только SIM 2</string>
-    <string name="sim_slot_all_desc">Режим глушит звонки на обеих SIM-картах (SIM 1 и SIM 2)</string>
-    <string name="sim_slot_1_desc">Режим глушит только SIM 1; SIM 2 принимает звонки</string>
-    <string name="sim_slot_2_desc">Режим глушит только SIM 2; SIM 1 принимает звонки</string>
-    <string name="app_version_label">Версия 0.1.10</string>
-    <string name="diagnostics_not_run_hint">Запустите диагностику, чтобы проверить реальное состояние модема.</string>
-    <string name="preset_commands_count">Команд: %1$d</string>
-    <string name="about_github">Репозиторий GitHub</string>
-    <string name="donate_description">Ghost Mode — полностью свободный и открытый проект без рекламы и трекеров.</string>
-    <string name="menu_updates">Обновления</string>
-    <string name="menu_theme">Тема</string>
-    <string name="update_banner_new">Доступна версия %1$s</string>
-    <string name="update_download">Скачать APK</string>
-    <string name="update_later">Позже</string>
-    <string name="update_none_hint">Установлена последняя версия. Нажмите «Проверить снова», чтобы повторить.</string>
-    <string name="update_check_again">Проверить снова</string>
-    <string name="theme_system">Системная</string>
+    <string name="schedule_summary">Ghost Mode будет включён %1$s каждый день.</string>
+    <string name="schedule_empty_window">Начало и конец совпадают — выберите другое время.</string>
+    <string name="schedule_hint">Если телефон был выключен в момент начала, режим включится сразу после загрузки. Включённый вручную режим перезагрузка не выключает.</string>
+
+    <!-- Пресеты -->
+    <string name="presets_title">Пресеты</string>
+    <string name="presets_subtitle">Наборы команд для разных телефонов. Начните с «Универсального».</string>
+    <string name="presets_new">Новый пресет</string>
+    <string name="presets_import">Импорт из файла</string>
+    <string name="presets_export">Экспорт своих пресетов</string>
+    <string name="presets_locked_title">Ghost Mode включён</string>
+    <string name="presets_locked_text">Выключите режим, чтобы сменить пресет: активный пресет нужен для восстановления настроек.</string>
+    <string name="preset_builtin">Встроенный</string>
+    <string name="preset_custom">Свой</string>
+    <string name="preset_show_commands">Команды</string>
+    <string name="preset_hide_commands">Скрыть</string>
+    <string name="preset_on_commands">Включение</string>
+    <string name="preset_off_commands">Выключение</string>
+    <string name="preset_copy_suffix">(копия)</string>
+    <string name="preset_delete_title">Удалить пресет?</string>
+    <string name="preset_delete_text">«%1$s» будет удалён без возможности восстановления.</string>
+
+    <string name="preset_universal_title">Универсальный</string>
+    <string name="preset_universal_desc">Рекомендуется начать с него. Отключает IMS (VoLTE) командами телефонии, фиксирует модем в LTE и выключает найденный на устройстве IMS-сервис. При выключении режима всё возвращается.</string>
+    <string name="preset_stock_title">Чистый Android / Pixel</string>
+    <string name="preset_stock_desc">Минимальный набор: IMS выключен + только LTE. Подходит для Pixel, Motorola, Nothing и большинства прошивок, близких к стоку (Android 12+).</string>
+    <string name="preset_xiaomi_title">Xiaomi HyperOS / MIUI</string>
+    <string name="preset_xiaomi_desc">Те же команды, что и в «Чистом Android». Скрытое сетевое меню на HyperOS закрыто, но shell-команды телефонии работают.</string>
+    <string name="preset_samsung_title">Samsung One UI</string>
+    <string name="preset_samsung_desc">Дополнительно выключает переключатели VoLTE, фиксирует preferred_network_mode в LTE для всех подписок и отключает IMS-пакеты Samsung. На некоторых моделях модем снимает регистрацию VoLTE только после перезагрузки.</string>
+    <string name="preset_oneplus_title">OnePlus / OxygenOS</string>
+    <string name="preset_oneplus_desc">Команды AOSP + отключение IMS-сервиса Qualcomm (org.codeaurora.ims) или MediaTek (com.mediatek.ims). Проверено на OnePlus 13.</string>
+    <string name="preset_vivo_title">vivo / iQOO</string>
+    <string name="preset_vivo_desc">Тот же подход, что у OnePlus, для OriginOS / Funtouch OS. Подтверждён не на всех моделях — если не сработает, попробуйте «Универсальный».</string>
+    <string name="preset_legacy_title">Android 9–11</string>
+    <string name="preset_legacy_desc">Для телефонов без команд телефонии Android 12: ставит preferred_network_mode в LTE-only и переключает режим полёта, чтобы применить. Некоторые прошивки это игнорируют.</string>
+
+    <!-- Редактор и импорт -->
+    <string name="editor_title_new">Новый пресет</string>
+    <string name="editor_title_edit">Редактирование</string>
+    <string name="editor_field_title">Название</string>
+    <string name="editor_field_description">Описание</string>
+    <string name="editor_field_on">Команды включения</string>
+    <string name="editor_field_off">Команды выключения</string>
+    <string name="editor_field_capture">Команда чтения маски сетей (необязательно)</string>
+    <string name="editor_one_per_line">Одна shell-команда на строку</string>
+    <string name="editor_capture_hint">Её вывод сохраняется перед включением и подставляется вместо {{SAVED_MASK}}</string>
+    <string name="editor_placeholders_title">Подстановки</string>
+    <string name="editor_placeholders_text">«-s 0» заменяется на выбранный слот SIM (команда выполняется для каждого слота).\n{{SAVED_MASK}} — маска сетей, сохранённая до включения режима.\n{{IMS_PACKAGES}} — IMS-пакеты, которые сейчас используют выбранные SIM.\n\nИсходные значения ключей «settings put» и пакеты, отключённые через «pm disable-user», восстанавливаются автоматически при выключении режима.</string>
+    <plurals name="import_title">
+        <item quantity="one">Импортировать %1$d пресет?</item>
+        <item quantity="few">Импортировать %1$d пресета?</item>
+        <item quantity="many">Импортировать %1$d пресетов?</item>
+        <item quantity="other">Импортировать %1$d пресета?</item>
+    </plurals>
+    <string name="import_warning">Эти команды будут выполняться с правами shell или root. Импортируйте пресеты только от тех, кому доверяете.</string>
+
+    <!-- Сообщения -->
+    <string name="message_busy">Команды ещё выполняются — подождите.</string>
+    <string name="message_not_ready">Нет доступа: запустите Shizuku или выдайте root.</string>
+    <string name="message_no_preset">Выбранный пресет не найден.</string>
+    <string name="message_all_failed">Команды не выполнились — ничего не изменено.</string>
+    <string name="message_partial_on">Ghost Mode включён, но часть команд завершилась с ошибкой.</string>
+    <string name="message_partial_off">Ghost Mode выключен, но часть команд восстановления завершилась с ошибкой.</string>
+    <string name="message_preset_locked">Выключите Ghost Mode, чтобы сменить пресет.</string>
+    <string name="message_sim_locked">Выключите Ghost Mode, чтобы изменить выбор SIM.</string>
+    <string name="message_export_done">Свои пресеты экспортированы.</string>
+    <string name="message_export_failed">Не удалось записать файл.</string>
+    <string name="message_import_done">Пресеты импортированы.</string>
+    <string name="message_import_duplicates">Такие пресеты уже есть.</string>
+    <string name="message_import_empty">В файле нет корректных пресетов.</string>
+    <string name="message_import_invalid">Это не файл пресетов Ghost Mode.</string>
+    <string name="message_packages_enabled">Пакеты включены.</string>
+
+    <!-- Настройки -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_section_mode">Режим</string>
+    <string name="settings_section_quick">Быстрый доступ</string>
+    <string name="settings_section_appearance">Оформление</string>
+    <string name="settings_section_updates">Обновления</string>
+    <string name="settings_section_tools">Инструменты</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_notification">Уведомление о статусе</string>
+    <string name="settings_notification_summary">Постоянное уведомление с таймером и кнопкой «Выключить»</string>
+    <string name="settings_schedule_on">Каждый день %1$s – %2$s</string>
+    <string name="settings_exact_alarms">Будильники и напоминания</string>
+    <string name="settings_exact_alarms_denied">Запрещено — расписание может опаздывать</string>
+    <string name="settings_battery">Работа в фоне</string>
+    <string name="settings_battery_restricted">Ограничена оптимизацией батареи</string>
+    <string name="settings_add_tile">Добавить плитку в шторку</string>
+    <string name="settings_add_tile_summary">Переключать Ghost Mode из панели быстрых настроек</string>
+    <string name="settings_widget">Виджет на рабочий стол</string>
+    <string name="settings_widget_summary">Долгое нажатие на рабочем столе → Виджеты → Ghost Mode</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_dynamic_color">Динамические цвета</string>
+    <string name="settings_dynamic_color_summary">Цвета из обоев</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_update_auto">Проверять обновления</string>
+    <string name="settings_update_auto_summary">Искать новые релизы на GitHub при запуске. По умолчанию выключено — без этого приложение не выходит в сеть.</string>
+    <string name="settings_update_now">Проверить сейчас</string>
+    <string name="settings_diagnostics_summary">Режим сети, состояние IMS и мобильный интернет</string>
+    <string name="settings_log_summary">Все выполненные команды и их вывод</string>
+    <string name="settings_stats_summary">Сколько времени вы были недоступны</string>
+    <string name="theme_system">Как в системе</string>
     <string name="theme_dark">Тёмная</string>
     <string name="theme_light">Светлая</string>
-    <string name="battery_title">Оптимизация батареи</string>
-    <string name="battery_text">Разрешите Ghost Mode работать в фоне без ограничений энергосбережения — иначе таймер и расписание могут срабатывать с опозданием.</string>
-    <string name="battery_action">Разрешить работу в фоне</string>
-    <string name="timer_title">Автовыключение</string>
-    <string name="timer_chip_30m">+30 мин</string>
-    <string name="timer_chip_1h">+1 час</string>
-    <string name="timer_chip_2h">+2 часа</string>
-    <string name="timer_chip_morning">До утра</string>
-    <string name="timer_armed_in">Выключится в %1$s</string>
-    <string name="timer_minutes_left">осталось %1$s</string>
-    <string name="timer_cancel">Отменить таймер</string>
+    <string name="language_system">Как в системе</string>
+    <string name="update_idle">Нажмите, чтобы проверить новую версию на GitHub</string>
+    <string name="update_checking">Проверяю…</string>
+    <string name="update_up_to_date">Установлена последняя версия</string>
+    <string name="update_failed">Не удалось связаться с GitHub</string>
+
+    <!-- Диагностика -->
+    <string name="diagnostics_title">Диагностика</string>
+    <string name="diagnostics_run">Проверить снова</string>
+    <string name="diagnostics_running">Читаю состояние модема…</string>
+    <string name="diagnostics_failed">Для диагностики нужен доступ через Shizuku или root.</string>
+    <string name="diagnostics_details">Подробности</string>
+    <string name="diagnostics_hint">Это оценка по состоянию модема. Самая надёжная проверка — позвонить себе с другого телефона.</string>
+    <string name="diag_calls_label">Входящие звонки</string>
+    <string name="diag_calls_blocked">Скорее всего, не проходят</string>
+    <string name="diag_calls_allowed">Скорее всего, проходят</string>
+    <string name="diag_summary_blocked">Нет отката в 2G/3G и нет активного IMS-сервиса: звонящие должны слышать «абонент недоступен», а мобильный интернет работает.</string>
+    <string name="diag_summary_allowed">Звонки могут пройти через 2G/3G или VoLTE. Это нормальное состояние, когда Ghost Mode выключен.</string>
+    <string name="diag_slot">SIM %1$d</string>
+    <string name="diag_network_label">Типы сетей</string>
+    <string name="diag_network_lte_only">Только LTE</string>
+    <string name="diag_network_all">2G/3G разрешены</string>
+    <string name="diag_unknown">Неизвестно</string>
+    <string name="diag_ims_label">Сервис IMS (VoLTE)</string>
+    <string name="diag_ims_bound">Подключён</string>
+    <string name="diag_ims_not_bound">Не подключён</string>
+    <string name="diag_mobile_data">Мобильный интернет</string>
+    <string name="diag_mobile_data_active">Работает</string>
+    <string name="diag_mobile_data_wifi">Доступен (сейчас Wi-Fi)</string>
+    <string name="diag_mobile_data_none">Не подключён</string>
+    <string name="diag_disabled_packages">Отключённые IMS-пакеты</string>
+    <string name="diag_disabled_packages_text">Эти IMS-пакеты отключены. Если VoLTE не работает при выключенном Ghost Mode (например, после старых версий приложения), включите их обратно.</string>
+    <string name="diag_enable_packages">Включить пакеты</string>
+    <string name="diag_enable_packages_confirm">Выполнить «pm enable» для: %1$s?</string>
+
+    <!-- Журнал -->
+    <string name="log_title">Журнал команд</string>
+    <string name="log_empty">Команд пока не было</string>
+    <string name="log_clear">Очистить журнал</string>
+    <string name="log_copy_all">Скопировать журнал</string>
+    <string name="log_exit_code">код %1$d</string>
+    <string name="log_note">заметка</string>
+
+    <!-- Статистика -->
+    <string name="stats_title">Статистика</string>
+    <string name="stats_today">Сегодня</string>
+    <string name="stats_week">За 7 дней</string>
+    <string name="stats_all">За всё время</string>
+    <string name="stats_sessions">Сеансов</string>
+    <string name="stats_last_7_days">Последние 7 дней</string>
+    <string name="stats_recent">Недавние сеансы</string>
+    <string name="stats_now">сейчас</string>
+
+    <!-- О приложении -->
+    <string name="about_title">О Ghost Mode</string>
+    <string name="about_version">Версия %1$s</string>
+    <string name="about_description">Делает телефон недоступным для звонков, пока мобильный интернет продолжает работать. Бесплатно и с открытым кодом, без рекламы и трекеров.</string>
+    <string name="about_links">Ссылки</string>
+    <string name="about_source">Исходный код</string>
+    <string name="about_releases">Релизы</string>
+    <string name="about_report_bug">Сообщить о проблеме</string>
+    <string name="about_changelog">История изменений</string>
+    <string name="about_license">Лицензия</string>
+    <string name="about_cert_label">Сертификат подписи</string>
+    <string name="about_cert_title">Отпечаток SHA-256</string>
+    <string name="about_cert_summary">Официальные релизы на GitHub подписаны этим ключом. Нажмите, чтобы скопировать.</string>
+    <string name="about_disclaimer">Не полагайтесь на Ghost Mode, если вы должны быть на связи в экстренных ситуациях. Используйте приложение только на своём устройстве и в рамках местного законодательства.</string>
+
+    <!-- Уведомления -->
+    <string name="notification_channel_status">Статус Ghost Mode</string>
+    <string name="notification_channel_status_desc">Показывается, пока Ghost Mode включён</string>
+    <string name="notification_channel_attention">Требует внимания</string>
+    <string name="notification_channel_attention_desc">Показывается, если перезагрузка сбросила часть настроек режима</string>
+    <string name="notification_title_on">Ghost Mode включён</string>
+    <string name="notification_text_on">Звонки не проходят · интернет работает</string>
+    <string name="notification_reapply_title">Перезагрузка прервала Ghost Mode</string>
+    <string name="notification_reapply_text">Звонки снова могут проходить. Примените режим заново или выключите его, чтобы вернуть обычные настройки.</string>
+    <string name="notification_action_turn_off">Выключить</string>
+
+    <!-- Плитка, виджет, ярлыки -->
+    <string name="tile_subtitle_on">Недоступен</string>
+    <string name="tile_subtitle_off">На связи</string>
+    <string name="tile_subtitle_busy">Применяю…</string>
+    <string name="tile_subtitle_setup">Нужна настройка</string>
+    <string name="widget_description">Включает и выключает Ghost Mode одним нажатием</string>
+    <string name="widget_state_on">Вкл</string>
+    <string name="widget_state_off">Выкл</string>
+    <string name="widget_cd_on">Ghost Mode включён. Нажмите, чтобы выключить.</string>
+    <string name="widget_cd_off">Ghost Mode выключен. Нажмите, чтобы включить.</string>
     <string name="shortcut_turn_on">Включить</string>
     <string name="shortcut_turn_off">Выключить</string>
-    <string name="shortcut_timer_1h">Таймер 1 час</string>
-    <string name="shortcut_timer_1h_long">Включить с таймером на 1 час</string>
+    <string name="shortcut_timer_1h">На 1 час</string>
+    <string name="shortcut_timer_1h_long">Включить на 1 час</string>
 </resources>
