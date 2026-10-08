@@ -218,6 +218,33 @@ class GhostModeControllerTest {
     }
 
     @Test
+    fun turnOn_whenNoImsPackageCouldBeDisabled_warnsImsStillActive() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        // `|| true` keeps the exit code at 0 even though the package manager refused.
+        shell.on("pm disable-user", stdout = "")
+
+        val outcome = controller.turnOn()
+
+        assertTrue(state.isOn.value)
+        assertTrue(outcome is TurnOutcome.Partial && outcome.imsStillActive)
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_NOT_DISABLED })
+    }
+
+    @Test
+    fun samsung_disablesDiscoveredImsPackageOnce() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("get-ims-service -s 0 -d", stdout = "${BuiltInPresets.SAMSUNG_IMS_PACKAGE}\n")
+        shell.on("get-ims-service -s 1 -d", stdout = "com.samsung.ims.next\n")
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+
+        val outcome = controller.turnOn()
+
+        assertTrue(outcome is TurnOutcome.Success)
+        assertEquals(1, shell.executedMatching("disable-user --user 0 com\\.sec\\.imsservice").size)
+        assertEquals(1, shell.executedMatching("disable-user --user 0 com\\.samsung\\.ims\\.next").size)
+    }
+
+    @Test
     fun packagesDisabledBeforehand_areNotReEnabled() = runTest {
         state.setActivePresetId(BuiltInPresets.ID_ONEPLUS)
         shell.on("pm list packages -d", stdout = "package:${BuiltInPresets.QUALCOMM_IMS_PACKAGE}\n")

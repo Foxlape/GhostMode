@@ -6,6 +6,14 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+### Fixed
+
+- **"On" while calls still came through ([#6](https://github.com/Foxlape/GhostMode/issues/6)).** IMS packages are
+  disabled with `|| true`, so when the system refused, the app still reported success. Ghost Mode now checks the
+  result and warns that the IMS service is still active and VoLTE / Wi-Fi Calling calls may get through.
+- **Samsung One UI preset** also disables the IMS service package the system actually uses, in case newer One UI
+  releases ship it under a different name.
+
 ## [0.2.0] — 2026-09-27
 
 A rework of the core and a new interface. The main goal of this release is that turning Ghost Mode **off** always

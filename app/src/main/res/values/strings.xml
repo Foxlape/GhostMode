@@ -163,6 +163,7 @@
     <string name="message_no_preset">The selected preset was not found.</string>
     <string name="message_all_failed">Commands failed — nothing was changed.</string>
     <string name="message_partial_on">Ghost Mode is on, but some commands failed.</string>
+    <string name="message_ims_still_active">Ghost Mode is on, but the IMS service could not be disabled: calls over VoLTE / Wi-Fi Calling may still come through. Check the command log or try root.</string>
     <string name="message_partial_off">Ghost Mode is off, but some restore commands failed.</string>
     <string name="message_preset_locked">Turn Ghost Mode off to change the preset.</string>
     <string name="message_sim_locked">Turn Ghost Mode off to change the SIM selection.</string>

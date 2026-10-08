@@ -162,6 +162,7 @@
     <string name="message_no_preset">Выбранный пресет не найден.</string>
     <string name="message_all_failed">Команды не выполнились — ничего не изменено.</string>
     <string name="message_partial_on">Ghost Mode включён, но часть команд завершилась с ошибкой.</string>
+    <string name="message_ims_still_active">Ghost Mode включён, но службу IMS отключить не удалось: звонки по VoLTE / Wi-Fi Calling могут доходить. Загляните в журнал команд или попробуйте root.</string>
     <string name="message_partial_off">Ghost Mode выключен, но часть команд восстановления завершилась с ошибкой.</string>
     <string name="message_preset_locked">Выключите Ghost Mode, чтобы сменить пресет.</string>
     <string name="message_sim_locked">Выключите Ghost Mode, чтобы изменить выбор SIM.</string>

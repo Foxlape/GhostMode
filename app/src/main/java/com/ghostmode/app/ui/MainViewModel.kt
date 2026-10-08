@@ -159,7 +159,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private fun messageFor(outcome: TurnOutcome, wasOn: Boolean): UiMessage? = when (outcome) {
         is TurnOutcome.Success -> null
         is TurnOutcome.Partial -> UiMessage(
-            if (wasOn) R.string.message_partial_off else R.string.message_partial_on,
+            when {
+                wasOn -> R.string.message_partial_off
+                outcome.imsStillActive -> R.string.message_ims_still_active
+                else -> R.string.message_partial_on
+            },
             showLogAction = true
         )
         is TurnOutcome.Failure -> when (outcome.reason) {

@@ -19,8 +19,16 @@ sealed interface TurnOutcome {
     /** Every command succeeded. */
     data class Success(override val results: List<CommandResult>) : TurnOutcome
 
-    /** The mode switched, but some commands failed (see the command log). */
-    data class Partial(override val results: List<CommandResult>) : TurnOutcome
+    /**
+     * The mode switched, but some commands failed (see the command log). [imsStillActive] is set
+     * when the preset tried to disable IMS service packages and none of them ended up disabled:
+     * such commands end with `|| true`, so their failure would otherwise go unnoticed while
+     * VoLTE / VoWiFi calls keep coming through.
+     */
+    data class Partial(
+        override val results: List<CommandResult>,
+        val imsStillActive: Boolean = false
+    ) : TurnOutcome
 
     /** Nothing changed. */
     data class Failure(
@@ -146,16 +154,19 @@ class GhostModeController(
 
         val alreadyDisabled = if (commands.any { PM_DISABLE.matches(it) }) listDisabledPackages() else emptySet()
         val disabledByUs = previous?.disabledPackages.orEmpty().toMutableSet()
+        val targetedPackages = mutableSetOf<String>()
+        var anyPackageDisabled = false
         val results = commands.map { command ->
             execute(command).also { result ->
-                val pkg = PM_DISABLE.matchEntire(command)?.groupValues?.get(1)
-                if (pkg != null && pkg !in alreadyDisabled && result.isSuccess &&
-                    result.stdout.contains(DISABLED_STATE_MARKER)
-                ) {
-                    disabledByUs += pkg
-                }
+                val pkg = PM_DISABLE.matchEntire(command)?.groupValues?.get(1) ?: return@also
+                targetedPackages += pkg
+                val nowDisabled = result.isSuccess && result.stdout.contains(DISABLED_STATE_MARKER)
+                if (nowDisabled || pkg in alreadyDisabled || pkg in disabledByUs) anyPackageDisabled = true
+                if (nowDisabled && pkg !in alreadyDisabled) disabledByUs += pkg
             }
         }
+        val imsStillActive = targetedPackages.isNotEmpty() && !anyPackageDisabled
+        if (imsStillActive) logNote(targetedPackages.joinToString(), NOTE_IMS_NOT_DISABLED)
 
         val changed = results.any { it.isSuccess }
         if (changed) {
@@ -171,7 +182,8 @@ class GhostModeController(
                 )
             )
         }
-        return outcomeOf(results, changed)
+        val outcome = outcomeOf(results, changed)
+        return if (imsStillActive && outcome !is TurnOutcome.Failure) TurnOutcome.Partial(results, imsStillActive = true) else outcome
     }
 
     /**
@@ -212,12 +224,15 @@ class GhostModeController(
 
     private suspend fun resolveImsPackages(commands: List<String>, slots: List<Int>): List<String> {
         if (commands.none { it.contains(BuiltInPresets.IMS_PACKAGES_PLACEHOLDER) }) return commands
-        val packages = discoverImsPackages(slots)
+        val discovered = discoverImsPackages(slots)
+        // Presets that also name packages explicitly (Samsung) must not disable them twice.
+        val explicit = commands.mapNotNull { PM_DISABLE.matchEntire(it)?.groupValues?.get(1) }.toSet()
+        val packages = discovered.filterNot { it in explicit }
         return commands.flatMap { command ->
             if (!command.contains(BuiltInPresets.IMS_PACKAGES_PLACEHOLDER)) {
                 listOf(command)
             } else {
-                if (packages.isEmpty()) logNote(command, NOTE_NO_IMS_PACKAGES)
+                if (discovered.isEmpty()) logNote(command, NOTE_NO_IMS_PACKAGES)
                 packages.map { command.replace(BuiltInPresets.IMS_PACKAGES_PLACEHOLDER, it) }
             }
         }
@@ -364,6 +379,8 @@ class GhostModeController(
         const val NOTE_MASK_FALLBACK =
             "Original network mask unavailable — the full set of standard network types will be restored."
         const val NOTE_NO_IMS_PACKAGES = "No bound IMS service found — nothing to disable."
+        const val NOTE_IMS_NOT_DISABLED =
+            "None of these IMS packages could be disabled — calls over VoLTE / VoWiFi may still come through."
 
         private const val EXIT_FAILURE = -1
         private const val IMS_KEYWORD = "ims"

@@ -124,6 +124,8 @@ object BuiltInPresets {
             preferredNetworkMode("2", NETWORK_MODE_LTE_ONLY),
             "$PM_DISABLE_USER $SAMSUNG_IMS_PACKAGE$IGNORE_FAILURE",
             "$PM_DISABLE_USER $SAMSUNG_IMS_PACKAGE_NEW$IGNORE_FAILURE",
+            // Newer One UI releases may bind IMS from a differently named package.
+            "$PM_DISABLE_USER $IMS_PACKAGES_PLACEHOLDER$IGNORE_FAILURE",
             "settings put global volte_vt_enabled 0",
             "settings put global enhanced_4g_mode_enabled 0",
             CARRIER_CONFIG_REFRESH_COMMAND
