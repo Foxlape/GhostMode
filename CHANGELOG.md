@@ -6,6 +6,8 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-10-08
+
 ### Fixed
 
 - **"On" while calls still came through ([#6](https://github.com/Foxlape/GhostMode/issues/6)).** IMS packages are
@@ -219,6 +221,7 @@ First public release: Shizuku and root backends, presets for Pixel / AOSP, Xiaom
 Android 9–11, custom presets with JSON import/export, Quick Settings tile, home screen widget, daily schedule,
 usage statistics, English and Russian UI.
 
+[0.2.1]: https://github.com/Foxlape/GhostMode/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Foxlape/GhostMode/compare/v0.1.16...v0.2.0
 [0.1.16]: https://github.com/Foxlape/GhostMode/compare/v0.1.15...v0.1.16
 [0.1.15]: https://github.com/Foxlape/GhostMode/compare/v0.1.14...v0.1.15

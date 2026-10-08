@@ -1,0 +1,3 @@
+Fix for Samsung and other phones where IMS could not be disabled.
+• If the system refuses to disable the IMS service, Ghost Mode no longer says everything is fine: it warns that VoLTE / Wi-Fi Calling calls may still get through
+• Samsung One UI preset also disables the IMS package the system actually uses
