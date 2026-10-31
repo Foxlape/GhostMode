@@ -6,6 +6,29 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-10-31
+
+### Fixed
+
+- **Samsung One UI: calls kept coming through ([#7](https://github.com/Foxlape/GhostMode/issues/7)).** The preset wrote
+  settings Samsung's IMS service does not use, and `com.sec.imsservice` is a persistent app, so disabling the package
+  does not stop it until a reboot. The preset now uses Samsung's own per-SIM switches for VoLTE, video calls and Wi-Fi
+  Calling, which take effect at once, and restores them on turn-off.
+- **Carriers that require VoLTE.** Samsung turns VoLTE back on for such carriers (Jio). Ghost Mode now checks the
+  switch a few seconds later and asks for a reboot instead of silently staying ineffective.
+- **Stack trace in the log on Samsung.** The protected `CARRIER_CONFIG_CHANGED` broadcast, which Android rejects for
+  Shizuku on every toggle, is no longer sent.
+- **`preferred_network_mode` format on dual-modem phones.** Devices storing one value per modem (`26,26`) keep that
+  format instead of getting a single value.
+
+### Added
+
+- **More detailed diagnostics:** device and firmware, carrier code, network registration, IMS registration and whether
+  the IMS process is running.
+- **Private logs.** Phone numbers, IMEI, IMSI, ICCID, IP and MAC addresses and emails are removed automatically before
+  they reach the command log, and the log no longer lists unrelated disabled or system-wide apps. See
+  [Privacy](README.md#privacy).
+
 ## [0.2.1] — 2026-10-08
 
 ### Fixed
@@ -221,6 +244,7 @@ First public release: Shizuku and root backends, presets for Pixel / AOSP, Xiaom
 Android 9–11, custom presets with JSON import/export, Quick Settings tile, home screen widget, daily schedule,
 usage statistics, English and Russian UI.
 
+[0.2.2]: https://github.com/Foxlape/GhostMode/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Foxlape/GhostMode/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Foxlape/GhostMode/compare/v0.1.16...v0.2.0
 [0.1.16]: https://github.com/Foxlape/GhostMode/compare/v0.1.15...v0.1.16

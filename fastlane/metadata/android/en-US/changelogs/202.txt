@@ -1,0 +1,6 @@
+Samsung fix and safer logs.
+• Samsung preset now uses Samsung's own VoLTE, video call and Wi-Fi Calling switches, per SIM, with no reboot
+• If the carrier forces VoLTE back on (Jio), the app says so and asks for a reboot
+• Removed the error that appeared in the log on every toggle
+• More detailed diagnostics
+• Phone numbers, IMEI, IMSI, ICCID, IP and MAC addresses and emails are removed from the log automatically

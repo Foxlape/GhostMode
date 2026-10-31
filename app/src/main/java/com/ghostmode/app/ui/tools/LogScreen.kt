@@ -93,6 +93,14 @@ fun LogScreen(vm: MainViewModel, onBack: () -> Unit) {
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                item {
+                    Text(
+                        stringResource(R.string.log_privacy_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(4.dp)
+                    )
+                }
                 items(entries.asReversed()) { entry ->
                     LogEntry(entry)
                 }

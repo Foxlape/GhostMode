@@ -119,9 +119,23 @@ Original values of `settings put` keys and packages disabled with `pm disable-us
 
 - **SMS** may be delayed until the mode is off on carriers that deliver SMS over IMS.
 - **Call forwarding** "when unreachable" sends callers to voicemail instead.
-- Some Samsung models drop VoLTE registration only after a reboot.
+- On Samsung, carriers that require VoLTE (such as Jio) turn it back on; Ghost Mode warns about this, and a reboot with
+  the mode on is needed.
 - Commands differ between firmware versions. If a preset does not work, send the diagnostics and command log.
 - Use the app only on your own device and in line with local regulations.
+
+## Privacy
+
+Ghost Mode has no accounts, analytics or ads, and it never sends your data anywhere. The only network request is the
+optional update check against GitHub.
+
+**Logs are safe to share.** The command log stays on your phone, in memory, until you copy it yourself. Before anything
+reaches the log, the app removes phone numbers, IMEI, IMSI, ICCID, IP and MAC addresses and emails. Diagnostic commands
+only read a fixed list of values and never dump full system state, and other apps on your phone are not listed.
+
+What stays in the log is what a fix depends on: phone model, firmware version, carrier code and name, and the state of
+the network and IMS service. On its own, none of this identifies you. The filter is automatic, so you can always read
+the log before posting it.
 
 ## Building
 

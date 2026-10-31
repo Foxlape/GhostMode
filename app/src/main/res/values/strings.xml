@@ -131,7 +131,7 @@
     <string name="preset_xiaomi_title">Xiaomi HyperOS / MIUI</string>
     <string name="preset_xiaomi_desc">Same commands as Stock. The hidden network menu is locked on HyperOS, but telephony shell commands still work.</string>
     <string name="preset_samsung_title">Samsung One UI</string>
-    <string name="preset_samsung_desc">Also turns off the VoLTE switches, locks preferred_network_mode to LTE for every subscription and disables Samsung IMS packages. On some models the modem drops VoLTE registration only after a reboot.</string>
+    <string name="preset_samsung_desc">Turns off VoLTE, video calls and Wi-Fi Calling with Samsung\'s own switches, locks the network to LTE and disables Samsung IMS packages. On carriers that require VoLTE (such as Jio) a reboot is needed.</string>
     <string name="preset_oneplus_title">OnePlus / OxygenOS</string>
     <string name="preset_oneplus_desc">AOSP commands plus disabling the Qualcomm (org.codeaurora.ims) or MediaTek (com.mediatek.ims) IMS service. Confirmed on OnePlus 13.</string>
     <string name="preset_vivo_title">vivo / iQOO</string>
@@ -163,6 +163,7 @@
     <string name="message_no_preset">The selected preset was not found.</string>
     <string name="message_all_failed">Commands failed — nothing was changed.</string>
     <string name="message_partial_on">Ghost Mode is on, but some commands failed.</string>
+    <string name="message_volte_forced">Ghost Mode is on, but your carrier turned VoLTE back on, so calls may still come through. Reboot the phone with Ghost Mode on: the disabled IMS service will not start again.</string>
     <string name="message_ims_still_active">Ghost Mode is on, but the IMS service could not be disabled: calls over VoLTE / Wi-Fi Calling may still come through. Check the command log or try root.</string>
     <string name="message_partial_off">Ghost Mode is off, but some restore commands failed.</string>
     <string name="message_preset_locked">Turn Ghost Mode off to change the preset.</string>
@@ -250,6 +251,7 @@
     <!-- Log -->
     <string name="log_title">Command log</string>
     <string name="log_empty">No commands yet</string>
+    <string name="log_privacy_note">Safe to share. Phone numbers, IMEI, IMSI, ICCID, IP and MAC addresses and emails are removed automatically. Your phone model, firmware and carrier stay in the log because fixes depend on them. Nothing is sent anywhere: the log leaves your phone only if you copy it yourself.</string>
     <string name="log_clear">Clear log</string>
     <string name="log_copy_all">Copy log</string>
     <string name="log_exit_code">exit %1$d</string>

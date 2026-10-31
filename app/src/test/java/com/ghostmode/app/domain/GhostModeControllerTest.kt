@@ -202,6 +202,107 @@ class GhostModeControllerTest {
     }
 
     @Test
+    fun perModemSetting_keepsItsFormat() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("settings get global preferred_network_mode$", stdout = "26,26")
+
+        controller.turnOn()
+
+        assertTrue(shell.executed.contains("settings put global preferred_network_mode 11,11"))
+        shell.executed.clear()
+        controller.turnOff()
+        assertTrue(shell.executed.contains("settings put global preferred_network_mode 26,26"))
+    }
+
+    @Test
+    fun samsung_usesPerSimSwitches_onlyForSelectedSlots() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        state.setSimSlotMode(SimSlotMode.SIM_2)
+
+        controller.turnOn()
+
+        assertEquals(listOf("settings put system voicecall_type2 1"), shell.executedMatching("put system voicecall_type"))
+        assertEquals(listOf("settings put system videocall_type2 1"), shell.executedMatching("put system videocall_type"))
+        assertEquals(listOf("settings put system wifi_call_enable2 0"), shell.executedMatching("put system wifi_call_enable"))
+    }
+
+    @Test
+    fun samsung_switchesGoFirst_andAreRestored() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("settings get system voicecall_type$", stdout = "0")
+        shell.on("settings get system wifi_call_enable1", stdout = "1")
+
+        controller.turnOn()
+        assertTrue(shell.executed.indexOf("settings put system voicecall_type 1") <
+            shell.executed.indexOf("pm disable-user --user 0 ${BuiltInPresets.SAMSUNG_IMS_PACKAGE} || true"))
+        shell.executed.clear()
+        controller.turnOff()
+
+        assertTrue(shell.executed.contains("settings put system voicecall_type 0"))
+        assertTrue(shell.executed.contains("settings put system wifi_call_enable1 1"))
+    }
+
+    @Test
+    fun samsung_volteSwitchNeverSet_isTurnedBackOnInsteadOfDeleted() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("settings get system voicecall_type$", stdout = "null")
+        controller.turnOn()
+        shell.executed.clear()
+
+        controller.turnOff()
+
+        assertTrue(shell.executed.contains("settings put system voicecall_type 0"))
+        assertTrue(shell.executedMatching("settings delete system voicecall_type").isEmpty())
+    }
+
+    @Test
+    fun turnOn_whenCarrierForcesVolteBack_warns() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "0")
+
+        val outcome = controller.turnOn()
+
+        assertTrue(state.isOn.value)
+        assertTrue(outcome is TurnOutcome.Partial && outcome.volteForcedOn)
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_VOLTE_FORCED })
+    }
+
+    @Test
+    fun turnOn_whenVolteSwitchSticks_isSuccess() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "1")
+
+        assertTrue(controller.turnOn() is TurnOutcome.Success)
+    }
+
+    @Test
+    fun log_hidesPersonalDataAndUnrelatedPackages() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_ONEPLUS)
+        shell.on("pm list packages -d", stdout = "package:com.bank.secret\npackage:org.codeaurora.ims\n")
+        shell.on("ims disable", stdout = "failed for +79991234567")
+
+        controller.turnOn()
+
+        val log = state.logEntries.value.joinToString { it.command + it.stdout + it.stderr }
+        assertFalse("com.bank.secret" in log)
+        assertFalse("79991234567" in log)
+        assertTrue("org.codeaurora.ims" in log)
+    }
+
+    @Test
+    fun samsung_sendsNoProtectedBroadcast() = runTest {
+        // CARRIER_CONFIG_CHANGED is protected: uid 2000 gets a SecurityException on every toggle.
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+
+        controller.turnOn()
+        controller.turnOff()
+
+        assertTrue(shell.executedMatching("am broadcast").isEmpty())
+    }
+
+    @Test
     fun discoveredImsPackage_isDisabledAndReEnabled() = runTest {
         shell.on("get-ims-service -s 0 -d", stdout = "com.shannon.imsservice\n")
         shell.on("pm list packages -d", stdout = "package:com.example.disabled\n")
@@ -305,7 +406,7 @@ class GhostModeControllerTest {
         GhostModeController(afterBoot, presets, state, bootCount = { bootCount }).reapply()
 
         assertEquals("33", state.appliedSnapshot.value?.settingsOriginals?.get("global/preferred_network_mode"))
-        assertTrue(afterBoot.executedMatching("settings get").isEmpty())
+        assertTrue(afterBoot.executedMatching("settings get global").isEmpty())
     }
 
     @Test

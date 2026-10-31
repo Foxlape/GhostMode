@@ -35,8 +35,8 @@ android {
         minSdk = 26
         targetSdk = 35
         // versionCode = major * 10000 + minor * 100 + patch
-        versionCode = 201
-        versionName = "0.2.1"
+        versionCode = 202
+        versionName = "0.2.2"
     }
 
     // Release key from keystore.properties or KEYSTORE_* environment variables. Without it

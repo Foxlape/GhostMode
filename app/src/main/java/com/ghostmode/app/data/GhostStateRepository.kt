@@ -1,5 +1,6 @@
 package com.ghostmode.app.data
 
+import com.ghostmode.app.support.LogSanitizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -177,7 +178,12 @@ class GhostStateRepository(
     // --- Command log (in memory only) -------------------------------------------------------
 
     fun appendLog(entry: CommandLogEntry) {
-        logEntriesFlow.update { current -> (current + entry).takeLast(LOG_CAPACITY) }
+        val clean = entry.copy(
+            command = LogSanitizer.sanitize(entry.command),
+            stdout = LogSanitizer.sanitize(entry.stdout),
+            stderr = LogSanitizer.sanitize(entry.stderr)
+        )
+        logEntriesFlow.update { current -> (current + clean).takeLast(LOG_CAPACITY) }
     }
 
     fun removeLogEntry(entry: CommandLogEntry) {

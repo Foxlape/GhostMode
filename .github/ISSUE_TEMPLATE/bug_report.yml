@@ -8,12 +8,15 @@ body:
         Thanks for the report! Before you start: open **Settings → Diagnostics** in Ghost Mode, then
         **Command log → Copy log** — the log is the most useful part of a report.
 
+        🔒 **The log is safe to post.** Phone numbers, IMEI, IMSI, ICCID, IP and MAC addresses and emails are removed
+        automatically (since 0.2.2). Only your phone model, firmware and carrier stay, because fixes depend on them.
+
   - type: input
     id: app_version
     attributes:
       label: Ghost Mode version
       description: Settings → About
-      placeholder: "0.2.0"
+      placeholder: "0.2.2"
     validations:
       required: true
 
@@ -66,7 +69,7 @@ body:
     id: what_happened
     attributes:
       label: What happened?
-      description: What did you do, what did you expect, what happened instead?
+      description: What did you do, what did you expect, what happened instead? Please describe the symptom, not just "not working".
       placeholder: |
         1. Turned Ghost Mode on
         2. Called from another phone
@@ -84,5 +87,5 @@ body:
     id: log
     attributes:
       label: Command log
-      description: Settings → Command log → copy. It contains shell commands and their output only.
+      description: Turn Ghost Mode on, run Diagnostics, then Settings → Command log → Copy log. Personal data is removed automatically.
       render: shell

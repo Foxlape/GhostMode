@@ -161,6 +161,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         is TurnOutcome.Partial -> UiMessage(
             when {
                 wasOn -> R.string.message_partial_off
+                outcome.volteForcedOn -> R.string.message_volte_forced
                 outcome.imsStillActive -> R.string.message_ims_still_active
                 else -> R.string.message_partial_on
             },
@@ -310,13 +311,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearLog() = state.clearLog()
 
-    fun logAsText(): String = logEntries.value.joinToString("\n\n") { entry ->
+    fun logAsText(): String = (listOf(logHeader()) + logEntries.value.map { entry ->
         buildString {
             append("$ ").append(entry.command).append("  [exit ").append(entry.exitCode).append(']')
             if (entry.stdout.isNotBlank()) append('\n').append(entry.stdout.trimEnd())
             if (entry.stderr.isNotBlank()) append('\n').append(entry.stderr.trimEnd())
         }
-    }
+    }).joinToString("\n\n")
+
+    private fun logHeader(): String = listOf(
+        "# Ghost Mode ${com.ghostmode.app.BuildConfig.VERSION_NAME} (${com.ghostmode.app.BuildConfig.VERSION_CODE})",
+        "# ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}, " +
+            "Android ${android.os.Build.VERSION.RELEASE} (SDK ${android.os.Build.VERSION.SDK_INT})",
+        "# Preset ${activePresetId.value}, SIM mode ${simSlotMode.value}, " +
+            "mode ${if (isOn.value) "on" else "off"}, Shizuku ${shizukuStatus.value}",
+        "# Phone numbers, IMEI, IMSI, ICCID, IP and MAC addresses and emails are removed automatically."
+    ).joinToString("\n")
 
     private fun readMobileDataStatus(): MobileDataStatus {
         val connectivity = getApplication<Application>().getSystemService(ConnectivityManager::class.java)

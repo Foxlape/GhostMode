@@ -26,6 +26,7 @@ data class Preset(
  * Placeholders understood by [com.ghostmode.app.domain.GhostModeController]:
  * - [MASK_PLACEHOLDER] — the network mask captured before the mode was turned on;
  * - [IMS_PACKAGES_PLACEHOLDER] — IMS service packages currently bound for the selected SIM slots;
+ * - [SLOT_SUFFIX_PLACEHOLDER] / [SLOT_NUMBER_PLACEHOLDER] — per-SIM parts of Samsung setting names;
  * - `-s 0` — rewritten to the selected SIM slot(s).
  */
 object BuiltInPresets {
@@ -39,6 +40,8 @@ object BuiltInPresets {
 
     const val MASK_PLACEHOLDER = "{{SAVED_MASK}}"
     const val IMS_PACKAGES_PLACEHOLDER = "{{IMS_PACKAGES}}"
+    const val SLOT_SUFFIX_PLACEHOLDER = "{{SLOT_SUFFIX}}"
+    const val SLOT_NUMBER_PLACEHOLDER = "{{SLOT_NUMBER}}"
     const val SLOT_0 = "-s 0"
 
     const val MASK_CAPTURE_COMMAND = "cmd phone get-allowed-network-types-for-users $SLOT_0"
@@ -46,13 +49,21 @@ object BuiltInPresets {
     const val IMS_ENABLE_COMMAND = "cmd phone ims enable $SLOT_0"
     const val GET_IMS_SERVICE_DEVICE_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -d"
     const val GET_IMS_SERVICE_CARRIER_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -c"
-    const val CARRIER_CONFIG_REFRESH_COMMAND =
-        "am broadcast -a android.telephony.action.CARRIER_CONFIG_CHANGED || true"
 
     const val SAMSUNG_IMS_PACKAGE = "com.sec.imsservice"
     const val SAMSUNG_IMS_PACKAGE_NEW = "com.samsung.android.imsservice"
     const val QUALCOMM_IMS_PACKAGE = "org.codeaurora.ims"
     const val MEDIATEK_IMS_PACKAGE = "com.mediatek.ims"
+
+    /**
+     * Settings the Samsung IMS stack observes: `voicecall_type` / `voicecall_type2` hold the
+     * "VoLTE calls" switch (0 — VoLTE, 1 — circuit-switched only), and changing them drops the
+     * registration at once. Its package is `persistent`, so `pm disable-user` alone leaves the
+     * running process registered until a reboot.
+     */
+    const val SAMSUNG_VOLTE_SWITCH = "voicecall_type"
+    const val SAMSUNG_VIDEO_SWITCH = "videocall_type"
+    private const val SAMSUNG_WIFI_CALLING_SWITCH = "wifi_call_enable"
 
     /** `RILConstants.NETWORK_MODE_LTE_ONLY`. */
     const val NETWORK_MODE_LTE_ONLY = "11"
@@ -117,6 +128,9 @@ object BuiltInPresets {
         title = "Samsung One UI",
         description = "",
         onCommands = listOf(
+            samsungSwitch(SAMSUNG_VOLTE_SWITCH, "1"),
+            samsungSwitch(SAMSUNG_VIDEO_SWITCH, "1"),
+            samsungWifiCalling("0"),
             IMS_DISABLE_COMMAND,
             setAllowedNetworkTypes(NetworkMask.LTE_ONLY),
             preferredNetworkMode("", NETWORK_MODE_LTE_ONLY),
@@ -127,18 +141,20 @@ object BuiltInPresets {
             // Newer One UI releases may bind IMS from a differently named package.
             "$PM_DISABLE_USER $IMS_PACKAGES_PLACEHOLDER$IGNORE_FAILURE",
             "settings put global volte_vt_enabled 0",
-            "settings put global enhanced_4g_mode_enabled 0",
-            CARRIER_CONFIG_REFRESH_COMMAND
+            "settings put global enhanced_4g_mode_enabled 0"
         ),
         offCommands = listOf(
+            // Written back from the captured originals; the values are only a fallback.
+            samsungWifiCalling("0"),
+            samsungSwitch(SAMSUNG_VIDEO_SWITCH, "0"),
+            samsungSwitch(SAMSUNG_VOLTE_SWITCH, "0"),
             "settings put global volte_vt_enabled 1",
             "settings put global enhanced_4g_mode_enabled 1",
             IMS_ENABLE_COMMAND,
             preferredNetworkMode("", NETWORK_MODE_RESTORE_FALLBACK),
             preferredNetworkMode("1", NETWORK_MODE_RESTORE_FALLBACK),
             preferredNetworkMode("2", NETWORK_MODE_RESTORE_FALLBACK),
-            setAllowedNetworkTypes(MASK_PLACEHOLDER),
-            CARRIER_CONFIG_REFRESH_COMMAND
+            setAllowedNetworkTypes(MASK_PLACEHOLDER)
         ),
         networkMaskCaptureCommand = MASK_CAPTURE_COMMAND,
         isBuiltIn = true,
@@ -214,6 +230,12 @@ object BuiltInPresets {
 
     private fun setAllowedNetworkTypes(mask: String): String =
         "cmd phone set-allowed-network-types-for-users $SLOT_0 $mask"
+
+    private fun samsungSwitch(key: String, value: String): String =
+        "settings put system $key$SLOT_SUFFIX_PLACEHOLDER $value"
+
+    private fun samsungWifiCalling(value: String): String =
+        "settings put system $SAMSUNG_WIFI_CALLING_SWITCH$SLOT_NUMBER_PLACEHOLDER $value"
 
     private fun preferredNetworkMode(suffix: String, mode: String): String =
         "settings put global preferred_network_mode$suffix $mode"

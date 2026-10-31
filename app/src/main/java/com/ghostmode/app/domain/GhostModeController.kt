@@ -8,6 +8,7 @@ import com.ghostmode.app.data.Preset
 import com.ghostmode.app.data.PresetRepository
 import com.ghostmode.app.shell.CommandResult
 import com.ghostmode.app.shell.ShellExecutor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,11 +24,13 @@ sealed interface TurnOutcome {
      * The mode switched, but some commands failed (see the command log). [imsStillActive] is set
      * when the preset tried to disable IMS service packages and none of them ended up disabled:
      * such commands end with `|| true`, so their failure would otherwise go unnoticed while
-     * VoLTE / VoWiFi calls keep coming through.
+     * VoLTE / VoWiFi calls keep coming through. [volteForcedOn] is set when the IMS stack put the
+     * VoLTE switch back on its own, as Samsung does for carriers that mandate VoLTE (Jio).
      */
     data class Partial(
         override val results: List<CommandResult>,
-        val imsStillActive: Boolean = false
+        val imsStillActive: Boolean = false,
+        val volteForcedOn: Boolean = false
     ) : TurnOutcome
 
     /** Nothing changed. */
@@ -72,7 +75,8 @@ class GhostModeController(
     /** SIM slots with a ready SIM card, or `null` if unknown. Empty slots are skipped. */
     private val activeSlots: () -> Set<Int>? = { null },
     private val clock: () -> Long = System::currentTimeMillis,
-    private val readyTimeoutMs: Long = DEFAULT_READY_TIMEOUT_MS
+    private val readyTimeoutMs: Long = DEFAULT_READY_TIMEOUT_MS,
+    private val volteSettleMs: Long = DEFAULT_VOLTE_SETTLE_MS
 ) {
 
     private val mutex = Mutex()
@@ -148,9 +152,10 @@ class GhostModeController(
 
         captureNetworkMasks(preset, slots, freshCapture = !wasOn)
 
-        val commands = resolveImsPackages(expandSlots(preset.onCommands, slots), slots)
+        val resolvedCommands = resolveImsPackages(expandSlots(preset.onCommands, slots), slots)
         val settingsOriginals = previous?.settingsOriginals.orEmpty().toMutableMap()
-        if (!wasOn) captureSettings(commands, settingsOriginals)
+        if (!wasOn) captureSettings(resolvedCommands, settingsOriginals)
+        val commands = resolvedCommands.map { matchPerModemFormat(it, settingsOriginals) }
 
         val alreadyDisabled = if (commands.any { PM_DISABLE.matches(it) }) listDisabledPackages() else emptySet()
         val disabledByUs = previous?.disabledPackages.orEmpty().toMutableSet()
@@ -167,6 +172,7 @@ class GhostModeController(
         }
         val imsStillActive = targetedPackages.isNotEmpty() && !anyPackageDisabled
         if (imsStillActive) logNote(targetedPackages.joinToString(), NOTE_IMS_NOT_DISABLED)
+        val volteForcedOn = isVolteForcedOn(commands)
 
         val changed = results.any { it.isSuccess }
         if (changed) {
@@ -183,7 +189,27 @@ class GhostModeController(
             )
         }
         val outcome = outcomeOf(results, changed)
-        return if (imsStillActive && outcome !is TurnOutcome.Failure) TurnOutcome.Partial(results, imsStillActive = true) else outcome
+        return if ((imsStillActive || volteForcedOn) && outcome !is TurnOutcome.Failure) {
+            TurnOutcome.Partial(results, imsStillActive, volteForcedOn)
+        } else {
+            outcome
+        }
+    }
+
+    /** The IMS stack reacts to the VoLTE switch asynchronously, so give it time to overrule us. */
+    private suspend fun isVolteForcedOn(commands: List<String>): Boolean {
+        val switches = commands.mapNotNull { SETTINGS_PUT.matchEntire(it) }
+            .filter { it.groupValues[2].startsWith(BuiltInPresets.SAMSUNG_VOLTE_SWITCH) }
+        if (switches.isEmpty()) return false
+        delay(volteSettleMs)
+        val forced = switches.any { match ->
+            val (namespace, key, expected) = match.destructured
+            val result = execute("settings get $namespace $key")
+            val actual = result.stdout.trim()
+            result.isSuccess && actual.isNotEmpty() && actual != expected
+        }
+        if (forced) logNote(BuiltInPresets.SAMSUNG_VOLTE_SWITCH, NOTE_VOLTE_FORCED)
+        return forced
     }
 
     /**
@@ -218,8 +244,22 @@ class GhostModeController(
             val value = result.stdout.trim().lineSequence().firstOrNull()?.trim().orEmpty()
             // Empty output means "unknown": keep the preset's own restore value in that case.
             if (value.isEmpty()) continue
+            // Samsung IMS ignores a deleted switch and would stay deregistered.
+            if (value == SETTINGS_NULL && SAMSUNG_CALL_SWITCHES.containsMatchIn(key)) continue
             originals[id] = value.takeUnless { it == SETTINGS_NULL }
         }
+    }
+
+    /**
+     * `preferred_network_mode` holds one comma-separated value per modem on some devices
+     * ("26,26"): a single value would leave the second modem without a readable setting.
+     */
+    private fun matchPerModemFormat(command: String, originals: Map<String, String?>): String {
+        val match = SETTINGS_PUT.matchEntire(command) ?: return command
+        val (namespace, key, value) = match.destructured
+        val modems = originals["$namespace/$key"]?.split(',')?.size ?: return command
+        if (modems < 2 || ',' in value) return command
+        return "settings put $namespace $key ${List(modems) { value }.joinToString(",")}${match.groupValues[4]}"
     }
 
     private suspend fun resolveImsPackages(commands: List<String>, slots: List<Int>): List<String> {
@@ -340,7 +380,10 @@ class GhostModeController(
         presets.getPreset(state.activePresetId.value) ?: presets.getPreset(BuiltInPresets.DEFAULT_ID)
 
     private suspend fun listDisabledPackages(): Set<String> {
-        val result = execute(LIST_DISABLED_PACKAGES_COMMAND)
+        // Which other apps the user has disabled is nobody's business: log IMS packages only.
+        val result = execute(LIST_DISABLED_PACKAGES_COMMAND) { output ->
+            output.lineSequence().filter { it.contains(IMS_KEYWORD, ignoreCase = true) }.joinToString("\n")
+        }
         if (!result.isSuccess) return emptySet()
         return result.stdout.lineSequence()
             .map { it.trim().removePrefix(PACKAGE_PREFIX) }
@@ -348,7 +391,7 @@ class GhostModeController(
             .toSet()
     }
 
-    private suspend fun execute(command: String): CommandResult {
+    private suspend fun execute(command: String, loggedOutput: (String) -> String = { it }): CommandResult {
         val result = try {
             shell.execute(command)
         } catch (error: kotlinx.coroutines.CancellationException) {
@@ -357,7 +400,7 @@ class GhostModeController(
             CommandResult(command, "", error.message ?: error.javaClass.simpleName, EXIT_FAILURE)
         }
         state.appendLog(
-            CommandLogEntry(clock(), result.command, result.stdout, result.stderr, result.exitCode)
+            CommandLogEntry(clock(), result.command, loggedOutput(result.stdout), result.stderr, result.exitCode)
         )
         return result
     }
@@ -374,38 +417,59 @@ class GhostModeController(
 
     companion object {
         const val DEFAULT_READY_TIMEOUT_MS = 6_000L
+        const val DEFAULT_VOLTE_SETTLE_MS = 3_000L
         const val EXIT_NOTE = -2
 
         const val NOTE_MASK_FALLBACK =
             "Original network mask unavailable — the full set of standard network types will be restored."
         const val NOTE_NO_IMS_PACKAGES = "No bound IMS service found — nothing to disable."
+        const val NOTE_VOLTE_FORCED =
+            "The VoLTE switch was turned back on by the system — the carrier requires VoLTE. A reboot is needed."
         const val NOTE_IMS_NOT_DISABLED =
             "None of these IMS packages could be disabled — calls over VoLTE / VoWiFi may still come through."
 
         private const val EXIT_FAILURE = -1
         private const val IMS_KEYWORD = "ims"
         private const val SETTINGS_NULL = "null"
+        private val SAMSUNG_CALL_SWITCHES =
+            Regex("^(${BuiltInPresets.SAMSUNG_VOLTE_SWITCH}|${BuiltInPresets.SAMSUNG_VIDEO_SWITCH})")
         private const val PACKAGE_PREFIX = "package:"
         private const val DISABLED_STATE_MARKER = "disabled"
         private const val LIST_DISABLED_PACKAGES_COMMAND = "pm list packages -d"
 
         private val SLOT_MARKER = Regex("(?<=\\s)-s 0(?=\\s|$)")
+        private val SLOT_PLACEHOLDER =
+            Regex(Regex.escape(BuiltInPresets.SLOT_SUFFIX_PLACEHOLDER) + "|" + Regex.escape(BuiltInPresets.SLOT_NUMBER_PLACEHOLDER))
         private val SLOT_ARGUMENT = Regex("(?<=\\s)-s (\\d+)(?=\\s|$)")
         private val SETTINGS_PUT = Regex("^settings put (global|secure|system) (\\S+) (\\S+)(\\s*\\|\\|\\s*true)?\\s*$")
         private val PM_DISABLE = Regex("^pm disable-user(?: --user \\d+)? ([A-Za-z][\\w.]*)(?:\\s*\\|\\|\\s*true)?\\s*$")
         private val PM_ENABLE = Regex("^pm enable(?: --user \\d+)? ([A-Za-z][\\w.]*)(?:\\s*\\|\\|\\s*true)?\\s*$")
         private val PACKAGE_NAME = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+$")
 
+        /**
+         * Everything here ends up in reports pasted into public issues, so each command prints a
+         * whitelist of values and never a full dump. Filters look at setting names, not values.
+         */
         private val DIAGNOSTICS_EXTRA_COMMANDS = listOf(
-            "pm list packages | grep -i ims",
-            "settings list global | grep -i -E \"volte|ims|preferred_network\"",
-            "settings list secure | grep -i -E \"volte|ims\"",
-            "settings list system | grep -i -E \"volte|ims\""
+            "for p in ro.product.model ro.build.version.release ro.build.version.sdk ro.build.version.oneui " +
+                "ro.build.display.id ro.csc.sales_code gsm.sim.state gsm.network.type gsm.sim.operator.numeric " +
+                "gsm.sim.operator.alpha gsm.operator.numeric; do echo \"\$p=\$(getprop \$p)\"; done",
+            "pm list packages -s | grep -i ims",
+            "for p in ${BuiltInPresets.SAMSUNG_IMS_PACKAGE} ${BuiltInPresets.SAMSUNG_IMS_PACKAGE_NEW} " +
+                "${BuiltInPresets.QUALCOMM_IMS_PACKAGE} ${BuiltInPresets.MEDIATEK_IMS_PACKAGE}; do " +
+                "echo \"\$p: \$(pidof \$p || echo not running)\"; done",
+            "dumpsys package ${BuiltInPresets.SAMSUNG_IMS_PACKAGE} | grep -E \"versionName=|pkgFlags=|enabled=\" || true",
+            "dumpsys telephony.registry | grep -o -E \"mVoiceRegState=[^,]*|mDataRegState=[^,]*|nrState=[^,]*\" | sort -u",
+            "dumpsys phone | grep -i -o -E \"ims[a-z_]*regist[a-z_]*[ ]?[=:][ ]?[a-z0-9_]+\" | sort -u",
+            "dumpsys -l | grep -i ims",
+            "settings list global | grep -i -E \"^[^=]*(volte|ims|preferred_network|hd_voice)[^=]*=\"",
+            "settings list secure | grep -i -E \"^[^=]*(volte|ims)[^=]*=\"",
+            "settings list system | grep -i -E \"^[^=]*(volte|ims|voicecall|videocall|wifi_call)[^=]*=\""
         )
 
         fun expandSlots(commands: List<String>, slots: List<Int>): List<String> =
             commands.flatMap { command ->
-                if (SLOT_MARKER.containsMatchIn(command)) {
+                if (SLOT_MARKER.containsMatchIn(command) || SLOT_PLACEHOLDER.containsMatchIn(command)) {
                     slots.map { slot -> forSlot(command, slot) }
                 } else {
                     listOf(command)
@@ -413,5 +477,7 @@ class GhostModeController(
             }
 
         fun forSlot(command: String, slot: Int): String = command.replace(SLOT_MARKER, "-s $slot")
+            .replace(BuiltInPresets.SLOT_SUFFIX_PLACEHOLDER, if (slot == 0) "" else "${slot + 1}")
+            .replace(BuiltInPresets.SLOT_NUMBER_PLACEHOLDER, "${slot + 1}")
     }
 }

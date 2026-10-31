@@ -128,7 +128,7 @@
     <string name="preset_xiaomi_title">Xiaomi HyperOS / MIUI</string>
     <string name="preset_xiaomi_desc">Те же команды, что и в «Чистом Android». Скрытое сетевое меню на HyperOS закрыто, но shell-команды телефонии работают.</string>
     <string name="preset_samsung_title">Samsung One UI</string>
-    <string name="preset_samsung_desc">Дополнительно выключает переключатели VoLTE, фиксирует preferred_network_mode в LTE для всех подписок и отключает IMS-пакеты Samsung. На некоторых моделях модем снимает регистрацию VoLTE только после перезагрузки.</string>
+    <string name="preset_samsung_desc">Выключает VoLTE, видеозвонки и Wi-Fi Calling собственными переключателями Samsung, оставляет только LTE и отключает IMS-пакеты Samsung. У операторов, требующих VoLTE (например, Jio), нужна перезагрузка.</string>
     <string name="preset_oneplus_title">OnePlus / OxygenOS</string>
     <string name="preset_oneplus_desc">Команды AOSP + отключение IMS-сервиса Qualcomm (org.codeaurora.ims) или MediaTek (com.mediatek.ims). Проверено на OnePlus 13.</string>
     <string name="preset_vivo_title">vivo / iQOO</string>
@@ -162,6 +162,7 @@
     <string name="message_no_preset">Выбранный пресет не найден.</string>
     <string name="message_all_failed">Команды не выполнились — ничего не изменено.</string>
     <string name="message_partial_on">Ghost Mode включён, но часть команд завершилась с ошибкой.</string>
+    <string name="message_volte_forced">Ghost Mode включён, но оператор вернул VoLTE, и звонки могут доходить. Перезагрузите телефон, не выключая Ghost Mode: отключённая служба IMS больше не запустится.</string>
     <string name="message_ims_still_active">Ghost Mode включён, но службу IMS отключить не удалось: звонки по VoLTE / Wi-Fi Calling могут доходить. Загляните в журнал команд или попробуйте root.</string>
     <string name="message_partial_off">Ghost Mode выключен, но часть команд восстановления завершилась с ошибкой.</string>
     <string name="message_preset_locked">Выключите Ghost Mode, чтобы сменить пресет.</string>
@@ -247,6 +248,7 @@
     <!-- Журнал -->
     <string name="log_title">Журнал команд</string>
     <string name="log_empty">Команд пока не было</string>
+    <string name="log_privacy_note">Журналом можно спокойно делиться. Номера телефонов, IMEI, IMSI, ICCID, IP- и MAC-адреса и почта удаляются автоматически. Модель телефона, прошивка и оператор остаются: без них проблему не исправить. Журнал никуда не отправляется и покидает телефон, только если вы сами его скопируете.</string>
     <string name="log_clear">Очистить журнал</string>
     <string name="log_copy_all">Скопировать журнал</string>
     <string name="log_exit_code">код %1$d</string>
