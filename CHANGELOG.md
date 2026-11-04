@@ -6,6 +6,10 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+### Added
+
+- **Simplified Chinese** interface ([#8](https://github.com/Foxlape/GhostMode/issues/8)).
+
 ## [0.2.2] — 2026-10-31
 
 ### Fixed

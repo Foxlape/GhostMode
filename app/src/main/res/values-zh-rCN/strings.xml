@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation -->
+    <string name="nav_home">主页</string>
+    <string name="nav_presets">预设</string>
+    <string name="nav_settings">设置</string>
+
+    <!-- Common actions -->
+    <string name="action_allow">允许</string>
+    <string name="action_back">返回</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_change">更改</string>
+    <string name="action_close">关闭</string>
+    <string name="action_delete">删除</string>
+    <string name="action_duplicate">复制</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_enable">启用</string>
+    <string name="action_get_shizuku">下载 Shizuku</string>
+    <string name="action_grant">授予权限</string>
+    <string name="action_import">导入</string>
+    <string name="action_later">稍后</string>
+    <string name="action_more">更多选项</string>
+    <string name="action_ok">确定</string>
+    <string name="action_open_log">打开日志</string>
+    <string name="action_open_release">打开发布页</string>
+    <string name="action_open_shizuku">打开 Shizuku</string>
+    <string name="action_reapply">重新应用</string>
+    <string name="action_save">保存</string>
+    <string name="action_turn_off">关闭</string>
+
+    <!-- Values -->
+    <string name="value_off">关闭</string>
+    <string name="value_allowed">已允许</string>
+    <string name="value_unrestricted">无限制</string>
+
+    <!-- Durations -->
+    <string name="duration_days_hours">%1$d 天 %2$d 小时</string>
+    <string name="duration_hours_minutes">%1$d 小时 %2$d 分钟</string>
+    <string name="duration_minutes">%1$d 分钟</string>
+    <string name="duration_less_than_minute">不到 1 分钟</string>
+
+    <!-- Home -->
+    <string name="status_title_on">您已无法接通</string>
+    <string name="status_title_off">您可以接通</string>
+    <string name="status_title_busy">正在应用…</string>
+    <string name="status_subtitle_on">来电者会听到“您拨打的用户暂时无法接通”。移动数据照常使用。</string>
+    <string name="status_subtitle_off">通话和移动数据照常工作。点击幽灵即可隐身。</string>
+    <string name="status_subtitle_no_access">Ghost Mode 需要 Shizuku 或 root 权限才能更改调制解调器设置。</string>
+    <string name="chip_active_for">已开启 %1$s</string>
+    <string name="backend_root">Root</string>
+    <string name="backend_shizuku">Shizuku</string>
+    <string name="backend_none">无权限</string>
+    <string name="backend_no_permission">需要授权</string>
+    <string name="home_preset_label">预设</string>
+    <string name="tile_sim">SIM 卡</string>
+    <string name="tile_schedule">定时</string>
+    <string name="tile_today">今天</string>
+    <string name="tile_diagnostics">诊断</string>
+    <string name="tile_diagnostics_value">检查状态</string>
+
+    <!-- Alerts -->
+    <string name="alert_reapply_title">重启撤销了 Ghost Mode 的部分设置</string>
+    <string name="alert_reapply_text">部分命令在重启后会失效，来电可能再次接通。请重新应用该模式，或将其关闭以恢复正常设置。</string>
+    <string name="alert_access_title">设置权限</string>
+    <string name="alert_access_not_installed">Ghost Mode 需要执行 telephony shell 命令。请从 GitHub 下载 Shizuku（无需 root），或在 KernelSU / Magisk / APatch 中授予 root 权限。</string>
+    <string name="alert_shizuku_stopped_title">Shizuku 未运行</string>
+    <string name="alert_shizuku_stopped_text">请通过无线调试启动 Shizuku，然后返回此处。</string>
+    <string name="alert_shizuku_permission_title">允许 Shizuku 访问</string>
+    <string name="alert_shizuku_permission_text">Ghost Mode 需要在 Shizuku 中获得授权才能执行命令。如果没有弹出授权提示，请在 Shizuku → 已授权的应用 中启用 Ghost Mode。</string>
+    <string name="alert_update_title">新版本 %1$s 可用</string>
+    <string name="alert_update_text">GitHub 上已发布新版本。</string>
+    <string name="alert_alarms_title">未允许精确闹钟</string>
+    <string name="alert_alarms_text">定时计划和自动关闭计时器可能会延迟几分钟触发。</string>
+    <string name="alert_battery_title">后台运行受限</string>
+    <string name="alert_battery_text">电池优化可能会延迟定时计划和计时器。请允许不受限制的后台使用。</string>
+
+    <!-- Timer -->
+    <string name="timer_title">自动关闭</string>
+    <string name="timer_hint">在以下时间后自动关闭 Ghost Mode：</string>
+    <string name="timer_armed">将于 %1$s 关闭 · 剩余 %2$s</string>
+    <string name="timer_cancel">取消计时</string>
+    <string name="timer_30m">30 分钟</string>
+    <string name="timer_1h">1 小时</string>
+    <string name="timer_2h">2 小时</string>
+    <string name="timer_morning">直到 8:00</string>
+
+    <!-- SIM -->
+    <string name="sim_sheet_title">SIM 卡</string>
+    <string name="sim_sheet_subtitle">选择要设为无法接通的 SIM 卡。</string>
+    <string name="sim_both">两张 SIM 卡</string>
+    <string name="sim_1">SIM 1</string>
+    <string name="sim_2">SIM 2</string>
+    <string name="sim_both_desc">两个号码的来电均被拦截</string>
+    <string name="sim_1_desc">SIM 2 仍可接听来电</string>
+    <string name="sim_2_desc">SIM 1 仍可接听来电</string>
+
+    <!-- Schedule -->
+    <string name="schedule_title">定时计划</string>
+    <string name="schedule_subtitle">每天自动开启和关闭</string>
+    <string name="schedule_from">开始</string>
+    <string name="schedule_to">结束</string>
+    <string name="schedule_summary">Ghost Mode 每天将开启 %1$s。</string>
+    <string name="schedule_empty_window">开始和结束时间相同，请选择其他时间。</string>
+    <string name="schedule_hint">如果手机在开始时间处于关机状态，该模式会在开机后立即开启。手动开启的模式不会因重启而关闭。</string>
+
+    <!-- Presets -->
+    <string name="presets_title">预设</string>
+    <string name="presets_subtitle">适用于不同手机的命令集。建议从“通用”开始。</string>
+    <string name="presets_new">新建预设</string>
+    <string name="presets_import">从文件导入</string>
+    <string name="presets_export">导出自定义预设</string>
+    <string name="presets_locked_title">Ghost Mode 已开启</string>
+    <string name="presets_locked_text">请先关闭后再切换预设：恢复设置需要用到当前预设。</string>
+    <string name="preset_builtin">内置</string>
+    <string name="preset_custom">自定义</string>
+    <string name="preset_show_commands">命令</string>
+    <string name="preset_hide_commands">隐藏</string>
+    <string name="preset_on_commands">开启</string>
+    <string name="preset_off_commands">关闭</string>
+    <string name="preset_copy_suffix">（副本）</string>
+    <string name="preset_delete_title">删除预设？</string>
+    <string name="preset_delete_text">“%1$s”将被删除。此操作无法撤销。</string>
+
+    <string name="preset_universal_title">通用</string>
+    <string name="preset_universal_desc">建议首选。通过 telephony shell 命令关闭 IMS（VoLTE），将调制解调器锁定为 LTE，并关闭检测到的 IMS 服务。关闭该模式时会恢复所有设置。</string>
+    <string name="preset_stock_title">原生 Android / Pixel</string>
+    <string name="preset_stock_desc">最小命令集：关闭 IMS 并仅允许 LTE 网络类型。适用于 Pixel、Motorola、Nothing 以及大多数接近原生的 Android 12+ 系统。</string>
+    <string name="preset_xiaomi_title">小米 HyperOS / MIUI</string>
+    <string name="preset_xiaomi_desc">命令与“原生 Android”相同。HyperOS 锁定了隐藏的网络菜单，但 telephony shell 命令仍然有效。</string>
+    <string name="preset_samsung_title">三星 One UI</string>
+    <string name="preset_samsung_desc">使用三星自带的开关关闭 VoLTE、视频通话和 WLAN 通话，将网络锁定为 LTE，并停用三星 IMS 软件包。对于强制要求 VoLTE 的运营商（例如 Jio），需要重启手机。</string>
+    <string name="preset_oneplus_title">一加 / OxygenOS</string>
+    <string name="preset_oneplus_desc">AOSP 命令，并停用高通（org.codeaurora.ims）或联发科（com.mediatek.ims）的 IMS 服务。已在一加 13 上验证。</string>
+    <string name="preset_vivo_title">vivo / iQOO</string>
+    <string name="preset_vivo_desc">适用于 OriginOS / Funtouch OS，方法与一加相同。并非所有机型都已验证；如果无效，请尝试“通用”。</string>
+    <string name="preset_legacy_title">Android 9–11</string>
+    <string name="preset_legacy_desc">适用于不支持 Android 12 telephony 命令的手机：将 preferred_network_mode 设为仅 LTE，并切换飞行模式使其生效。部分系统会忽略此设置。</string>
+
+    <!-- Preset editor & import -->
+    <string name="editor_title_new">新建预设</string>
+    <string name="editor_title_edit">编辑预设</string>
+    <string name="editor_field_title">名称</string>
+    <string name="editor_field_description">描述</string>
+    <string name="editor_field_on">开启命令</string>
+    <string name="editor_field_off">关闭命令</string>
+    <string name="editor_field_capture">读取网络掩码的命令（可选）</string>
+    <string name="editor_one_per_line">每行一条 shell 命令</string>
+    <string name="editor_capture_hint">其输出会在开启前保存，并替换 {{SAVED_MASK}}</string>
+    <string name="editor_placeholders_title">占位符</string>
+    <string name="editor_placeholders_text">“-s 0”会被替换为所选 SIM 卡槽（命令会对每个卡槽各执行一次）。\n{{SAVED_MASK}}：开启该模式前保存的网络掩码。\n{{IMS_PACKAGES}}：所选 SIM 卡当前使用的 IMS 服务软件包。\n\n关闭该模式时，会自动恢复“settings put”键的原始值，并重新启用通过“pm disable-user”停用的软件包。</string>
+    <plurals name="import_title">
+        <item quantity="other">导入 %1$d 个预设？</item>
+    </plurals>
+    <string name="import_warning">这些命令将以 shell 或 root 权限运行。请只导入来自可信来源的预设。</string>
+
+    <!-- Messages -->
+    <string name="message_busy">命令仍在运行，请稍候。</string>
+    <string name="message_not_ready">无权限：请启动 Shizuku 或授予 root 权限。</string>
+    <string name="message_no_preset">找不到所选的预设。</string>
+    <string name="message_all_failed">命令执行失败，未做任何更改。</string>
+    <string name="message_partial_on">Ghost Mode 已开启，但部分命令执行失败。</string>
+    <string name="message_volte_forced">Ghost Mode 已开启，但运营商重新开启了 VoLTE，来电仍可能接通。请在 Ghost Mode 开启的状态下重启手机：已停用的 IMS 服务不会再次启动。</string>
+    <string name="message_ims_still_active">Ghost Mode 已开启，但无法停用 IMS 服务：通过 VoLTE / WLAN 通话的来电仍可能接通。请查看命令日志或尝试使用 root。</string>
+    <string name="message_partial_off">Ghost Mode 已关闭，但部分恢复命令执行失败。</string>
+    <string name="message_preset_locked">请先关闭 Ghost Mode 再更改预设。</string>
+    <string name="message_sim_locked">请先关闭 Ghost Mode 再更改 SIM 卡选择。</string>
+    <string name="message_export_done">已导出自定义预设。</string>
+    <string name="message_export_failed">无法写入文件。</string>
+    <string name="message_import_done">已导入预设。</string>
+    <string name="message_import_duplicates">这些预设已存在。</string>
+    <string name="message_import_empty">文件中没有有效的预设。</string>
+    <string name="message_import_invalid">这不是 Ghost Mode 预设文件。</string>
+    <string name="message_packages_enabled">已启用软件包。</string>
+    <string name="message_tile_added">已将磁贴添加到快捷设置。</string>
+    <string name="message_tile_already_added">Ghost Mode 磁贴已在快捷设置中。</string>
+    <string name="message_tile_manual">请手动添加：打开快捷设置 → ✏ 编辑 → 将“Ghost Mode”拖入面板。</string>
+
+    <!-- Settings -->
+    <string name="settings_title">设置</string>
+    <string name="settings_section_mode">模式</string>
+    <string name="settings_section_quick">快速访问</string>
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_section_updates">更新</string>
+    <string name="settings_section_tools">工具</string>
+    <string name="settings_section_about">关于</string>
+    <string name="settings_notification">状态通知</string>
+    <string name="settings_notification_summary">显示已用时间和“关闭”按钮的常驻通知</string>
+    <string name="settings_schedule_on">每天 %1$s – %2$s</string>
+    <string name="settings_exact_alarms">闹钟和提醒</string>
+    <string name="settings_exact_alarms_denied">未允许：定时计划可能延迟</string>
+    <string name="settings_battery">后台运行</string>
+    <string name="settings_battery_restricted">受电池优化限制</string>
+    <string name="settings_add_tile">添加快捷设置磁贴</string>
+    <string name="settings_add_tile_summary">从通知栏切换 Ghost Mode</string>
+    <string name="settings_widget">桌面小部件</string>
+    <string name="settings_widget_summary">长按桌面 → 小部件 → Ghost Mode</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_dynamic_color">动态颜色</string>
+    <string name="settings_dynamic_color_summary">使用壁纸中的颜色</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_update_auto">检查更新</string>
+    <string name="settings_update_auto_summary">应用启动时在 GitHub 上检查新版本。默认关闭：否则应用不会访问网络。</string>
+    <string name="settings_update_now">立即检查</string>
+    <string name="settings_diagnostics_summary">网络模式、IMS 状态和移动数据</string>
+    <string name="settings_log_summary">每条已执行的命令及其输出</string>
+    <string name="settings_stats_summary">您处于无法接通状态的时长</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_light">浅色</string>
+    <string name="language_system">跟随系统</string>
+    <string name="update_idle">点击以在 GitHub 上检查新版本</string>
+    <string name="update_checking">正在检查…</string>
+    <string name="update_up_to_date">已是最新版本</string>
+    <string name="update_failed">无法连接到 GitHub</string>
+
+    <!-- Diagnostics -->
+    <string name="diagnostics_title">诊断</string>
+    <string name="diagnostics_run">重新检查</string>
+    <string name="diagnostics_running">正在读取调制解调器状态…</string>
+    <string name="diagnostics_failed">诊断需要通过 Shizuku 或 root 获取权限。</string>
+    <string name="diagnostics_details">详情</string>
+    <string name="diagnostics_hint">这只是对调制解调器状态的尽力读取。最可靠的测试方法是用另一部手机给自己打电话。</string>
+    <string name="diag_calls_label">来电</string>
+    <string name="diag_calls_blocked">很可能已拦截</string>
+    <string name="diag_calls_allowed">很可能可以接通</string>
+    <string name="diag_summary_blocked">没有 2G/3G 回落，也没有已绑定的 IMS 服务：来电者应会听到“您拨打的用户暂时无法接通”，而移动数据照常使用。</string>
+    <string name="diag_summary_allowed">来电可以通过 2G/3G 或 VoLTE 接通。这是 Ghost Mode 关闭时的正常状态。</string>
+    <string name="diag_slot">SIM %1$d</string>
+    <string name="diag_network_label">网络类型</string>
+    <string name="diag_network_lte_only">仅 LTE</string>
+    <string name="diag_network_all">允许 2G/3G</string>
+    <string name="diag_unknown">未知</string>
+    <string name="diag_ims_label">IMS（VoLTE）服务</string>
+    <string name="diag_ims_bound">已绑定</string>
+    <string name="diag_ims_not_bound">未绑定</string>
+    <string name="diag_mobile_data">移动数据</string>
+    <string name="diag_mobile_data_active">正常工作</string>
+    <string name="diag_mobile_data_wifi">可用（正在使用 WLAN）</string>
+    <string name="diag_mobile_data_none">未连接</string>
+    <string name="diag_disabled_packages">已停用的 IMS 软件包</string>
+    <string name="diag_disabled_packages_text">这些 IMS 软件包已被停用。如果在 Ghost Mode 关闭时 VoLTE 无法使用（例如使用过旧版本应用之后），请重新启用它们。</string>
+    <string name="diag_enable_packages">启用软件包</string>
+    <string name="diag_enable_packages_confirm">对以下软件包执行“pm enable”：%1$s？</string>
+
+    <!-- Log -->
+    <string name="log_title">命令日志</string>
+    <string name="log_empty">暂无命令</string>
+    <string name="log_privacy_note">可以放心分享。电话号码、IMEI、IMSI、ICCID、IP 和 MAC 地址以及电子邮件地址会被自动移除。手机型号、系统版本和运营商信息会保留在日志中，因为修复问题需要用到它们。日志不会被发送到任何地方：只有在您自己复制时，它才会离开您的手机。</string>
+    <string name="log_clear">清除日志</string>
+    <string name="log_copy_all">复制日志</string>
+    <string name="log_exit_code">退出码 %1$d</string>
+    <string name="log_note">备注</string>
+
+    <!-- Statistics -->
+    <string name="stats_title">统计</string>
+    <string name="stats_today">今天</string>
+    <string name="stats_week">最近 7 天</string>
+    <string name="stats_all">全部</string>
+    <string name="stats_sessions">次数</string>
+    <string name="stats_last_7_days">最近 7 天</string>
+    <string name="stats_recent">最近记录</string>
+    <string name="stats_now">现在</string>
+
+    <!-- About -->
+    <string name="about_title">关于 Ghost Mode</string>
+    <string name="about_version">版本 %1$s</string>
+    <string name="about_description">让您的手机无法接听蜂窝网络来电，同时移动数据照常使用。免费开源，无广告，无追踪。</string>
+    <string name="about_links">链接</string>
+    <string name="about_source">源代码</string>
+    <string name="about_releases">发布版本</string>
+    <string name="about_report_bug">报告问题</string>
+    <string name="about_changelog">更新日志</string>
+    <string name="about_license">许可证</string>
+    <string name="about_cert_label">签名证书</string>
+    <string name="about_cert_title">SHA-256 指纹</string>
+    <string name="about_cert_summary">GitHub 官方发布版本均使用此密钥签名。点击即可复制。</string>
+    <string name="about_disclaimer">在必须保持可联系以应对紧急情况时，请勿依赖 Ghost Mode。请仅在您自己的设备上使用，并遵守当地法规。</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_status">Ghost Mode 状态</string>
+    <string name="notification_channel_status_desc">Ghost Mode 开启时显示</string>
+    <string name="notification_channel_attention">需要注意</string>
+    <string name="notification_channel_attention_desc">当重启撤销了 Ghost Mode 的部分设置时显示</string>
+    <string name="notification_title_on">Ghost Mode 已开启</string>
+    <string name="notification_text_on">来电无法接通 · 移动数据正常</string>
+    <string name="notification_reapply_title">Ghost Mode 因重启而中断</string>
+    <string name="notification_reapply_text">来电可能再次接通。请重新应用该模式，或将其关闭以恢复正常设置。</string>
+    <string name="notification_action_turn_off">关闭</string>
+
+    <!-- Tile, widget, shortcuts -->
+    <string name="tile_subtitle_on">无法接通</string>
+    <string name="tile_subtitle_off">可以接通</string>
+    <string name="tile_subtitle_busy">正在应用…</string>
+    <string name="tile_subtitle_setup">需要设置</string>
+    <string name="widget_description">一键开启或关闭 Ghost Mode</string>
+    <string name="widget_state_on">开启</string>
+    <string name="widget_state_off">关闭</string>
+    <string name="widget_cd_on">Ghost Mode 已开启。点击关闭。</string>
+    <string name="widget_cd_off">Ghost Mode 已关闭。点击开启。</string>
+    <string name="shortcut_turn_on">开启</string>
+    <string name="shortcut_turn_off">关闭</string>
+    <string name="shortcut_timer_1h">开启 1 小时</string>
+    <string name="shortcut_timer_1h_long">开启 1 小时</string>
+</resources>

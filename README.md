@@ -40,7 +40,7 @@ No airplane mode, no call-blocking rules.
 - **Schedule** (e.g. every night 23:00–07:30) and an **auto turn-off timer**.
 - **Reboot-aware**: re-applies itself after a restart when root / Sui is available, otherwise shows a notification.
 - **Diagnostics** per SIM, a full **command log** and **statistics**.
-- Material You design, dark and light themes, English and Russian.
+- Material You design, dark and light themes, English, Russian and Simplified Chinese.
 - No ads, no trackers, no analytics. No network access unless you enable the optional update check.
 
 ## Requirements
