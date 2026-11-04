@@ -1,0 +1,2 @@
+Simplified Chinese.
+• The app is now available in Simplified Chinese. Pick it in Settings → Language or in Android's per-app language settings
