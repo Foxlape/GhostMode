@@ -214,6 +214,7 @@
     <string name="language_system">System default</string>
     <string name="language_english" translatable="false">English</string>
     <string name="language_russian" translatable="false">Русский</string>
+    <string name="language_chinese_simplified" translatable="false">简体中文</string>
     <string name="update_idle">Tap to check GitHub for a newer version</string>
     <string name="update_checking">Checking…</string>
     <string name="update_up_to_date">You have the latest version</string>

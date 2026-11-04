@@ -310,14 +310,18 @@ private fun themeLabel(mode: ThemeMode): Int = when (mode) {
     ThemeMode.LIGHT -> R.string.theme_light
 }
 
-private val LANGUAGES = listOf("", "en", "ru")
+private val LANGUAGES = listOf("", "en", "ru", "zh-CN")
 
-private fun currentLanguageTag(): String =
-    AppCompatDelegate.getApplicationLocales().get(0)?.language.orEmpty()
+/** Maps the app locale back to an entry of [LANGUAGES]; `zh-CN` is stored as `zh-Hans-CN` on some versions. */
+private fun currentLanguageTag(): String {
+    val language = AppCompatDelegate.getApplicationLocales().get(0)?.language ?: return ""
+    return LANGUAGES.firstOrNull { it.isNotEmpty() && it.substringBefore('-') == language }.orEmpty()
+}
 
 private fun languageLabel(tag: String): Int = when (tag) {
     "en" -> R.string.language_english
     "ru" -> R.string.language_russian
+    "zh-CN" -> R.string.language_chinese_simplified
     else -> R.string.language_system
 }
 
