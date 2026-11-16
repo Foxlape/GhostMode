@@ -1,0 +1,3 @@
+Schedule by day of the week.
+• Pick the days the schedule runs on, e.g. Monday to Friday. Existing schedules keep running every day
+• Samsung with Secure Folder or Dual Messenger: fixed an error while checking which IMS packages are disabled

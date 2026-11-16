@@ -6,6 +6,8 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+## [0.2.4] — 2026-11-16
+
 ### Added
 
 - **Schedule by day of the week ([#11](https://github.com/Foxlape/GhostMode/issues/11)).** Pick the days the schedule
@@ -261,6 +263,7 @@ First public release: Shizuku and root backends, presets for Pixel / AOSP, Xiaom
 Android 9–11, custom presets with JSON import/export, Quick Settings tile, home screen widget, daily schedule,
 usage statistics, English and Russian UI.
 
+[0.2.4]: https://github.com/Foxlape/GhostMode/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/Foxlape/GhostMode/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Foxlape/GhostMode/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Foxlape/GhostMode/compare/v0.2.0...v0.2.1
