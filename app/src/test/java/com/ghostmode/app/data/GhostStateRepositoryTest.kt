@@ -1,5 +1,6 @@
 package com.ghostmode.app.data
 
+import com.ghostmode.app.scheduling.ScheduleWindow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -58,7 +59,7 @@ class GhostStateRepositoryTest {
     fun stateSurvivesReload() {
         repository.markOn(snapshot())
         repository.setSavedNetworkMask(1, "0101")
-        repository.setSchedule(true, 22 * 60, 7 * 60)
+        repository.setSchedule(true, 22 * 60, 7 * 60, ScheduleWindow.WEEKDAYS)
         repository.setSimSlotMode(SimSlotMode.SIM_2)
 
         val reloaded = GhostStateRepository(store) { now }
@@ -68,6 +69,7 @@ class GhostStateRepositoryTest {
         assertEquals("0101", reloaded.getSavedNetworkMask(1))
         assertTrue(reloaded.scheduleEnabled.value)
         assertEquals(22 * 60, reloaded.scheduleStartMinuteOfDay.value)
+        assertEquals(ScheduleWindow.WEEKDAYS, reloaded.scheduleDays.value)
         assertEquals(SimSlotMode.SIM_2, reloaded.simSlotMode.value)
         assertEquals(1, reloaded.sessions.value.size)
     }

@@ -46,10 +46,11 @@ class ScheduleReceiver : BroadcastReceiver() {
     ) {
         if (!enabled) return
         val state = context.appGraph.state
-        val inWindow = ScheduleWindow.contains(
-            ScheduleWindow.currentMinuteOfDay(),
+        val inWindow = ScheduleWindow.isActive(
+            System.currentTimeMillis(),
             state.scheduleStartMinuteOfDay.value,
-            state.scheduleEndMinuteOfDay.value
+            state.scheduleEndMinuteOfDay.value,
+            state.scheduleDays.value
         )
         val isOn = state.isOn.value
         when {

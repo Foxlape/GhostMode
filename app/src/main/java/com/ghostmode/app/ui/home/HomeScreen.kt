@@ -52,11 +52,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ghostmode.app.R
 import com.ghostmode.app.data.SessionStats
 import com.ghostmode.app.data.SimSlotMode
+import com.ghostmode.app.scheduling.ScheduleWindow
 import com.ghostmode.app.shell.ShellBackend
 import com.ghostmode.app.shell.ShizukuStatus
 import com.ghostmode.app.support.UpdateState
@@ -98,6 +100,7 @@ fun HomeScreen(
     val scheduleEnabled by vm.scheduleEnabled.collectAsStateWithLifecycle()
     val scheduleStart by vm.scheduleStart.collectAsStateWithLifecycle()
     val scheduleEnd by vm.scheduleEnd.collectAsStateWithLifecycle()
+    val scheduleDays by vm.scheduleDays.collectAsStateWithLifecycle()
     val updateState by vm.updateState.collectAsStateWithLifecycle()
     val systemStatus by vm.systemStatus.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -258,7 +261,8 @@ fun HomeScreen(
                 icon = Icons.Outlined.Schedule,
                 title = stringResource(R.string.tile_schedule),
                 value = if (scheduleEnabled) {
-                    "${Format.minuteOfDay(context, scheduleStart)} – ${Format.minuteOfDay(context, scheduleEnd)}"
+                    val hours = "${Format.minuteOfDay(context, scheduleStart)} – ${Format.minuteOfDay(context, scheduleEnd)}"
+                    if (scheduleDays == ScheduleWindow.ALL_DAYS) hours else "$hours\n${Format.scheduleDays(context, scheduleDays)}"
                 } else {
                     stringResource(R.string.value_off)
                 },
@@ -411,7 +415,7 @@ private fun QuickTile(
         IconBadge(icon, size = 36)
         Spacer(Modifier.height(14.dp))
         Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+        Text(value, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
     }
 }
 

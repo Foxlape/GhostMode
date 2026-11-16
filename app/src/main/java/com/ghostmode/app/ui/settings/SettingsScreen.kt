@@ -83,6 +83,7 @@ fun SettingsScreen(
     val scheduleEnabled by vm.scheduleEnabled.collectAsStateWithLifecycle()
     val scheduleStart by vm.scheduleStart.collectAsStateWithLifecycle()
     val scheduleEnd by vm.scheduleEnd.collectAsStateWithLifecycle()
+    val scheduleDays by vm.scheduleDays.collectAsStateWithLifecycle()
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
     val dynamicColor by vm.dynamicColor.collectAsStateWithLifecycle()
     val updateCheck by vm.updateCheckEnabled.collectAsStateWithLifecycle()
@@ -120,6 +121,7 @@ fun SettingsScreen(
                 summary = if (scheduleEnabled) {
                     stringResource(
                         R.string.settings_schedule_on,
+                        Format.scheduleDays(context, scheduleDays),
                         Format.minuteOfDay(context, scheduleStart),
                         Format.minuteOfDay(context, scheduleEnd)
                     )

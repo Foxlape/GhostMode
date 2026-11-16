@@ -96,12 +96,18 @@
 
     <!-- Расписание -->
     <string name="schedule_title">Расписание</string>
-    <string name="schedule_subtitle">Включать и выключать автоматически каждый день</string>
+    <string name="schedule_subtitle">Включать и выключать автоматически в выбранные дни</string>
     <string name="schedule_from">С</string>
     <string name="schedule_to">До</string>
     <string name="schedule_summary">Ghost Mode будет включён %1$s каждый день.</string>
     <string name="schedule_empty_window">Начало и конец совпадают — выберите другое время.</string>
     <string name="schedule_hint">Если телефон был выключен в момент начала, режим включится сразу после загрузки. Включённый вручную режим перезагрузка не выключает.</string>
+    <string name="schedule_every_day">Каждый день</string>
+    <string name="schedule_weekdays">Будни</string>
+    <string name="schedule_weekends">Выходные</string>
+    <string name="schedule_summary_days">Ghost Mode будет включён %1$s в эти дни: %2$s.</string>
+    <string name="schedule_no_days">Выберите хотя бы один день.</string>
+    <string name="schedule_overnight_hint">Интервал через полночь относится к дню, в который начинается: пятница 23:00 – 08:00 захватывает и утро субботы.</string>
 
     <!-- Пресеты -->
     <string name="presets_title">Пресеты</string>
@@ -188,7 +194,7 @@
     <string name="settings_section_about">О приложении</string>
     <string name="settings_notification">Уведомление о статусе</string>
     <string name="settings_notification_summary">Постоянное уведомление с таймером и кнопкой «Выключить»</string>
-    <string name="settings_schedule_on">Каждый день %1$s – %2$s</string>
+    <string name="settings_schedule_on">%1$s, %2$s – %3$s</string>
     <string name="settings_exact_alarms">Будильники и напоминания</string>
     <string name="settings_exact_alarms_denied">Запрещено — расписание может опаздывать</string>
     <string name="settings_battery">Работа в фоне</string>

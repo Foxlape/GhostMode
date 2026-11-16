@@ -18,7 +18,7 @@
 <li>Presets for Pixel and stock Android, Samsung One UI, Xiaomi HyperOS, OnePlus, vivo / iQOO and Android 9–11, plus your own command sets with import and export.</li>
 <li>Dual SIM: make SIM 1, SIM 2 or both unreachable.</li>
 <li>Quick Settings tile, home screen widget and launcher shortcuts.</li>
-<li>Daily schedule and an auto turn-off timer.</li>
+<li>Schedule for the days you pick and an auto turn-off timer.</li>
 <li>Re-applies itself after a reboot (root / Sui) or reminds you to.</li>
 <li>Diagnostics, a full command log and usage statistics.</li>
 <li>Material You design, dark and light themes, English and Russian.</li>

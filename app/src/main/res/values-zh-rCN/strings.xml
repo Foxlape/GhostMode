@@ -96,12 +96,18 @@
 
     <!-- Schedule -->
     <string name="schedule_title">定时计划</string>
-    <string name="schedule_subtitle">每天自动开启和关闭</string>
+    <string name="schedule_subtitle">在所选日期自动开启和关闭</string>
     <string name="schedule_from">开始</string>
     <string name="schedule_to">结束</string>
     <string name="schedule_summary">Ghost Mode 每天将开启 %1$s。</string>
     <string name="schedule_empty_window">开始和结束时间相同，请选择其他时间。</string>
     <string name="schedule_hint">如果手机在开始时间处于关机状态，该模式会在开机后立即开启。手动开启的模式不会因重启而关闭。</string>
+    <string name="schedule_every_day">每天</string>
+    <string name="schedule_weekdays">工作日</string>
+    <string name="schedule_weekends">周末</string>
+    <string name="schedule_summary_days">Ghost Mode 将在以下日期开启 %1$s：%2$s。</string>
+    <string name="schedule_no_days">请至少选择一天。</string>
+    <string name="schedule_overnight_hint">跨越午夜的时段属于其开始的那一天：周五 23:00 – 08:00 也包括周六早上。</string>
 
     <!-- Presets -->
     <string name="presets_title">预设</string>
@@ -185,7 +191,7 @@
     <string name="settings_section_about">关于</string>
     <string name="settings_notification">状态通知</string>
     <string name="settings_notification_summary">显示已用时间和“关闭”按钮的常驻通知</string>
-    <string name="settings_schedule_on">每天 %1$s – %2$s</string>
+    <string name="settings_schedule_on">%1$s，%2$s – %3$s</string>
     <string name="settings_exact_alarms">闹钟和提醒</string>
     <string name="settings_exact_alarms_denied">未允许：定时计划可能延迟</string>
     <string name="settings_battery">后台运行</string>

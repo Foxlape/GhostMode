@@ -75,6 +75,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val scheduleEnabled = state.scheduleEnabled
     val scheduleStart = state.scheduleStartMinuteOfDay
     val scheduleEnd = state.scheduleEndMinuteOfDay
+    val scheduleDays = state.scheduleDays
     val notificationEnabled = state.notificationEnabled
     val themeMode = state.themeMode
     val dynamicColor = state.dynamicColor
@@ -199,8 +200,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         state.setSimSlotMode(mode)
     }
 
-    fun setSchedule(enabled: Boolean, startMinute: Int, endMinute: Int) {
-        state.setSchedule(enabled, startMinute, endMinute)
+    fun setSchedule(enabled: Boolean, startMinute: Int, endMinute: Int, days: Int) {
+        state.setSchedule(enabled, startMinute, endMinute, days)
         ScheduleManager.update(getApplication())
     }
 

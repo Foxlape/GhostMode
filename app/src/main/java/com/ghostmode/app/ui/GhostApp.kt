@@ -142,7 +142,8 @@ fun GhostApp(vm: MainViewModel, host: AppHost, initialTab: Tab = Tab.HOME, initi
             val enabled by vm.scheduleEnabled.collectAsStateWithLifecycle()
             val start by vm.scheduleStart.collectAsStateWithLifecycle()
             val end by vm.scheduleEnd.collectAsStateWithLifecycle()
-            ScheduleSheet(enabled, start, end, onApply = vm::setSchedule, onDismiss = { sheet = null })
+            val days by vm.scheduleDays.collectAsStateWithLifecycle()
+            ScheduleSheet(enabled, start, end, days, onApply = vm::setSchedule, onDismiss = { sheet = null })
         }
         Sheet.SIM -> {
             val mode by vm.simSlotMode.collectAsStateWithLifecycle()

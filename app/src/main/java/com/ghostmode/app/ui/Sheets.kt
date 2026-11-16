@@ -2,6 +2,7 @@ package com.ghostmode.app.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,12 +30,15 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -41,6 +48,7 @@ import com.ghostmode.app.R
 import com.ghostmode.app.data.SimSlotMode
 import com.ghostmode.app.scheduling.ScheduleWindow
 import com.ghostmode.app.ui.home.simLabel
+import java.text.DateFormatSymbols
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,13 +107,15 @@ fun ScheduleSheet(
     enabled: Boolean,
     startMinute: Int,
     endMinute: Int,
-    onApply: (Boolean, Int, Int) -> Unit,
+    days: Int,
+    onApply: (Boolean, Int, Int, Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     var isEnabled by rememberSaveable { mutableStateOf(enabled) }
     var start by rememberSaveable { mutableIntStateOf(startMinute) }
     var end by rememberSaveable { mutableIntStateOf(endMinute) }
+    var selectedDays by rememberSaveable { mutableIntStateOf(days) }
     var picking by rememberSaveable { mutableStateOf<String?>(null) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
@@ -128,24 +138,36 @@ fun ScheduleSheet(
                 TimeBox(stringResource(R.string.schedule_from), Format.minuteOfDay(context, start), isEnabled, Modifier.weight(1f)) { picking = "start" }
                 TimeBox(stringResource(R.string.schedule_to), Format.minuteOfDay(context, end), isEnabled, Modifier.weight(1f)) { picking = "end" }
             }
+            DayPicker(selectedDays, isEnabled) { selectedDays = it }
             val length = ScheduleWindow.durationMinutes(start, end)
+            val noDays = selectedDays and ScheduleWindow.ALL_DAYS == 0
+            val everyDay = selectedDays and ScheduleWindow.ALL_DAYS == ScheduleWindow.ALL_DAYS
+            val duration = Format.duration(context, length * 60_000L)
             Text(
-                if (start == end) stringResource(R.string.schedule_empty_window)
-                else stringResource(R.string.schedule_summary, Format.duration(context, length * 60_000L)),
+                when {
+                    start == end -> stringResource(R.string.schedule_empty_window)
+                    noDays -> stringResource(R.string.schedule_no_days)
+                    everyDay -> stringResource(R.string.schedule_summary, duration)
+                    else -> stringResource(R.string.schedule_summary_days, duration, Format.scheduleDays(context, selectedDays))
+                },
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (start == end) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                color = if (start == end || noDays) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                stringResource(R.string.schedule_hint),
+                if (start > end && !everyDay) {
+                    stringResource(R.string.schedule_overnight_hint) + "\n" + stringResource(R.string.schedule_hint)
+                } else {
+                    stringResource(R.string.schedule_hint)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
                 Button(
-                    enabled = !isEnabled || start != end,
+                    enabled = !isEnabled || (start != end && !noDays),
                     onClick = {
-                        onApply(isEnabled, start, end)
+                        onApply(isEnabled, start, end, selectedDays)
                         onDismiss()
                     }
                 ) { Text(stringResource(R.string.action_save)) }
@@ -173,6 +195,36 @@ fun ScheduleSheet(
             },
             dismissButton = { TextButton(onClick = { picking = null }) { Text(stringResource(R.string.action_cancel)) } }
         )
+    }
+}
+
+/** Seven round toggles in the locale's week order. */
+@Composable
+private fun DayPicker(days: Int, enabled: Boolean, onChange: (Int) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
+    val symbols = remember(locale) { DateFormatSymbols.getInstance(locale) }
+    val week = remember(locale) { ScheduleWindow.week(Format.firstDayOfWeek(locale)) }
+    Row(
+        Modifier.fillMaxWidth().alpha(if (enabled) 1f else 0.4f),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        week.forEach { day ->
+            val bit = ScheduleWindow.dayBit(day)
+            val selected = days and bit != 0
+            Surface(
+                shape = CircleShape,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(40.dp)
+                    .toggleable(value = selected, enabled = enabled, role = Role.Checkbox) { onChange(days xor bit) }
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(symbols.shortWeekdays[day], style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                }
+            }
+        }
     }
 }
 
