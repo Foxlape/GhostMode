@@ -17,14 +17,12 @@ object ScheduleManager {
         val pendingIntent = tickPendingIntent(appContext)
         alarmManager.cancel(pendingIntent)
         if (!state.scheduleEnabled.value) return
-        val start = state.scheduleStartMinuteOfDay.value
-        val end = state.scheduleEndMinuteOfDay.value
-        if (start == end) return
-        val nowMs = System.currentTimeMillis()
-        val triggerAtMs = minOf(
-            ScheduleWindow.nextOccurrenceMs(nowMs, start),
-            ScheduleWindow.nextOccurrenceMs(nowMs, end)
-        )
+        val triggerAtMs = ScheduleWindow.nextBoundaryMs(
+            System.currentTimeMillis(),
+            state.scheduleStartMinuteOfDay.value,
+            state.scheduleEndMinuteOfDay.value,
+            state.scheduleDays.value
+        ) ?: return
         setAlarm(alarmManager, triggerAtMs, pendingIntent)
     }
 

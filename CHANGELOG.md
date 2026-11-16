@@ -6,6 +6,17 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+### Added
+
+- **Schedule by day of the week ([#11](https://github.com/Foxlape/GhostMode/issues/11)).** Pick the days the schedule
+  runs on, e.g. Monday to Friday, 8:00 to 20:00. A window that crosses midnight belongs to the day it starts on. Existing
+  schedules keep running every day.
+
+### Fixed
+
+- **Samsung with Secure Folder or Dual Messenger.** `pm list packages -d` failed with a `SecurityException` for the
+  second profile, so Ghost Mode could not tell which IMS packages were already disabled. It now asks for user 0 only.
+
 ## [0.2.3] — 2026-11-04
 
 ### Added

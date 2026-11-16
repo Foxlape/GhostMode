@@ -37,7 +37,7 @@ No airplane mode, no call-blocking rules.
   your own command sets with JSON import and export.
 - **Dual SIM**: make SIM 1, SIM 2 or both unreachable.
 - **Quick Settings tile, home screen widget, launcher shortcuts.**
-- **Schedule** (e.g. every night 23:00–07:30) and an **auto turn-off timer**.
+- **Schedule** (e.g. every night 23:00–07:30, or weekdays only) and an **auto turn-off timer**.
 - **Reboot-aware**: re-applies itself after a restart when root / Sui is available, otherwise shows a notification.
 - **Diagnostics** per SIM, a full **command log** and **statistics**.
 - Material You design, dark and light themes, English, Russian and Simplified Chinese.

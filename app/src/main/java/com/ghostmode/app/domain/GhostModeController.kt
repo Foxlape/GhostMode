@@ -435,7 +435,8 @@ class GhostModeController(
             Regex("^(${BuiltInPresets.SAMSUNG_VOLTE_SWITCH}|${BuiltInPresets.SAMSUNG_VIDEO_SWITCH})")
         private const val PACKAGE_PREFIX = "package:"
         private const val DISABLED_STATE_MARKER = "disabled"
-        private const val LIST_DISABLED_PACKAGES_COMMAND = "pm list packages -d"
+        // Without `--user 0`, a Secure Folder or Dual Messenger profile makes it fail with a SecurityException.
+        private const val LIST_DISABLED_PACKAGES_COMMAND = "pm list packages -d --user 0"
 
         private val SLOT_MARKER = Regex("(?<=\\s)-s 0(?=\\s|$)")
         private val SLOT_PLACEHOLDER =

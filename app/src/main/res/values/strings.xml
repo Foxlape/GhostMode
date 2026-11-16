@@ -99,12 +99,18 @@
 
     <!-- Schedule -->
     <string name="schedule_title">Schedule</string>
-    <string name="schedule_subtitle">Turn on and off automatically every day</string>
+    <string name="schedule_subtitle">Turn on and off automatically on the days you pick</string>
     <string name="schedule_from">From</string>
     <string name="schedule_to">To</string>
     <string name="schedule_summary">Ghost Mode will be on for %1$s every day.</string>
     <string name="schedule_empty_window">Start and end are the same — pick a different time.</string>
     <string name="schedule_hint">If the phone was off at the start time, the mode turns on right after boot. A mode you turn on manually is never switched off by a reboot.</string>
+    <string name="schedule_every_day">Every day</string>
+    <string name="schedule_weekdays">Weekdays</string>
+    <string name="schedule_weekends">Weekends</string>
+    <string name="schedule_summary_days">Ghost Mode will be on for %1$s on: %2$s.</string>
+    <string name="schedule_no_days">Pick at least one day.</string>
+    <string name="schedule_overnight_hint">A window past midnight belongs to the day it starts: Friday 23:00 – 08:00 also covers Saturday morning.</string>
 
     <!-- Presets -->
     <string name="presets_title">Presets</string>
@@ -189,7 +195,7 @@
     <string name="settings_section_about">About</string>
     <string name="settings_notification">Status notification</string>
     <string name="settings_notification_summary">Ongoing notification with elapsed time and a “Turn off” button</string>
-    <string name="settings_schedule_on">Every day %1$s – %2$s</string>
+    <string name="settings_schedule_on">%1$s, %2$s – %3$s</string>
     <string name="settings_exact_alarms">Alarms &amp; reminders</string>
     <string name="settings_exact_alarms_denied">Not allowed — schedule may be late</string>
     <string name="settings_battery">Background work</string>

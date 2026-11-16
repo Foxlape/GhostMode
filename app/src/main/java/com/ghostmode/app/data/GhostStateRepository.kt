@@ -1,5 +1,6 @@
 package com.ghostmode.app.data
 
+import com.ghostmode.app.scheduling.ScheduleWindow
 import com.ghostmode.app.support.LogSanitizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +51,7 @@ class GhostStateRepository(
     private val scheduleEnabledFlow = MutableStateFlow(store.getBoolean(KEY_SCHEDULE_ENABLED, false))
     private val scheduleStartFlow = MutableStateFlow(store.getInt(KEY_SCHEDULE_START_MINUTE, DEFAULT_SCHEDULE_START))
     private val scheduleEndFlow = MutableStateFlow(store.getInt(KEY_SCHEDULE_END_MINUTE, DEFAULT_SCHEDULE_END))
+    private val scheduleDaysFlow = MutableStateFlow(store.getInt(KEY_SCHEDULE_DAYS, ScheduleWindow.ALL_DAYS))
     private val themeModeFlow = MutableStateFlow(ThemeMode.fromStorage(store.getString(KEY_THEME_MODE)))
     private val dynamicColorFlow = MutableStateFlow(store.getBoolean(KEY_DYNAMIC_COLOR, false))
     private val timerFireAtFlow = MutableStateFlow(store.getLong(KEY_TIMER_FIRE_AT, NONE))
@@ -67,6 +69,9 @@ class GhostStateRepository(
     val scheduleEnabled: StateFlow<Boolean> = scheduleEnabledFlow.asStateFlow()
     val scheduleStartMinuteOfDay: StateFlow<Int> = scheduleStartFlow.asStateFlow()
     val scheduleEndMinuteOfDay: StateFlow<Int> = scheduleEndFlow.asStateFlow()
+
+    /** Days the window starts on, see [ScheduleWindow.dayBit]. Older versions ran every day. */
+    val scheduleDays: StateFlow<Int> = scheduleDaysFlow.asStateFlow()
     val themeMode: StateFlow<ThemeMode> = themeModeFlow.asStateFlow()
     val dynamicColor: StateFlow<Boolean> = dynamicColorFlow.asStateFlow()
     val timerFireAtMs: StateFlow<Long> = timerFireAtFlow.asStateFlow()
@@ -142,14 +147,16 @@ class GhostStateRepository(
         store.edit { putBoolean(KEY_NOTIFICATION_ENABLED, value) }
     }
 
-    fun setSchedule(enabled: Boolean, startMinuteOfDay: Int, endMinuteOfDay: Int) {
+    fun setSchedule(enabled: Boolean, startMinuteOfDay: Int, endMinuteOfDay: Int, days: Int = ScheduleWindow.ALL_DAYS) {
         scheduleEnabledFlow.value = enabled
         scheduleStartFlow.value = startMinuteOfDay
         scheduleEndFlow.value = endMinuteOfDay
+        scheduleDaysFlow.value = days
         store.edit {
             putBoolean(KEY_SCHEDULE_ENABLED, enabled)
             putInt(KEY_SCHEDULE_START_MINUTE, startMinuteOfDay)
             putInt(KEY_SCHEDULE_END_MINUTE, endMinuteOfDay)
+            putInt(KEY_SCHEDULE_DAYS, days)
         }
     }
 
@@ -256,6 +263,7 @@ class GhostStateRepository(
         private const val KEY_SCHEDULE_ENABLED = "schedule_enabled"
         private const val KEY_SCHEDULE_START_MINUTE = "schedule_start_minute"
         private const val KEY_SCHEDULE_END_MINUTE = "schedule_end_minute"
+        private const val KEY_SCHEDULE_DAYS = "schedule_days"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_DYNAMIC_COLOR = "dynamic_color"
         private const val KEY_TIMER_FIRE_AT = "timer_fire_at"
