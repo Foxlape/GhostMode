@@ -28,6 +28,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.outlined.Troubleshoot
@@ -86,6 +87,7 @@ fun SettingsScreen(
     val scheduleDays by vm.scheduleDays.collectAsStateWithLifecycle()
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
     val dynamicColor by vm.dynamicColor.collectAsStateWithLifecycle()
+    val stopImsWithoutReboot by vm.stopImsWithoutReboot.collectAsStateWithLifecycle()
     val updateCheck by vm.updateCheckEnabled.collectAsStateWithLifecycle()
     val updateState by vm.updateState.collectAsStateWithLifecycle()
     val systemStatus by vm.systemStatus.collectAsStateWithLifecycle()
@@ -114,6 +116,17 @@ fun SettingsScreen(
                 checked = notificationEnabled,
                 onCheckedChange = onNotificationToggle
             )
+            // Samsung only for now: its persistent IMS service is what needs the reboot.
+            if (Build.MANUFACTURER.equals("samsung", ignoreCase = true) || stopImsWithoutReboot) {
+                Divider()
+                SwitchRow(
+                    icon = Icons.Outlined.Science,
+                    title = stringResource(R.string.settings_stop_ims),
+                    summary = stringResource(R.string.settings_stop_ims_summary),
+                    checked = stopImsWithoutReboot,
+                    onCheckedChange = vm::setStopImsWithoutReboot
+                )
+            }
             Divider()
             SettingsRow(
                 icon = Icons.Outlined.Schedule,

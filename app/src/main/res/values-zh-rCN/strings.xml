@@ -191,6 +191,8 @@
     <string name="settings_section_about">关于</string>
     <string name="settings_notification">状态通知</string>
     <string name="settings_notification_summary">显示已用时间和“关闭”按钮的常驻通知</string>
+    <string name="settings_stop_ims">无需重启即停止 IMS</string>
+    <string name="settings_stop_ims_summary">实验性功能。当运营商重新开启 VoLTE 时，尝试停止三星的 IMS 服务，而不是要求重启。如果关闭 Ghost Mode 后仍无法接听来电，请重启手机。</string>
     <string name="settings_schedule_on">%1$s，%2$s – %3$s</string>
     <string name="settings_exact_alarms">闹钟和提醒</string>
     <string name="settings_exact_alarms_denied">未允许：定时计划可能延迟</string>

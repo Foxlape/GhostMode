@@ -172,7 +172,11 @@ class GhostModeController(
         }
         val imsStillActive = targetedPackages.isNotEmpty() && !anyPackageDisabled
         if (imsStillActive) logNote(targetedPackages.joinToString(), NOTE_IMS_NOT_DISABLED)
-        val volteForcedOn = isVolteForcedOn(commands)
+        var volteForcedOn = isVolteForcedOn(commands)
+        if (volteForcedOn && state.stopImsWithoutReboot.value) {
+            val disabledIms = targetedPackages.filter { it in disabledByUs || it in alreadyDisabled }
+            if (disabledIms.isNotEmpty() && stopImsProcesses(disabledIms)) volteForcedOn = false
+        }
 
         val changed = results.any { it.isSuccess }
         if (changed) {
@@ -195,6 +199,24 @@ class GhostModeController(
             outcome
         }
     }
+
+    /**
+     * Experimental (#7). A disabled IMS package that is `persistent` (Samsung) keeps running and
+     * stays registered until a reboot, and `am force-stop` skips persistent apps. `am crash` kills
+     * it anyway; whether Android brings it back while the package is disabled depends on the
+     * firmware, so check the process afterwards. `true` when none of [packages] is running.
+     */
+    private suspend fun stopImsProcesses(packages: List<String>): Boolean {
+        val running = packages.filter { isRunning(it) }
+        if (running.isEmpty()) return true
+        running.forEach { execute("$CRASH_COMMAND $it") }
+        delay(volteSettleMs)
+        val stillRunning = running.filter { isRunning(it) }
+        logNote(running.joinToString(), if (stillRunning.isEmpty()) NOTE_IMS_STOPPED else NOTE_IMS_RESTARTED)
+        return stillRunning.isEmpty()
+    }
+
+    private suspend fun isRunning(pkg: String): Boolean = execute("pidof $pkg || true").stdout.isNotBlank()
 
     /** The IMS stack reacts to the VoLTE switch asynchronously, so give it time to overrule us. */
     private suspend fun isVolteForcedOn(commands: List<String>): Boolean {
@@ -425,6 +447,11 @@ class GhostModeController(
         const val NOTE_NO_IMS_PACKAGES = "No bound IMS service found — nothing to disable."
         const val NOTE_VOLTE_FORCED =
             "The VoLTE switch was turned back on by the system — the carrier requires VoLTE. A reboot is needed."
+        const val NOTE_IMS_STOPPED =
+            "Experimental: the IMS service was stopped without a reboot. If calls don't come back after turning Ghost Mode off, reboot."
+        const val NOTE_IMS_RESTARTED =
+            "Experimental: Android restarted the IMS service right away. A reboot is still needed."
+        const val CRASH_COMMAND = "am crash"
         const val NOTE_IMS_NOT_DISABLED =
             "None of these IMS packages could be disabled — calls over VoLTE / VoWiFi may still come through."
 

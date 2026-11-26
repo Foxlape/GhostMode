@@ -33,6 +33,11 @@ class FakeShell : ShellExecutor {
 
     override suspend fun awaitReady(timeoutMs: Long): Boolean = ready
 
+    /** Like [on], but the output is computed on every call (for state that changes mid-test). */
+    fun onDynamic(pattern: String, stdout: () -> String) {
+        rules += Regex(pattern) to { command -> CommandResult(command, stdout(), "", 0) }
+    }
+
     fun on(pattern: String, stdout: String = "", exitCode: Int = 0) {
         rules += Regex(pattern) to { command -> CommandResult(command, stdout, "", exitCode) }
     }
@@ -266,6 +271,49 @@ class GhostModeControllerTest {
         assertTrue(state.isOn.value)
         assertTrue(outcome is TurnOutcome.Partial && outcome.volteForcedOn)
         assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_VOLTE_FORCED })
+    }
+
+    @Test
+    fun turnOn_volteForced_doesNotCrashImsUnlessEnabled() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "0")
+        shell.on("pidof", stdout = "1234")
+
+        controller.turnOn()
+
+        assertTrue(shell.executedMatching(GhostModeController.CRASH_COMMAND).isEmpty())
+    }
+
+    @Test
+    fun turnOn_volteForced_stopsImsWithoutReboot() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        state.setStopImsWithoutReboot(true)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "0")
+        var crashed = false
+        shell.onDynamic("pidof ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}") { if (crashed) "" else "1234" }
+        shell.onDynamic("${GhostModeController.CRASH_COMMAND} ") { crashed = true; "" }
+
+        val outcome = controller.turnOn()
+
+        assertTrue(shell.executed.contains("${GhostModeController.CRASH_COMMAND} ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}"))
+        assertTrue(outcome is TurnOutcome.Success)
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_STOPPED })
+    }
+
+    @Test
+    fun turnOn_volteForced_imsComesBack_stillAsksForReboot() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        state.setStopImsWithoutReboot(true)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "0")
+        shell.on("pidof ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}", stdout = "1234")
+
+        val outcome = controller.turnOn()
+
+        assertTrue(outcome is TurnOutcome.Partial && outcome.volteForcedOn)
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_RESTARTED })
     }
 
     @Test
