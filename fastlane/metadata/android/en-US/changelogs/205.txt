@@ -1,0 +1,3 @@
+Samsung: stop IMS without a reboot (experimental).
+• New switch in Settings. When the carrier turns VoLTE back on, Ghost Mode tries to stop Samsung's IMS service instead of asking for a reboot
+• If calls don't come back after turning Ghost Mode off, reboot the phone

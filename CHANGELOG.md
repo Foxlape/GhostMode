@@ -6,6 +6,15 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+## [0.2.5] — 2026-11-26
+
+### Added
+
+- **Experimental: stop Samsung IMS without a reboot ([#7](https://github.com/Foxlape/GhostMode/issues/7)).** A new
+  switch in Settings (Samsung only, off by default). When the carrier turns VoLTE back on, Ghost Mode runs `am crash`
+  on the disabled IMS service and checks whether it stayed down. If Android starts it again, the app still asks for a
+  reboot. If calls don't come back after turning Ghost Mode off, a reboot fixes it.
+
 ## [0.2.4] — 2026-11-16
 
 ### Added
@@ -263,6 +272,7 @@ First public release: Shizuku and root backends, presets for Pixel / AOSP, Xiaom
 Android 9–11, custom presets with JSON import/export, Quick Settings tile, home screen widget, daily schedule,
 usage statistics, English and Russian UI.
 
+[0.2.5]: https://github.com/Foxlape/GhostMode/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/Foxlape/GhostMode/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/Foxlape/GhostMode/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/Foxlape/GhostMode/compare/v0.2.1...v0.2.2
