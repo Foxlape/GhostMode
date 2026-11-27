@@ -54,7 +54,6 @@ class GhostStateRepository(
     private val scheduleDaysFlow = MutableStateFlow(store.getInt(KEY_SCHEDULE_DAYS, ScheduleWindow.ALL_DAYS))
     private val themeModeFlow = MutableStateFlow(ThemeMode.fromStorage(store.getString(KEY_THEME_MODE)))
     private val dynamicColorFlow = MutableStateFlow(store.getBoolean(KEY_DYNAMIC_COLOR, false))
-    private val stopImsWithoutRebootFlow = MutableStateFlow(store.getBoolean(KEY_STOP_IMS_WITHOUT_REBOOT, false))
     private val timerFireAtFlow = MutableStateFlow(store.getLong(KEY_TIMER_FIRE_AT, NONE))
     private val updateCheckEnabledFlow = MutableStateFlow(store.getBoolean(KEY_UPDATE_CHECK_ENABLED, false))
     private val appliedSnapshotFlow = MutableStateFlow(AppliedSnapshot.fromJson(store.getString(KEY_APPLIED_SNAPSHOT)))
@@ -75,9 +74,6 @@ class GhostStateRepository(
     val scheduleDays: StateFlow<Int> = scheduleDaysFlow.asStateFlow()
     val themeMode: StateFlow<ThemeMode> = themeModeFlow.asStateFlow()
     val dynamicColor: StateFlow<Boolean> = dynamicColorFlow.asStateFlow()
-
-    /** Experimental (#7): stop a disabled IMS service that the carrier keeps on VoLTE, instead of asking for a reboot. */
-    val stopImsWithoutReboot: StateFlow<Boolean> = stopImsWithoutRebootFlow.asStateFlow()
     val timerFireAtMs: StateFlow<Long> = timerFireAtFlow.asStateFlow()
     val updateCheckEnabled: StateFlow<Boolean> = updateCheckEnabledFlow.asStateFlow()
     val appliedSnapshot: StateFlow<AppliedSnapshot?> = appliedSnapshotFlow.asStateFlow()
@@ -174,9 +170,21 @@ class GhostStateRepository(
         store.edit { putBoolean(KEY_DYNAMIC_COLOR, enabled) }
     }
 
-    fun setStopImsWithoutReboot(enabled: Boolean) {
-        stopImsWithoutRebootFlow.value = enabled
-        store.edit { putBoolean(KEY_STOP_IMS_WITHOUT_REBOOT, enabled) }
+    /**
+     * Safety net for the experimental IMS unbinding (#7): the boot count when the IMS service was
+     * unbound and not bound back yet, or [AppliedSnapshot.BOOT_COUNT_UNKNOWN].
+     */
+    fun imsUnboundAtBoot(): Int = store.getInt(KEY_IMS_UNBOUND_AT_BOOT, AppliedSnapshot.BOOT_COUNT_UNKNOWN)
+
+    fun setImsUnboundAtBoot(bootCount: Int) {
+        store.edit { putInt(KEY_IMS_UNBOUND_AT_BOOT, bootCount) }
+    }
+
+    /** Set once the phone rebooted by itself while the IMS service was unbound: never unbind it again. */
+    fun isImsUnbindBlocked(): Boolean = store.getBoolean(KEY_IMS_UNBIND_BLOCKED, false)
+
+    fun blockImsUnbind() {
+        store.edit { putBoolean(KEY_IMS_UNBIND_BLOCKED, true) }
     }
 
     fun setUpdateCheckEnabled(enabled: Boolean) {
@@ -275,7 +283,8 @@ class GhostStateRepository(
         private const val KEY_SCHEDULE_DAYS = "schedule_days"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_DYNAMIC_COLOR = "dynamic_color"
-        private const val KEY_STOP_IMS_WITHOUT_REBOOT = "stop_ims_without_reboot"
+        private const val KEY_IMS_UNBOUND_AT_BOOT = "ims_unbound_at_boot"
+        private const val KEY_IMS_UNBIND_BLOCKED = "ims_unbind_blocked"
         private const val KEY_TIMER_FIRE_AT = "timer_fire_at"
         private const val KEY_UPDATE_CHECK_ENABLED = "update_check_enabled"
         private const val KEY_APPLIED_SNAPSHOT = "applied_snapshot"

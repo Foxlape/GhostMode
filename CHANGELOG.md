@@ -6,6 +6,30 @@ Russian release notes for every version are published on the [Releases](https://
 
 ## [Unreleased]
 
+## [0.2.6] — 2026-11-28
+
+### Changed
+
+- **Samsung: no reboot when the carrier forces VoLTE back on ([#7](https://github.com/Foxlape/GhostMode/issues/7)),
+  experimental.** Samsung binds its IMS app as the carrier's IMS service, and that process keeps running after the
+  package is disabled. Ghost Mode now unbinds it from telephony with `cmd phone ims set-ims-service`, an override that
+  Shizuku is allowed to set and that Android keeps until Ghost Mode is turned off or the phone reboots. Turning Ghost Mode
+  off clears the override, so VoLTE should come back without a reboot too. If the IMS service is not bound as the
+  carrier's, the app still asks for a reboot. Nobody has tested this on a Samsung yet, so there is a safety net: if the
+  phone reboots while the IMS service is unbound and the user didn't restart it (checked with `sys.boot.reason`), Ghost
+  Mode stops unbinding on that phone and asks for a reboot instead, as in 0.2.4.
+
+### Removed
+
+- **The "Stop IMS without a reboot" switch from 0.2.5.** Crashing Samsung's IMS service with `am crash` made a tester's
+  phone reboot by itself, and calls still came through afterwards.
+
+### Fixed
+
+- **A reboot while Ghost Mode is turning on no longer loses its state.** The app used to save what it changed only after
+  the last VoLTE check, which waits a few seconds. If the phone rebooted or the app was closed during that wait, Ghost
+  Mode showed as off and could not undo its changes. It now saves them before the check.
+
 ## [0.2.5] — 2026-11-26
 
 ### Added
@@ -272,6 +296,7 @@ First public release: Shizuku and root backends, presets for Pixel / AOSP, Xiaom
 Android 9–11, custom presets with JSON import/export, Quick Settings tile, home screen widget, daily schedule,
 usage statistics, English and Russian UI.
 
+[0.2.6]: https://github.com/Foxlape/GhostMode/compare/v0.2.5...v0.2.6
 [0.2.5]: https://github.com/Foxlape/GhostMode/compare/v0.2.4...v0.2.5
 [0.2.4]: https://github.com/Foxlape/GhostMode/compare/v0.2.3...v0.2.4
 [0.2.3]: https://github.com/Foxlape/GhostMode/compare/v0.2.2...v0.2.3

@@ -119,8 +119,9 @@ Original values of `settings put` keys and packages disabled with `pm disable-us
 
 - **SMS** may be delayed until the mode is off on carriers that deliver SMS over IMS.
 - **Call forwarding** "when unreachable" sends callers to voicemail instead.
-- On Samsung, carriers that require VoLTE (such as Jio) turn it back on; Ghost Mode warns about this, and a reboot with
-  the mode on is needed.
+- On Samsung, carriers that require VoLTE (such as Jio) turn it back on. Ghost Mode then unbinds Samsung's IMS service
+  from telephony (experimental). If that doesn't work on your firmware, the app tells you, and a reboot with the mode on
+  is needed.
 - Commands differ between firmware versions. If a preset does not work, send the diagnostics and command log.
 - Use the app only on your own device and in line with local regulations.
 

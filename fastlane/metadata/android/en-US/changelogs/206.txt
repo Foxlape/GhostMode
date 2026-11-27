@@ -1,0 +1,5 @@
+Samsung: no reboot when the carrier forces VoLTE back on (experimental).
+• Ghost Mode unbinds Samsung's IMS service from telephony instead. Turning the mode off brings it back
+• If the phone still reboots by itself, the app stops doing this on that phone
+• The "Stop IMS without a reboot" switch is removed: on some phones it made the phone reboot by itself
+• A reboot while Ghost Mode is turning on no longer makes the mode show as off

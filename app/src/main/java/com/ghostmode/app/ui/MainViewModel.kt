@@ -79,7 +79,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val notificationEnabled = state.notificationEnabled
     val themeMode = state.themeMode
     val dynamicColor = state.dynamicColor
-    val stopImsWithoutReboot = state.stopImsWithoutReboot
     val updateCheckEnabled = state.updateCheckEnabled
     val updateState = graph.updates.state
     val logEntries = state.logEntries
@@ -214,8 +213,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setDynamicColor(enabled: Boolean) = state.setDynamicColor(enabled)
-
-    fun setStopImsWithoutReboot(enabled: Boolean) = state.setStopImsWithoutReboot(enabled)
 
     fun setUpdateCheckEnabled(enabled: Boolean) {
         state.setUpdateCheckEnabled(enabled)

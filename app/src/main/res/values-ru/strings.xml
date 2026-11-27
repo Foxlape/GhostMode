@@ -194,8 +194,6 @@
     <string name="settings_section_about">О приложении</string>
     <string name="settings_notification">Уведомление о статусе</string>
     <string name="settings_notification_summary">Постоянное уведомление с таймером и кнопкой «Выключить»</string>
-    <string name="settings_stop_ims">Останавливать IMS без перезагрузки</string>
-    <string name="settings_stop_ims_summary">Экспериментально. Когда оператор включает VoLTE обратно, приложение пытается остановить IMS-сервис Samsung вместо просьбы перезагрузиться. Если после выключения Ghost Mode звонки не вернулись, перезагрузите телефон.</string>
     <string name="settings_schedule_on">%1$s, %2$s – %3$s</string>
     <string name="settings_exact_alarms">Будильники и напоминания</string>
     <string name="settings_exact_alarms_denied">Запрещено — расписание может опаздывать</string>

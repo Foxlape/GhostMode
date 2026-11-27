@@ -172,12 +172,8 @@ class GhostModeController(
         }
         val imsStillActive = targetedPackages.isNotEmpty() && !anyPackageDisabled
         if (imsStillActive) logNote(targetedPackages.joinToString(), NOTE_IMS_NOT_DISABLED)
-        var volteForcedOn = isVolteForcedOn(commands)
-        if (volteForcedOn && state.stopImsWithoutReboot.value) {
-            val disabledIms = targetedPackages.filter { it in disabledByUs || it in alreadyDisabled }
-            if (disabledIms.isNotEmpty() && stopImsProcesses(disabledIms)) volteForcedOn = false
-        }
-
+        // Save the snapshot before the VoLTE check below waits: if the app dies or the phone reboots
+        // in between, the mode must still show as on and turn off cleanly (#7).
         val changed = results.any { it.isSuccess }
         if (changed) {
             state.markOn(
@@ -192,6 +188,8 @@ class GhostModeController(
                 )
             )
         }
+        var volteForcedOn = isVolteForcedOn(commands)
+        if (volteForcedOn && unbindCarrierImsService(slots)) volteForcedOn = false
         val outcome = outcomeOf(results, changed)
         return if ((imsStillActive || volteForcedOn) && outcome !is TurnOutcome.Failure) {
             TurnOutcome.Partial(results, imsStillActive, volteForcedOn)
@@ -201,22 +199,58 @@ class GhostModeController(
     }
 
     /**
-     * Experimental (#7). A disabled IMS package that is `persistent` (Samsung) keeps running and
-     * stays registered until a reboot, and `am force-stop` skips persistent apps. `am crash` kills
-     * it anyway; whether Android brings it back while the package is disabled depends on the
-     * firmware, so check the process afterwards. `true` when none of [packages] is running.
+     * Experimental (#7). Samsung binds its IMS app as the carrier ImsService. When the carrier
+     * forces VoLTE back on, that process keeps running even though the package is disabled (it is
+     * persistent), and killing it is not an option: crashing it with `am crash` (0.2.5) rebooted
+     * phones. Overriding the carrier ImsService unbinds it from telephony instead, which normal
+     * SIM and carrier changes do too. OFF clears the override, a reboot drops it.
+     * `true` when at least one slot is unbound and no slot is left with a bound ImsService (a
+     * device-bound one is left alone: there is no way to clear that override afterwards).
      */
-    private suspend fun stopImsProcesses(packages: List<String>): Boolean {
-        val running = packages.filter { isRunning(it) }
-        if (running.isEmpty()) return true
-        running.forEach { execute("$CRASH_COMMAND $it") }
-        delay(volteSettleMs)
-        val stillRunning = running.filter { isRunning(it) }
-        logNote(running.joinToString(), if (stillRunning.isEmpty()) NOTE_IMS_STOPPED else NOTE_IMS_RESTARTED)
-        return stillRunning.isEmpty()
+    private suspend fun unbindCarrierImsService(slots: List<Int>): Boolean {
+        checkRebootWhileUnbound()
+        if (state.isImsUnbindBlocked()) {
+            logNote(BuiltInPresets.UNBIND_CARRIER_IMS_COMMAND, NOTE_IMS_UNBIND_BLOCKED)
+            return false
+        }
+        val states = slots.map { slot ->
+            val carrier = firstLine(forSlot(BuiltInPresets.GET_IMS_SERVICE_CARRIER_COMMAND, slot))
+            when {
+                carrier == BuiltInPresets.NO_IMS_SERVICE -> true
+                carrier != null && PACKAGE_NAME.matches(carrier) -> {
+                    // Saved first: if unbinding takes the phone down, the next run must know.
+                    state.setImsUnboundAtBoot(bootCount())
+                    val result = execute(forSlot(BuiltInPresets.UNBIND_CARRIER_IMS_COMMAND, slot))
+                    result.isSuccess && result.stdout.trim() == "true"
+                }
+                // No IMS on this slot at all: nothing to unbind.
+                firstLine(forSlot(BuiltInPresets.GET_IMS_SERVICE_DEVICE_COMMAND, slot)) == null -> null
+                else -> false
+            }
+        }
+        if (states.none { it == true }) state.setImsUnboundAtBoot(AppliedSnapshot.BOOT_COUNT_UNKNOWN)
+        val unbound = states.any { it == true } && states.none { it == false }
+        logNote(BuiltInPresets.UNBIND_CARRIER_IMS_COMMAND, if (unbound) NOTE_IMS_UNBOUND else NOTE_IMS_UNBIND_FAILED)
+        return unbound
     }
 
-    private suspend fun isRunning(pkg: String): Boolean = execute("pidof $pkg || true").stdout.isNotBlank()
+    /**
+     * Safety net for [unbindCarrierImsService]. If the phone rebooted while the IMS service was
+     * unbound and the user didn't ask for that reboot, assume the unbinding caused it, as
+     * `am crash` did in 0.2.5, and never unbind on this phone again. Worst case it reboots once.
+     */
+    private suspend fun checkRebootWhileUnbound() {
+        val unboundAt = state.imsUnboundAtBoot()
+        val current = bootCount()
+        if (unboundAt == AppliedSnapshot.BOOT_COUNT_UNKNOWN || current == AppliedSnapshot.BOOT_COUNT_UNKNOWN) return
+        if (current == unboundAt) return
+        val reason = execute(BOOT_REASON_COMMAND).stdout.trim()
+        if (!USER_REBOOT_REASON.containsMatchIn(reason)) state.blockImsUnbind()
+        state.setImsUnboundAtBoot(AppliedSnapshot.BOOT_COUNT_UNKNOWN)
+    }
+
+    private suspend fun firstLine(command: String): String? =
+        execute(command).stdout.lineSequence().map { it.trim() }.firstOrNull { it.isNotEmpty() }
 
     /** The IMS stack reacts to the VoLTE switch asynchronously, so give it time to overrule us. */
     private suspend fun isVolteForcedOn(commands: List<String>): Boolean {
@@ -318,6 +352,8 @@ class GhostModeController(
             ?: legacySnapshot()
             ?: return TurnOutcome.Failure(FailureReason.NO_PRESET)
 
+        // Before the override is cleared below, or a reboot caused by the unbinding goes unnoticed.
+        checkRebootWhileUnbound()
         val restoreCommands = expandSlots(snapshot.offCommands, snapshot.slots)
         val reEnables = snapshot.disabledPackages
             .filter { pkg -> restoreCommands.none { PM_ENABLE.matchEntire(it)?.groupValues?.get(1) == pkg } }
@@ -327,7 +363,10 @@ class GhostModeController(
             execute(resolveRestoreCommand(command, snapshot))
         }
         val changed = results.any { it.isSuccess }
-        if (changed) state.markOff()
+        if (changed) {
+            state.markOff()
+            state.setImsUnboundAtBoot(AppliedSnapshot.BOOT_COUNT_UNKNOWN)
+        }
         return outcomeOf(results, changed)
     }
 
@@ -447,11 +486,15 @@ class GhostModeController(
         const val NOTE_NO_IMS_PACKAGES = "No bound IMS service found — nothing to disable."
         const val NOTE_VOLTE_FORCED =
             "The VoLTE switch was turned back on by the system — the carrier requires VoLTE. A reboot is needed."
-        const val NOTE_IMS_STOPPED =
-            "Experimental: the IMS service was stopped without a reboot. If calls don't come back after turning Ghost Mode off, reboot."
-        const val NOTE_IMS_RESTARTED =
-            "Experimental: Android restarted the IMS service right away. A reboot is still needed."
-        const val CRASH_COMMAND = "am crash"
+        const val NOTE_IMS_UNBOUND =
+            "Experimental: the IMS service was unbound from telephony instead, no reboot needed. Call yourself to check; if calls still come through, reboot."
+        const val NOTE_IMS_UNBIND_FAILED =
+            "The IMS service could not be unbound from telephony, so a reboot is still needed."
+        const val NOTE_IMS_UNBIND_BLOCKED =
+            "The phone once rebooted by itself while the IMS service was unbound, so Ghost Mode no longer unbinds it on this phone. A reboot is needed instead."
+        const val BOOT_REASON_COMMAND = "getprop sys.boot.reason"
+        /** Restarts from the power menu, `adb reboot` or `svc power reboot`; anything else counts as unexpected. */
+        private val USER_REBOOT_REASON = Regex("userrequested|shell|adb")
         const val NOTE_IMS_NOT_DISABLED =
             "None of these IMS packages could be disabled — calls over VoLTE / VoWiFi may still come through."
 
