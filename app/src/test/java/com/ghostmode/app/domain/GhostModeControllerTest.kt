@@ -274,7 +274,7 @@ class GhostModeControllerTest {
     }
 
     @Test
-    fun turnOn_volteForced_doesNotCrashImsUnlessEnabled() = runTest {
+    fun turnOn_volteForced_neverCrashesIms() = runTest {
         state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
         shell.on("pm disable-user", stdout = "new state: disabled-user")
         shell.on("settings get system voicecall_type", stdout = "0")
@@ -282,38 +282,132 @@ class GhostModeControllerTest {
 
         controller.turnOn()
 
-        assertTrue(shell.executedMatching(GhostModeController.CRASH_COMMAND).isEmpty())
+        assertTrue(shell.executedMatching("am crash").isEmpty())
+        assertTrue(state.isOn.value)
     }
 
     @Test
-    fun turnOn_volteForced_stopsImsWithoutReboot() = runTest {
+    fun turnOn_savesStateBeforeTheVolteCheck() = runTest {
         state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
-        state.setStopImsWithoutReboot(true)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        var onWhenChecked = false
+        shell.onDynamic("settings get system voicecall_type") {
+            onWhenChecked = state.isOn.value
+            "1"
+        }
+
+        controller.turnOn()
+
+        // The last read is the VoLTE check; a reboot during its wait must not lose the snapshot.
+        assertTrue(onWhenChecked)
+        assertTrue(state.appliedSnapshot.value?.disabledPackages?.isNotEmpty() == true)
+    }
+
+    @Test
+    fun turnOn_volteForced_unbindsCarrierImsService() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
         shell.on("pm disable-user", stdout = "new state: disabled-user")
         shell.on("settings get system voicecall_type", stdout = "0")
-        var crashed = false
-        shell.onDynamic("pidof ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}") { if (crashed) "" else "1234" }
-        shell.onDynamic("${GhostModeController.CRASH_COMMAND} ") { crashed = true; "" }
+        shell.on("get-ims-service -s 0 -c", stdout = BuiltInPresets.SAMSUNG_IMS_PACKAGE)
+        shell.on("set-ims-service", stdout = "true")
 
         val outcome = controller.turnOn()
 
-        assertTrue(shell.executed.contains("${GhostModeController.CRASH_COMMAND} ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}"))
+        assertTrue(shell.executed.contains("cmd phone ims set-ims-service -s 0 -c -f 0,1 none"))
         assertTrue(outcome is TurnOutcome.Success)
-        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_STOPPED })
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_UNBOUND })
     }
 
     @Test
-    fun turnOn_volteForced_imsComesBack_stillAsksForReboot() = runTest {
+    fun turnOn_volteForced_alreadyUnbound_isSuccess() = runTest {
         state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
-        state.setStopImsWithoutReboot(true)
         shell.on("pm disable-user", stdout = "new state: disabled-user")
         shell.on("settings get system voicecall_type", stdout = "0")
-        shell.on("pidof ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}", stdout = "1234")
+        shell.on("get-ims-service -s 0 -c", stdout = BuiltInPresets.NO_IMS_SERVICE)
 
         val outcome = controller.turnOn()
 
+        assertTrue(shell.executedMatching("set-ims-service").isEmpty())
+        assertTrue(shell.executedMatching("pm disable-user ${BuiltInPresets.NO_IMS_SERVICE}").isEmpty())
+        assertTrue(outcome is TurnOutcome.Success)
+    }
+
+    @Test
+    fun turnOn_volteForced_deviceBoundIms_stillAsksForReboot() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "0")
+        shell.on("get-ims-service -s 0 -d", stdout = BuiltInPresets.SAMSUNG_IMS_PACKAGE)
+
+        val outcome = controller.turnOn()
+
+        assertTrue(shell.executedMatching("set-ims-service").isEmpty())
         assertTrue(outcome is TurnOutcome.Partial && outcome.volteForcedOn)
-        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_RESTARTED })
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_UNBIND_FAILED })
+    }
+
+    @Test
+    fun turnOff_samsung_rebindsImsAfterEnablingIt() = runTest {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        controller.turnOn()
+        shell.executed.clear()
+
+        controller.turnOff()
+
+        val enable = shell.executed.indexOf("pm enable ${BuiltInPresets.SAMSUNG_IMS_PACKAGE}")
+        val rebind = shell.executed.indexOf("cmd phone ims clear-ims-service-override -s 0 || true")
+        assertTrue(enable in 0 until rebind)
+    }
+
+    private fun carrierForcesVolteWithCarrierBoundIms(bootReason: String) {
+        state.setActivePresetId(BuiltInPresets.ID_SAMSUNG_ONE_UI)
+        shell.on("pm disable-user", stdout = "new state: disabled-user")
+        shell.on("settings get system voicecall_type", stdout = "0")
+        shell.on("get-ims-service -s 0 -c", stdout = BuiltInPresets.SAMSUNG_IMS_PACKAGE)
+        shell.on("set-ims-service", stdout = "true")
+        shell.on(GhostModeController.BOOT_REASON_COMMAND, stdout = bootReason)
+    }
+
+    @Test
+    fun unbinding_phoneRebootedByItselfWhileUnbound_isNotRetried() = runTest {
+        carrierForcesVolteWithCarrierBoundIms(bootReason = "reboot,rescueparty")
+        controller.turnOn()
+
+        bootCount++
+        controller.turnOff()
+        shell.executed.clear()
+        val outcome = controller.turnOn()
+
+        assertTrue(shell.executedMatching("set-ims-service").isEmpty())
+        assertTrue(outcome is TurnOutcome.Partial && outcome.volteForcedOn)
+        assertTrue(state.logEntries.value.any { it.stdout == GhostModeController.NOTE_IMS_UNBIND_BLOCKED })
+    }
+
+    @Test
+    fun unbinding_userRestartWhileUnbound_keepsUnbinding() = runTest {
+        carrierForcesVolteWithCarrierBoundIms(bootReason = "reboot,userrequested")
+        controller.turnOn()
+
+        bootCount++
+        controller.turnOff()
+        shell.executed.clear()
+        val outcome = controller.turnOn()
+
+        assertTrue(shell.executed.contains("cmd phone ims set-ims-service -s 0 -c -f 0,1 none"))
+        assertTrue(outcome is TurnOutcome.Success)
+    }
+
+    @Test
+    fun unbinding_noRebootInBetween_doesNotReadBootReason() = runTest {
+        carrierForcesVolteWithCarrierBoundIms(bootReason = "")
+        controller.turnOn()
+        controller.turnOff()
+
+        val outcome = controller.turnOn()
+
+        assertTrue(shell.executedMatching(GhostModeController.BOOT_REASON_COMMAND).isEmpty())
+        assertTrue(outcome is TurnOutcome.Success)
     }
 
     @Test

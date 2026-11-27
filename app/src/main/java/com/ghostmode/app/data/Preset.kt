@@ -50,6 +50,17 @@ object BuiltInPresets {
     const val GET_IMS_SERVICE_DEVICE_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -d"
     const val GET_IMS_SERVICE_CARRIER_COMMAND = "cmd phone ims get-ims-service $SLOT_0 -c"
 
+    /**
+     * Experimental (#7). Pointing the carrier ImsService at a package that has none makes
+     * telephony unbind the real one (MMTEL and emergency MMTEL), so VoLTE calls stop reaching the
+     * phone while the IMS process keeps running. The shell is allowed to set this test override;
+     * it lives in memory until it is cleared or the phone reboots. "none" is not a package name,
+     * so IMS discovery never picks it up.
+     */
+    const val NO_IMS_SERVICE = "none"
+    const val UNBIND_CARRIER_IMS_COMMAND = "cmd phone ims set-ims-service $SLOT_0 -c -f 0,1 $NO_IMS_SERVICE"
+    const val CLEAR_IMS_OVERRIDE_COMMAND = "cmd phone ims clear-ims-service-override $SLOT_0"
+
     const val SAMSUNG_IMS_PACKAGE = "com.sec.imsservice"
     const val SAMSUNG_IMS_PACKAGE_NEW = "com.samsung.android.imsservice"
     const val QUALCOMM_IMS_PACKAGE = "org.codeaurora.ims"
@@ -150,6 +161,8 @@ object BuiltInPresets {
             samsungSwitch(SAMSUNG_VOLTE_SWITCH, "0"),
             "settings put global volte_vt_enabled 1",
             "settings put global enhanced_4g_mode_enabled 1",
+            // Rebinds the IMS service if the VoLTE fallback unbound it; a no-op otherwise.
+            "$CLEAR_IMS_OVERRIDE_COMMAND$IGNORE_FAILURE",
             IMS_ENABLE_COMMAND,
             preferredNetworkMode("", NETWORK_MODE_RESTORE_FALLBACK),
             preferredNetworkMode("1", NETWORK_MODE_RESTORE_FALLBACK),

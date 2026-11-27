@@ -195,8 +195,6 @@
     <string name="settings_section_about">About</string>
     <string name="settings_notification">Status notification</string>
     <string name="settings_notification_summary">Ongoing notification with elapsed time and a “Turn off” button</string>
-    <string name="settings_stop_ims">Stop IMS without a reboot</string>
-    <string name="settings_stop_ims_summary">Experimental. When the carrier turns VoLTE back on, try to stop Samsung\'s IMS service instead of asking for a reboot. If calls don\'t come back after turning Ghost Mode off, reboot.</string>
     <string name="settings_schedule_on">%1$s, %2$s – %3$s</string>
     <string name="settings_exact_alarms">Alarms &amp; reminders</string>
     <string name="settings_exact_alarms_denied">Not allowed — schedule may be late</string>
